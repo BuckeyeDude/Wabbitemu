@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:ads="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/browseLayout"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+
+    <ListView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_above="@+id/adView4"
+            android:id="@id/android:list" />
+    
+<!--     <TextView android:id="@id/android:empty" -->
+<!--                android:layout_width="match_parent" -->
+<!--                android:layout_height="match_parent" -->
+<!--                android:layout_centerInParent="true" -->
+<!--                android:visibility="gone" -->
+<!--                android:text="@string/noFilesFound" /> -->
+    
+    <com.google.android.gms.ads.AdView android:id="@+id/adView4"
+        android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:layout_alignParentBottom="true"
+		ads:adUnitId="ca-app-pub-9020637264295870/8898887345"
+		ads:adSize="BANNER" />
+    
+</RelativeLayout>
