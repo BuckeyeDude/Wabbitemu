@@ -356,28 +356,28 @@ public class WabbitemuActivity extends Activity {
 		final String extensions;
 		switch (CalcInterface.GetModel()) {
 		case CalcInterface.TI_73:
-			extensions = "\\.(rom|sav|[73][b|c|d|g|i|k|l|m|n|p|q|s|t|u|v|w|y|z])$";
+			extensions = "\\.(rom|sav|73[b|c|d|g|i|k|l|m|n|p|q|s|t|u|v|w|y|z])$";
 			break;
 		case CalcInterface.TI_82:
-			extensions = "\\.(rom|sav|[82][b|c|d|g|i|l|m|n|p|q|s|t|u|v|w|y|z])$";
+			extensions = "\\.(rom|sav|82[b|c|d|g|i|l|m|n|p|q|s|t|u|v|w|y|z])$";
 			break;
 		case CalcInterface.TI_83:
-			extensions = "\\.(rom|sav|[83][b|c|d|g|i|l|m|n|p|q|s|t|u|v|w|y|z])$";
+			extensions = "\\.(rom|sav|83[b|c|d|g|i|l|m|n|p|q|s|t|u|v|w|y|z])$";
 			break;
 		case CalcInterface.TI_83P:
 		case CalcInterface.TI_83PSE:
 		case CalcInterface.TI_84P:
 		case CalcInterface.TI_84PSE:
-			extensions = "\\.(rom|sav|[8x][b|c|d|g|i|k|l|m|n|p|q|s|t|u|v|w|y|z])$";
+			extensions = "\\.(rom|sav|8x[b|c|d|g|i|k|l|m|n|p|q|s|t|u|v|w|y|z])$";
 			break;
 		case CalcInterface.TI_84PCSE:
-			extensions = "\\.(rom|sav|[8][x|c][b|c|d|g|i|k|l|m|n|p|q|s|t|u|v|w|y|z])$";
+			extensions = "\\.(rom|sav|8[x|c][b|c|d|g|i|k|l|m|n|p|q|s|t|u|v|w|y|z])$";
 			break;
 		case CalcInterface.TI_85:
-			extensions = "\\.(rom|sav|[85][b|c|d|g|i|l|m|n|p|q|s|t|u|v|w|y|z])$";
+			extensions = "\\.(rom|sav|85[b|c|d|g|i|l|m|n|p|q|s|t|u|v|w|y|z])$";
 			break;
 		case CalcInterface.TI_86:
-			extensions = "\\.(rom|sav|[86][b|c|d|g|i|l|m|n|p|q|s|t|u|v|w|y|z])$";
+			extensions = "\\.(rom|sav|86[b|c|d|g|i|l|m|n|p|q|s|t|u|v|w|y|z])$";
 			break;
 		default:
 			extensions = DEFAULT_FILE_REGEX;
