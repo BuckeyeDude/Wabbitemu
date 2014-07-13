@@ -2,28 +2,27 @@ package com.Revsoft.Wabbitemu.fragment;
 
 import java.io.File;
 
-import android.app.Fragment;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
+import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
-import android.view.SurfaceHolder;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 
 import com.Revsoft.Wabbitemu.CalcInterface;
-import com.Revsoft.Wabbitemu.R;
 import com.Revsoft.Wabbitemu.WabbitLCD;
 import com.Revsoft.Wabbitemu.threads.CalcThread;
 import com.Revsoft.Wabbitemu.utils.PreferenceConstants;
 import com.Revsoft.Wabbitemu.utils.ProgressTask;
+import com.Revsoft.Wabbitemu.R;
 
 public class EmulatorFragment extends Fragment {
 
-	private static final int DELAY_MILLISECONDS = 2000;
+	private static final int DELAY_MILLISECONDS = 500;
 	private static final String SEND_FILE_PAUSE_KEY = "SendFile";
 	private static final String ACTIVITY_PAUSE_KEY = "EmulatorFragment";
 
@@ -31,10 +30,13 @@ public class EmulatorFragment extends Fragment {
 	private String mCurrentRomFile;
 
 	private WabbitLCD mSurfaceView;
-	private SurfaceHolder mSurfaceHolder;
 	private boolean mIsInitialized;
 
 	public void handleFile(final File f, final Runnable runnable) {
+		if (mCalcThread != null) {
+			mCalcThread.setPaused(SEND_FILE_PAUSE_KEY, true);
+		}
+
 		if (!mIsInitialized) {
 			final Handler handler = new Handler();
 			handler.postDelayed(new Runnable() {
@@ -63,17 +65,15 @@ public class EmulatorFragment extends Fragment {
 					CalcInterface.SetAutoTurnOn(sharedPrefs.getBoolean(PreferenceConstants.AUTO_TURN_ON, true));
 
 					mCurrentRomFile = f.getPath();
-					if (mCalcThread == null) {
-						mCalcThread = new CalcThread(mSurfaceHolder, mSurfaceView);
-						CalcInterface.CreateCalc(mCurrentRomFile);
-						mCalcThread.start();
-						success = true;
-					} else {
-						linkResult = CalcInterface.LoadFile(mCurrentRomFile);
-						success = linkResult == 0;
+					if (mCalcThread != null) {
+						mCalcThread.interrupt();
 					}
+					mCalcThread = new CalcThread(mSurfaceView);
+					CalcInterface.CreateCalc(mCurrentRomFile);
+					mCalcThread.start();
+					success = true;
 
-					mSurfaceView.mainThread.loadSkinAndKeymap();
+					mSurfaceView.updateSkin();
 					saveCurrentRom();
 				} else {
 					linkResult = CalcInterface.LoadFile(f.getPath());
@@ -86,10 +86,6 @@ public class EmulatorFragment extends Fragment {
 			@Override
 			protected void onPreExecute() {
 				super.onPreExecute();
-
-				if (mCalcThread != null) {
-					mCalcThread.setPaused(SEND_FILE_PAUSE_KEY, true);
-				}
 			}
 
 			@Override
@@ -112,12 +108,15 @@ public class EmulatorFragment extends Fragment {
 		return mCalcThread.getScreenshot();
 	}
 
+	public void resetCalc() {
+		mCalcThread.resetCalc();
+	}
+
 	@Override
 	public View onCreateView(final LayoutInflater inflater, final ViewGroup container,
 			final Bundle savedInstanceState) {
 		final View view = inflater.inflate(R.layout.emulator, null);
-		mSurfaceView = (WabbitLCD) view.findViewById(R.id.surfaceView);
-		mSurfaceHolder = mSurfaceView.getHolder();
+		mSurfaceView = (WabbitLCD) view.findViewById(R.id.textureView);
 		return view;
 	}
 
@@ -137,6 +136,8 @@ public class EmulatorFragment extends Fragment {
 		if (createTempSave()) {
 			saveCurrentRom();
 		}
+
+		mIsInitialized = false;
 	}
 
 	@Override
@@ -153,7 +154,7 @@ public class EmulatorFragment extends Fragment {
 	}
 
 	private boolean createTempSave() {
-		if (mCurrentRomFile == null || mCurrentRomFile.isEmpty()) {
+		if (mCurrentRomFile == null || "".equals(mCurrentRomFile)) {
 			return false;
 		}
 
@@ -166,6 +167,10 @@ public class EmulatorFragment extends Fragment {
 	private void saveCurrentRom() {
 		final SharedPreferences sharedPrefs = PreferenceManager
 				.getDefaultSharedPreferences(getActivity());
+		if (sharedPrefs == null) {
+			return;
+		}
+
 		final SharedPreferences.Editor editor = sharedPrefs.edit();
 		editor.putString(PreferenceConstants.ROM_PATH, mCurrentRomFile);
 		editor.commit();
@@ -174,6 +179,10 @@ public class EmulatorFragment extends Fragment {
 	private void updateSettings() {
 		final SharedPreferences sharedPrefs = PreferenceManager
 				.getDefaultSharedPreferences(getActivity());
+		if (sharedPrefs == null) {
+			return;
+		}
+
 		if (sharedPrefs.getBoolean(PreferenceConstants.STAY_AWAKE, false)) {
 			getActivity().getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 		}

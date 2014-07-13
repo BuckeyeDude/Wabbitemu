@@ -5,7 +5,6 @@ import java.util.List;
 
 import android.graphics.Bitmap;
 import android.os.SystemClock;
-import android.view.SurfaceHolder;
 
 import com.Revsoft.Wabbitemu.CalcInterface;
 import com.Revsoft.Wabbitemu.WabbitLCD;
@@ -16,13 +15,12 @@ public class CalcThread extends Thread {
 	private static final int TPS = 1000 / FPS;
 	private static final int MAX_FRAME_SKIP = 5;
 
-	private boolean mPaused;
-	private final SurfaceHolder mSurfaceHolder;
+	private volatile boolean mPaused;
+	private boolean mReset;
 	private final WabbitLCD mSurfaceView;
 	private final List<String> mPauseList;
 
-	public CalcThread(final SurfaceHolder surfaceHolder, final WabbitLCD surfaceView) {
-		mSurfaceHolder = surfaceHolder;
+	public CalcThread(final WabbitLCD surfaceView) {
 		mSurfaceView = surfaceView;
 		mPauseList = new ArrayList<String>();
 	}
@@ -45,12 +43,17 @@ public class CalcThread extends Thread {
 				continue;
 			}
 
-			synchronized (mSurfaceHolder) {
+			if (mReset) {
+				CalcInterface.ResetCalc();
+				mReset = false;
+			}
+
+			synchronized (mSurfaceView) {
 				startTime = SystemClock.elapsedRealtime();
 				framesSkipped = 0;
 
 				CalcInterface.RunCalcs();
-				mSurfaceView.mainThread.run();
+				mSurfaceView.drawScreen();
 
 				timeDiff = SystemClock.elapsedRealtime() - startTime;
 				sleepTime = (int) (TPS - timeDiff);
@@ -70,13 +73,15 @@ public class CalcThread extends Thread {
 					framesSkipped++;
 				}
 
-				//android.util.Log.d("", "Frame skip: " + framesSkipped);
+				if (framesSkipped == MAX_FRAME_SKIP) {
+					android.util.Log.d("", "Frame skip: " + framesSkipped);
+				}
 			}
 		}
 	}
 
 	public Bitmap getScreenshot() {
-		return mSurfaceView.mainThread.getScreen();
+		return mSurfaceView.getScreen();
 	}
 
 	public void setPaused(final String key, final boolean paused) {
@@ -92,5 +97,9 @@ public class CalcThread extends Thread {
 				mPaused = false;
 			}
 		}
+	}
+
+	public void resetCalc() {
+		mReset = true;
 	}
 }

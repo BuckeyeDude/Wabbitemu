@@ -53,13 +53,17 @@ public class OSDownloader extends AsyncTask<Integer, Integer, Boolean> {
 		case CalcInterface.TI_84P:
 		case CalcInterface.TI_84PSE:
 			if (version == 0) {
-				urlString = "http://education.ti.com/en/asia/~/media/Files/Download%20Center/Software/83plus/TI84Plus_OS243.8Xu";
-			} else {
 				urlString = "http://education.ti.com/en/asia/~/media/Files/Download%20Center/Software/83plus/TI84Plus_OS.8Xu";
+			} else {
+				urlString = "http://education.ti.com/en/asia/~/media/Files/Download%20Center/Software/83plus/TI84Plus_OS243.8Xu";
 			}
 			break;
 		case CalcInterface.TI_84PCSE:
-			urlString = "http://education.ti.com/download/en/ASIA/5F0CBAC101194542B16B80BCE6CB3602/4D5547F48BBA4384BB85A645D7772A1A/TI84PlusC_OS.8Cu";
+			if (version == 0) {
+				urlString = "http://education.ti.com/download/en/ASIA/5F0CBAC101194542B16B80BCE6CB3602/0BB0CC9043204D52BF22BC717A917A9A/TI84PlusC_OS-4.20.8Cu";
+			} else {
+				urlString = "http://education.ti.com/download/en/ASIA/5F0CBAC101194542B16B80BCE6CB3602/4D5547F48BBA4384BB85A645D7772A1A/TI84PlusC_OS.8Cu";
+			}
 			break;
 		default:
 			throw new IllegalStateException("Invalid calculator type");
@@ -129,6 +133,7 @@ public class OSDownloader extends AsyncTask<Integer, Integer, Boolean> {
 
 	@Override
 	protected void onPostExecute(final Boolean result) {
+		super.onPreExecute();
 		mProgressDialog.dismiss();
 	}
 }

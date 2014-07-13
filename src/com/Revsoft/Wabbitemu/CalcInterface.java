@@ -1,5 +1,7 @@
 package com.Revsoft.Wabbitemu;
 
+import java.nio.IntBuffer;
+
 public class CalcInterface {
 	static
 	{
@@ -31,7 +33,7 @@ public class CalcInterface {
 	public static native void PauseCalc();
 	public static native void UnpauseCalc();
 	public static native int GetModel();
-	public static native int Tstates();
+	public static native long Tstates();
 	public static native void SetSpeedCalc(int speed);
 
 	public static native void PressKey(int group, int bit);
@@ -39,5 +41,5 @@ public class CalcInterface {
 	public static native void SetAutoTurnOn(boolean autoTurnOn);
 
 	public static native boolean IsLCDActive();
-	public static native int GetLCD(int[] array);
+	public static native int GetLCD(IntBuffer buffer);
 }

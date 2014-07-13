@@ -8,6 +8,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.FileObserver;
 
 public class FileUtils {
@@ -49,7 +50,7 @@ public class FileUtils {
 
 					final String extraStorage = System
 							.getenv("SECONDARY_STORAGE");
-					if (extraStorage != null && !extraStorage.isEmpty()) {
+					if (extraStorage != null && !"".equals(extraStorage)) {
 						for (final String dir : extraStorage.split(":")) {
 							mFiles.addAll(findValidFiles(regex, dir));
 							observer = getObserverForDir(dir);
@@ -57,17 +58,24 @@ public class FileUtils {
 							observer.startWatching();
 						}
 					}
+				} else {
+					mFiles = new ArrayList<String>();
 				}
 
+				mSearchLatch.countDown();
 				return null;
 			}
 
 			@Override
 			protected void onPostExecute(final Void arg) {
-				mSearchLatch.countDown();
 			}
 		};
-		asyncTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+			asyncTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+		} else {
+			asyncTask.execute();
+		}
 	}
 
 	private RecursiveFileObserver getObserverForDir(final String observerPath) {

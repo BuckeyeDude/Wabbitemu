@@ -12,36 +12,36 @@ import android.widget.TextView;
 
 public class SpinnerDropDownAdapter extends BaseAdapter implements SpinnerAdapter {
 
-	private List<String> mItems;
-	private Context mContext;
-	
-	public SpinnerDropDownAdapter(Context context, List<String> items) {
+	private final List<String> mItems;
+	private final Context mContext;
+
+	public SpinnerDropDownAdapter(final Context context, final List<String> items) {
 		mContext = context;
 		mItems = items;
 	}
-	
+
 	@Override
 	public int getCount() {
 		return mItems.size();
 	}
 
 	@Override
-	public Object getItem(int position) {
+	public Object getItem(final int position) {
 		return mItems.get(position);
 	}
 
 	@Override
-	public long getItemId(int position) {
+	public long getItemId(final int position) {
 		return mItems.get(position).hashCode();
 	}
 
 	@Override
-	public View getView(int position, View convertView, ViewGroup parent) {
+	public View getView(final int position, final View convertView, final ViewGroup parent) {
 		final TextView text = new TextView(mContext);
-        text.setTextColor(Color.WHITE);
-        text.setText(mItems.get(position));
-        text.setPadding(20, 20, 20, 20);
-        return text;
+		text.setTextColor(Color.WHITE);
+		text.setText(mItems.get(position));
+		text.setPadding(20, 20, 20, 20);
+		return text;
 	}
 
 }

@@ -7,4 +7,6 @@ public class PreferenceConstants {
 	public static final String FIRST_RUN = "firstRun";
 	public static final String FACEPLATE_COLOR = "faceplateColor";
 	public static final String USE_VIBRATION = "useVibration";
+	public static final String CORRECT_SCREEN_RATIO = "correctScreenRatio";
+	public static final String LARGE_SCREEN = "largeScreen";
 }

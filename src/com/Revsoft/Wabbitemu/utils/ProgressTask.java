@@ -33,7 +33,7 @@ public abstract class ProgressTask extends AsyncTask<Void, Void, Boolean> {
 	protected void onPostExecute(final Boolean arg) {
 		super.onPostExecute(arg);
 
-		if (mProgress != null) {
+		if (mProgress != null && mProgress.isShowing()) {
 			mProgress.dismiss();
 		}
 	}

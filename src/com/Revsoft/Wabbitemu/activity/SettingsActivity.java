@@ -1,20 +1,20 @@
 package com.Revsoft.Wabbitemu.activity;
 
-import com.Revsoft.Wabbitemu.R;
-import com.Revsoft.Wabbitemu.fragment.SettingsFragment;
-
-import android.app.Activity;
 import android.os.Bundle;
+import android.support.v4.app.FragmentActivity;
 
-public class SettingsActivity extends Activity {
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+import com.Revsoft.Wabbitemu.fragment.SettingsFragment;
+import com.Revsoft.Wabbitemu.R;
 
-        setTitle(R.string.settings);
-        // Display the fragment as the main content.
-        getFragmentManager().beginTransaction()
-                .replace(android.R.id.content, new SettingsFragment())
-                .commit();
-    }
+public class SettingsActivity extends FragmentActivity {
+	@Override
+	protected void onCreate(final Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+
+		setTitle(R.string.settings);
+		// Display the fragment as the main content.
+		getSupportFragmentManager().beginTransaction()
+		.replace(android.R.id.content, new SettingsFragment())
+		.commit();
+	}
 }

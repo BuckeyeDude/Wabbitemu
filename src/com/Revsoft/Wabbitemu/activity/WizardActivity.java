@@ -6,22 +6,24 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.FragmentTransaction;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.os.Bundle;
-import android.os.Environment;
 import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.FragmentTransaction;
 import android.text.method.LinkMovementMethod;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.animation.Animation;
+import android.view.animation.Animation.AnimationListener;
 import android.widget.Button;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
@@ -31,7 +33,6 @@ import android.widget.TextView;
 import android.widget.ViewFlipper;
 
 import com.Revsoft.Wabbitemu.CalcInterface;
-import com.Revsoft.Wabbitemu.R;
 import com.Revsoft.Wabbitemu.fragment.BrowseFragment;
 import com.Revsoft.Wabbitemu.utils.AdUtils;
 import com.Revsoft.Wabbitemu.utils.AnalyticsConstants;
@@ -40,11 +41,11 @@ import com.Revsoft.Wabbitemu.utils.ErrorUtils;
 import com.Revsoft.Wabbitemu.utils.IntentConstants;
 import com.Revsoft.Wabbitemu.utils.OSDownloader;
 import com.Revsoft.Wabbitemu.utils.SpinnerDropDownAdapter;
-import com.Revsoft.Wabbitemu.utils.StorageUtils;
 import com.google.analytics.tracking.android.EasyTracker;
 import com.google.analytics.tracking.android.MapBuilder;
 import com.google.analytics.tracking.android.Tracker;
 import com.google.android.gms.ads.AdView;
+import com.Revsoft.Wabbitemu.R;
 
 public class WizardActivity extends FragmentActivity implements BrowseCallback {
 
@@ -55,6 +56,25 @@ public class WizardActivity extends FragmentActivity implements BrowseCallback {
 	private static final int OS_SELECTION_CHILD = 2;
 	private static final int BROWSE_ROM_CHILD = 3;
 	private static final int BROWSE_OS_CHILD = 4;
+
+	private final AtomicBoolean mIsTransitioningPages = new AtomicBoolean();
+	private final AnimationListener mAnimationListener = new AnimationListener() {
+
+		@Override
+		public void onAnimationStart(final Animation animation) {
+			// no-op
+		}
+
+		@Override
+		public void onAnimationRepeat(final Animation animation) {
+			// no-op
+		}
+
+		@Override
+		public void onAnimationEnd(final Animation animation) {
+			mIsTransitioningPages.set(false);
+		}
+	};
 
 	private int mCalcType;
 	private int mCalcModel;
@@ -233,7 +253,7 @@ public class WizardActivity extends FragmentActivity implements BrowseCallback {
 		final BrowseFragment fragInfo = new BrowseFragment();
 		fragInfo.setArguments(setupBundle);
 
-		final FragmentTransaction transaction = getFragmentManager()
+		final FragmentTransaction transaction = getSupportFragmentManager()
 				.beginTransaction();
 		transaction.replace(fragId, fragInfo);
 		transaction.commit();
@@ -245,6 +265,10 @@ public class WizardActivity extends FragmentActivity implements BrowseCallback {
 
 			@Override
 			public void onClick(final View v) {
+				if (mViewFlipper.isFlipping()) {
+					return;
+				}
+
 				setTitle(R.string.calculatorTypeTitle);
 				setNextAnimation();
 				final int radioId = group.getCheckedRadioButtonId();
@@ -269,6 +293,10 @@ public class WizardActivity extends FragmentActivity implements BrowseCallback {
 
 			@Override
 			public void onClick(final View v) {
+				if (mViewFlipper.isFlipping()) {
+					return;
+				}
+
 				setTitle(R.string.osSelectionTitle);
 				setNextAnimation();
 
@@ -286,10 +314,11 @@ public class WizardActivity extends FragmentActivity implements BrowseCallback {
 					break;
 				case R.id.ti84pRadio:
 				case R.id.ti84pseRadio:
-					items.add("2.43");
 					items.add("2.55 MP");
+					items.add("2.43");
 					break;
 				case R.id.ti84pcseRadio:
+					items.add("4.2");
 					items.add("4.0");
 					break;
 				}
@@ -308,6 +337,10 @@ public class WizardActivity extends FragmentActivity implements BrowseCallback {
 
 			@Override
 			public void onClick(final View v) {
+				if (mViewFlipper.isFlipping()) {
+					return;
+				}
+
 				setNextAnimation();
 
 				if (mBrowseOsRadio.isChecked()) {
@@ -330,26 +363,22 @@ public class WizardActivity extends FragmentActivity implements BrowseCallback {
 		final Tracker tracker = EasyTracker.getInstance(this);
 		tracker.send(MapBuilder.createEvent(
 				AnalyticsConstants.WIZARD_ACTIVITY,
-				AnalyticsConstants.HAVE_OWN_ROM,
+				AnalyticsConstants.BOOTFREE_ROM,
 				null,
 				(long) error).build());
 
 		if (error == 0) {
 			finishSuccess();
 		} else {
-			finishError();
+			finishRomError();
 		}
 	}
 
 	private void extractBootpage() {
 		final Resources resources = getResources();
-		final File sdcard = Environment.getExternalStorageDirectory();
 		final File cache = getCacheDir();
-		if (StorageUtils.hasExternalStorage()) {
-			mCreatedFilePath = sdcard.getAbsolutePath() + "/Wabbitemu/";
-		} else {
-			mCreatedFilePath = cache.getAbsolutePath() + "/";
-		}
+		mCreatedFilePath = cache.getAbsolutePath() + "/";
+
 		final File bootPagePath;
 		try {
 			bootPagePath = File.createTempFile("boot", ".hex", cache);
@@ -402,12 +431,14 @@ public class WizardActivity extends FragmentActivity implements BrowseCallback {
 				outputStream.write(buffer, 0, 4096);
 			}
 		} catch (final IOException e) {
-			finishError();
+			finishRomError();
 		} finally {
 			try {
-				outputStream.close();
+				if (outputStream != null) {
+					outputStream.close();
+				}
 			} catch (final IOException e) {
-				finishError();
+				finishRomError();
 			}
 		}
 
@@ -435,19 +466,27 @@ public class WizardActivity extends FragmentActivity implements BrowseCallback {
 				super.onPostExecute(success);
 
 				if (success) {
-					CalcInterface.CreateRom(mOsFilePath, mBootPagePath,
+					final int error = CalcInterface.CreateRom(mOsFilePath, mBootPagePath,
 							mCreatedFilePath, mCalcModel);
-					finishSuccess();
+					if (error == 0) {
+						finishSuccess();
+					} else {
+						finishRomError();
+					}
 				} else {
-					finishError();
+					finishOsError();
 				}
 			}
 		};
 		task.execute(mCalcModel, osVersion);
 	}
 
-	private void finishError() {
-		showError();
+	private void finishOsError() {
+		showOsError();
+	}
+
+	private void finishRomError() {
+		showRomError();
 	}
 
 	private void finishSuccess() {
@@ -458,8 +497,12 @@ public class WizardActivity extends FragmentActivity implements BrowseCallback {
 		finish();
 	}
 
-	private void showError() {
+	private void showOsError() {
 		ErrorUtils.showErrorDialog(this, R.string.errorOsDownloadDescription);
+	}
+
+	private void showRomError() {
+		ErrorUtils.showErrorDialog(this, R.string.errorRomCreateDescription);
 	}
 
 	private OnClickListener getBackButtonOnClick() {
@@ -467,6 +510,10 @@ public class WizardActivity extends FragmentActivity implements BrowseCallback {
 
 			@Override
 			public void onClick(final View v) {
+				if (mIsTransitioningPages.getAndSet(true)) {
+					return;
+				}
+
 				setBackAnimation(mViewFlipper);
 
 				switch (mViewFlipper.getDisplayedChild()) {
@@ -494,11 +541,18 @@ public class WizardActivity extends FragmentActivity implements BrowseCallback {
 	private void setNextAnimation() {
 		mViewFlipper.setOutAnimation(this, R.anim.out_to_left);
 		mViewFlipper.setInAnimation(this, R.anim.in_from_right);
+		setAnimationListeners();
 	}
 
 	private void setBackAnimation(final ViewFlipper flipper) {
 		mViewFlipper.setOutAnimation(this, R.anim.out_to_right);
 		mViewFlipper.setInAnimation(this, R.anim.in_from_left);
+		setAnimationListeners();
+	}
+
+	private void setAnimationListeners() {
+		mViewFlipper.getInAnimation().setAnimationListener(mAnimationListener);
+		mViewFlipper.getOutAnimation().setAnimationListener(mAnimationListener);
 	}
 
 	@Override

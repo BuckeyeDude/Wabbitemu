@@ -6,13 +6,13 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.support.v4.app.FragmentActivity;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v4.widget.DrawerLayout.DrawerListener;
 import android.view.Menu;
@@ -27,7 +27,6 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import com.Revsoft.Wabbitemu.CalcInterface;
-import com.Revsoft.Wabbitemu.R;
 import com.Revsoft.Wabbitemu.fragment.EmulatorFragment;
 import com.Revsoft.Wabbitemu.utils.AnalyticsConstants;
 import com.Revsoft.Wabbitemu.utils.ErrorUtils;
@@ -37,8 +36,9 @@ import com.Revsoft.Wabbitemu.utils.StorageUtils;
 import com.google.analytics.tracking.android.EasyTracker;
 import com.google.analytics.tracking.android.MapBuilder;
 import com.google.analytics.tracking.android.Tracker;
+import com.Revsoft.Wabbitemu.R;
 
-public class WabbitemuActivity extends Activity {
+public class WabbitemuActivity extends FragmentActivity {
 
 	private static final int LOAD_FILE_CODE = 1;
 	private static final int SETUP_WIZARD = 2;
@@ -79,7 +79,7 @@ public class WabbitemuActivity extends Activity {
 		setFullscreenMode();
 		setContentView(R.layout.main);
 		mEmulatorFragment = new EmulatorFragment();
-		getFragmentManager().beginTransaction()
+		getSupportFragmentManager().beginTransaction()
 		.replace(R.id.content_frame, mEmulatorFragment).commit();
 		attachMenu();
 
@@ -94,7 +94,7 @@ public class WabbitemuActivity extends Activity {
 
 		// we expect an absolute filename
 		final String fileName = getLastRomSetting();
-		if (fileName != null && !fileName.isEmpty()) {
+		if (fileName != null && !"".equals(fileName)) {
 			handleFile(new File(fileName), runnable);
 		} else {
 			runnable.run();
@@ -161,17 +161,8 @@ public class WabbitemuActivity extends Activity {
 
 			@Override
 			public void run() {
-				final Intent setupIntent = new Intent(WabbitemuActivity.this,
-						BrowseActivity.class);
-				final String extensions = "\\.(rom|sav)$";
-				final String description = getResources().getString(
-						R.string.browseRomDescription);
-				setupIntent.putExtra(IntentConstants.EXTENSION_EXTRA_REGEX,
-						extensions);
-				setupIntent.putExtra(
-						IntentConstants.BROWSE_DESCRIPTION_EXTRA_STRING,
-						description);
-				startActivityForResult(setupIntent, LOAD_FILE_CODE);
+				final Intent wizardIntent = new Intent(WabbitemuActivity.this, WizardActivity.class);
+				startActivityForResult(wizardIntent, SETUP_WIZARD);
 			}
 		};
 	}
@@ -277,7 +268,7 @@ public class WabbitemuActivity extends Activity {
 		final Tracker tracker = EasyTracker.getInstance(WabbitemuActivity.this);
 		final Map<String, String> event = MapBuilder.createEvent(
 				AnalyticsConstants.MAIN_ACTIVITY,
-				AnalyticsConstants.MENU_ITEM_SELECTED, null, (long) position)
+				AnalyticsConstants.MENU_ITEM_SELECTED, Integer.toString(position), null)
 				.build();
 		tracker.send(event);
 
@@ -306,6 +297,13 @@ public class WabbitemuActivity extends Activity {
 	}
 
 	private void screenshotCalc() {
+		final Tracker tracker = EasyTracker.getInstance(WabbitemuActivity.this);
+		final Map<String, String> event = MapBuilder.createEvent(
+				AnalyticsConstants.MAIN_ACTIVITY,
+				AnalyticsConstants.SCREENSHOT, null, null)
+				.build();
+		tracker.send(event);
+
 		final Bitmap screenshot = mEmulatorFragment.getScreenshot();
 		final Bitmap scaledScreenshot = Bitmap.createScaledBitmap(screenshot,
 				screenshot.getWidth() * 2, screenshot.getHeight() * 2, true);
@@ -398,7 +396,7 @@ public class WabbitemuActivity extends Activity {
 	}
 
 	private void resetCalc() {
-		CalcInterface.ResetCalc();
+		mEmulatorFragment.resetCalc();
 	}
 
 	private void launchSettings() {
