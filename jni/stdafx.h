@@ -79,6 +79,7 @@ typedef std::string tstring;
 #endif
 
 #elif defined(_LINUX) || defined(_ANDROID)
+#include <float.h>
 #include <assert.h>
 #include <setjmp.h>
 #include <stdio.h>
@@ -90,7 +91,6 @@ typedef std::string tstring;
 #include <stddef.h>
 #include <time.h>
 #include <ctype.h>
-
 #ifdef __cplusplus
 #include <map>
 #endif
@@ -112,17 +112,22 @@ typedef int errno_t;
 #define _tcsicmp strcasecmp
 #define _putts puts
 #define _tcsrchr strrchr
-#define _tcscpy_s strcpy
+#define _tcscpy_s(dest, len, src) strcpy(dest, src)
 #define _tcslen strlen
 #define _tcscmp strcmp
 #define _tcsncmp strncmp
 #define _tcsnicmp _strnicmp
-#define tmpfile_s tmpfile
+#define _stscanf_s sscanf_s
+#define sscanf_s sscanf
 #define vsprintf_s vsprintf
 #define ZeroMemory(dest, size) memset(dest, 0, size)
 #define memcpy_s(dest, num, source, size) memcpy(dest, source, size)
 #define StringCbCopy(dest, size, source) strcpy(dest, source)
+#define StringCchCopy(dest, size, source) strcpy(dest, source)
 #define StringCbPrintf(dest, size, format, args...) sprintf(dest, format, args)
+#define fopen_s(pFile,filename,mode) (*(pFile)) = fopen((filename),(mode))
+#define tmpfile_s(pFile) (*(pFile)) = tmpfile()
+#define _tfopen_s fopen_s
 
 #elif defined(_MACVER)
 #include <assert.h>
@@ -136,6 +141,9 @@ typedef int errno_t;
 #include <stddef.h>
 #include <time.h>
 #include <ctype.h>
+#ifdef __cplusplus
+#include <map>
+#endif
 
 typedef int errno_t;
 

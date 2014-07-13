@@ -84,7 +84,7 @@ JNIEXPORT jint JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_GetModel
  * Method:    Tstates
  * Signature: ()I
  */
-JNIEXPORT jint JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_Tstates
+JNIEXPORT jlong JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_Tstates
   (JNIEnv *, jclass);
 
 /*
@@ -133,7 +133,7 @@ JNIEXPORT jboolean JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_IsLCDActive
  * Signature: ([I)I
  */
 JNIEXPORT jint JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_GetLCD
-  (JNIEnv *, jclass, jintArray);
+  (JNIEnv *, jclass, jobject);
 
 #ifdef __cplusplus
 }

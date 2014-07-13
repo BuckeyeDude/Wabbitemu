@@ -3,7 +3,7 @@
 #include "colorlcd.h"
 
 #define PIXEL_OFFSET(x, y) ((y) * COLOR_LCD_WIDTH + (x)) * COLOR_LCD_DEPTH 
-#define TRUCOLOR(color, bits) (color) * (0xFF / ((1 << (bits)) - 1))
+#define TRUCOLOR(color, bits) ((color) * (0xFF / ((1 << (bits)) - 1)))
 #define LCD_REG(reg) (lcd->registers[reg])
 #define LCD_REG_MASK(reg, mask) (LCD_REG(reg) & (mask))
 
@@ -120,11 +120,12 @@ typedef enum {
 #define P2_END_MASK 0x1FF
 
 static int read_pixel(ColorLCD_t *lcd);
-static void write_pixel18(ColorLCD_t *lcd, timerc *timerc);
-static void write_pixel16(ColorLCD_t *lcd, timerc *timerc);
+static void write_pixel18(ColorLCD_t *lcd);
+static void write_pixel16(ColorLCD_t *lcd);
 static void update_x(ColorLCD_t *lcd, BOOL should_update_row);
 static void update_y(ColorLCD_t *lcd, BOOL should_update_col);
 
+static void ColorLCD_enqueue(CPU_t *, ColorLCD_t *);
 static void ColorLCD_reset(CPU_t *);
 static void ColorLCD_LCDreset(ColorLCD_t *lcd);
 static void ColorLCD_free(CPU_t *);
@@ -134,13 +135,21 @@ uint8_t *ColorLCD_Image(LCDBase_t *);
 
 ColorLCD_t *ColorLCD_init(CPU_t *cpu, int model) {
 	ColorLCD_t* lcd = (ColorLCD_t *)malloc(sizeof(ColorLCD_t));
-	if (!lcd) {
+	if (lcd == NULL) {
 		printf("Couldn't allocate memory for LCD\n");
 		exit(1);
 	}
 	
 	ColorLCD_LCDreset(lcd);
 	return lcd;
+}
+
+void set_line_time(ColorLCD_t *lcd) {
+	// FrameFrequency * (DisplayLine + FrontPorch + BackPorch) * ClockCyclePerLines
+	uint64_t refresh_time = lcd->frame_rate * (lcd->display_lines + lcd->front_porch + lcd->back_porch) * lcd->clocks_per_line;
+	refresh_time /= lcd->clock_divider;
+	//refresh_time /= COLOR_LCD_HEIGHT;
+	lcd->line_time = 1.0 / refresh_time;
 }
 
 
@@ -160,19 +169,21 @@ static void reset_x(ColorLCD_t *lcd, uint16_t mode) {
 	}
 }
 
-static void set_register(ColorLCD_t *lcd, uint16_t reg, uint16_t value) {
-	int mode = LCD_REG(ENTRY_MODE_REG);
+void ColorLCD_set_register(CPU_t *cpu, ColorLCD_t *lcd, uint16_t reg, uint16_t value) {
+	uint16_t mode = LCD_REG(ENTRY_MODE_REG);
+
 	switch (reg) {
+	case DRIVER_CODE_REG:
+		break;
 	case DRIVER_OUTPUT_CONTROL1_REG:
 		lcd->registers[DRIVER_OUTPUT_CONTROL1_REG] = value & DRIVER_OUTPUT_CONTROL1_MASK;
 		break;
 	case ENTRY_MODE_REG: {
 		lcd->registers[ENTRY_MODE_REG] = value & ENTRY_MODE_MASK;
-		LCD_CURSOR_MODE row_mode = LCD_REG_MASK(ENTRY_MODE_REG, ROW_INC_MASK) ? Y_UP : Y_DOWN;
-		LCD_CURSOR_MODE col_mode = LCD_REG_MASK(ENTRY_MODE_REG, COL_INC_MASK) ? X_UP : X_DOWN;
-		lcd->base.cursor_mode = (LCD_CURSOR_MODE) (row_mode | col_mode);
-		reset_x(lcd, value);
-		reset_y(lcd, value);
+		if (mode & ORG_MASK) {
+			reset_x(lcd, value);
+			reset_y(lcd, value);
+		}
 		break;
 	}
 	case DATA_FORMAT_16BIT_REG:
@@ -181,9 +192,14 @@ static void set_register(ColorLCD_t *lcd, uint16_t reg, uint16_t value) {
 	case DISPLAY_CONTROL1_REG:
 		lcd->registers[DISPLAY_CONTROL1_REG] = value & DISPLAY_CONTROL1_MASK;
 		lcd->base.active = value & DISPLAY_ON_MASK ? TRUE : FALSE;
+		// if active changed, we need to notify the change immediately
+		ColorLCD_enqueue(cpu, lcd);
 		break;
 	case DISPLAY_CONTROL2_REG:
 		lcd->registers[DISPLAY_CONTROL2_REG] = value & DISPLAY_CONTROL2_MASK;
+		lcd->back_porch = value & 0xFF;
+		lcd->front_porch = value >> 8;
+		set_line_time(lcd);
 		break;
 	case DISPLAY_CONTROL3_REG:
 		lcd->registers[DISPLAY_CONTROL3_REG] = value & DISPLAY_CONTROL3_MASK;
@@ -233,8 +249,8 @@ static void set_register(ColorLCD_t *lcd, uint16_t reg, uint16_t value) {
 		break;
 	case FRAME_RATE_COLOR_CONTROL_REG:
 		lcd->registers[FRAME_RATE_COLOR_CONTROL_REG] = value & FRAME_RATE_COLOR_CONTROL_MASK;
+		lcd->panic_mode = FALSE;
 		switch (value & FRAME_RATE_MASK) {
-		default:
 		case 0:
 			lcd->frame_rate = 31;
 			break;
@@ -277,7 +293,11 @@ static void set_register(ColorLCD_t *lcd, uint16_t reg, uint16_t value) {
 		case 13:
 			lcd->frame_rate = 89;
 			break;
+		default:
+			lcd->panic_mode = TRUE;
+			break;
 		}
+		set_line_time(lcd);
 		break;
 	case GAMMA_CONTROL1_REG:
 	case GAMMA_CONTROL2_REG:
@@ -351,6 +371,22 @@ static void set_register(ColorLCD_t *lcd, uint16_t reg, uint16_t value) {
 		break;
 	case PANEL_INTERFACE_CONTROL1_REG:
 		lcd->registers[PANEL_INTERFACE_CONTROL1_REG] = value & PANEL_INTERFACE_CONTROL1_MASK;
+		lcd->clocks_per_line = value & 0xFF;
+		switch (value >> 8) {
+		case 0:
+			lcd->clock_divider = 1;
+			break;
+		case 1:
+			lcd->clock_divider = 2;
+			break;
+		case 2:
+			lcd->clock_divider = 4;
+			break;
+		case 3:
+			lcd->clock_divider = 8;
+			break;
+		}
+		set_line_time(lcd);
 		break;
 	case PANEL_INTERFACE_CONTROL2_REG:
 		lcd->registers[PANEL_INTERFACE_CONTROL2_REG] = value & PANEL_INTERFACE_CONTROL2_MASK;
@@ -385,10 +421,40 @@ static void set_register(ColorLCD_t *lcd, uint16_t reg, uint16_t value) {
 static void ColorLCD_free(CPU_t *cpu) {
 	free(cpu->pio.lcd);
 }
+#define REAL_LCD2
+#ifdef REAL_LCD
+static void ColorLCD_enqueue(CPU_t *cpu, ColorLCD_t *lcd) {
+	lcd->is_drawing = TRUE;
+	// display sideways can't memcpy fuck
+	if (lcd->draw_gate >= lcd->back_porch && lcd->draw_gate <= (COLOR_LCD_WIDTH + 1 - lcd->front_porch + lcd->back_porch)) {
+		int offset = (lcd->draw_gate - lcd->back_porch) * COLOR_LCD_DEPTH;
+		for (int i = 0; i < COLOR_LCD_HEIGHT; i++) {
+			lcd->queued_image[offset] = lcd->display[offset];
+			lcd->queued_image[offset + 1] = lcd->display[offset + 1];
+			lcd->queued_image[offset + 2] = lcd->display[offset + 2];
+			offset += COLOR_LCD_WIDTH * COLOR_LCD_DEPTH;
+		}
+	}
 
-static void ColorLCD_enqueue(ColorLCD_t *lcd) {
-	memcpy(lcd->queued_image, lcd->display, COLOR_LCD_DISPLAY_SIZE);
+	lcd->last_draw = tc_elapsed(cpu->timer_c);
+	lcd->draw_gate++;
+	if (lcd->draw_gate == COLOR_LCD_WIDTH + lcd->front_porch + lcd->back_porch) {
+		lcd->draw_gate = 0;
+		lcd->is_drawing = FALSE;
+		if (cpu->lcd_enqueue_callback != NULL) {
+			cpu->lcd_enqueue_callback(cpu);
+		}
+	}
 }
+#else
+static void ColorLCD_enqueue(CPU_t *cpu, ColorLCD_t *lcd) {
+	memcpy(lcd->queued_image, lcd->display, COLOR_LCD_DISPLAY_SIZE);
+
+	if (cpu->lcd_enqueue_callback != NULL) {
+		cpu->lcd_enqueue_callback(cpu);
+	}
+}
+#endif
 
 void ColorLCD_command(CPU_t *cpu, device_t *device) {
 	ColorLCD_t *lcd = (ColorLCD_t *) device->aux;
@@ -404,11 +470,6 @@ void ColorLCD_command(CPU_t *cpu, device_t *device) {
 			lcd->write_step = 0;
 		}
 
-		if (lcd->current_register == 0) {
-			// sync
-			//ColorLCD_enqueue(lcd);
-		}
-
 		cpu->output = FALSE;
 	} else if (cpu->input) {
 		cpu->bus = 0;
@@ -420,6 +481,30 @@ void ColorLCD_data(CPU_t *cpu, device_t *device) {
 	ColorLCD_t *lcd = (ColorLCD_t *)device->aux;
 	uint16_t reg_index = lcd->current_register & 0xFF;
 	if (cpu->output) {
+		// Run some sanity checks on the write vars
+		if (lcd->base.write_last > tc_elapsed(cpu->timer_c))
+			lcd->base.write_last = tc_elapsed(cpu->timer_c);
+
+		double write_delay = tc_elapsed(cpu->timer_c) - lcd->base.write_last;
+		if (lcd->base.write_avg == 0.0) lcd->base.write_avg = write_delay;
+		lcd->base.write_last = tc_elapsed(cpu->timer_c);
+		lcd->base.last_tstate = tc_tstates(cpu->timer_c);
+
+		// If there is a delay that is significantly longer than the
+		// average write delay, we can assume a frame has just terminated
+		// and you can push this complete frame towards generating the
+		// final image.
+
+		// If you are in steady mode, then this simply serves as a
+		// FPS calculator
+		if (write_delay < lcd->base.write_avg * 100.0) {
+			lcd->base.write_avg = (lcd->base.write_avg * 0.90) + (write_delay * 0.10);
+		} else {
+			double ufps_length = tc_elapsed(cpu->timer_c) - lcd->base.ufps_last;
+			lcd->base.ufps = 1.0 / ufps_length;
+			lcd->base.ufps_last = tc_elapsed(cpu->timer_c);
+		}
+
 		lcd->write_buffer = lcd->write_buffer << 8 | cpu->bus;
 		if (reg_index == GRAM_REG) {
 			int mode = LCD_REG_MASK(ENTRY_MODE_REG, TRI_MASK);
@@ -427,19 +512,24 @@ void ColorLCD_data(CPU_t *cpu, device_t *device) {
 				lcd->write_step++;
 				if (lcd->write_step >= 3) {
 					lcd->write_step = 0;
-					write_pixel18(lcd, cpu->timer_c);
+					write_pixel18(lcd);
 				}
 			} else {
 				lcd->write_step = !lcd->write_step;
 				if (!lcd->write_step) {
-					write_pixel16(lcd, cpu->timer_c);
+					write_pixel16(lcd);
 				}
 			}
 		} else {
 			lcd->write_step = !lcd->write_step;
 			if (!lcd->write_step) {
-				set_register(lcd, reg_index, lcd->write_buffer);
+				ColorLCD_set_register(cpu, lcd, reg_index, (uint16_t)lcd->write_buffer);
 			}
+		}
+
+		BOOL isBreakpoint = lcd->register_breakpoint[reg_index];
+		if (isBreakpoint) {
+			cpu->pio.breakpoint_callback(cpu, lcd);
 		}
 
 		cpu->output = FALSE;
@@ -447,7 +537,7 @@ void ColorLCD_data(CPU_t *cpu, device_t *device) {
 		if (reg_index == GRAM_REG) {
 			// read from LCD mem
 			int pixel = lcd->read_buffer;
-			cpu->bus = pixel >> 16;
+			cpu->bus = (unsigned char)(pixel >> 16);
 			lcd->read_step = !lcd->read_step;
 			if (!lcd->read_step) {
 				pixel = read_pixel(lcd);
@@ -460,7 +550,7 @@ void ColorLCD_data(CPU_t *cpu, device_t *device) {
 
 			lcd->read_buffer = pixel;
 		} else {
-			int val = LCD_REG(reg_index);
+			uint16_t val = LCD_REG(reg_index);
 			lcd->read_step = !lcd->read_step;
 			if (lcd->read_step) {
 				cpu->bus = val >> 8;
@@ -475,11 +565,24 @@ void ColorLCD_data(CPU_t *cpu, device_t *device) {
 	// Make sure timers are valid
 	if (lcd->base.time > tc_elapsed(cpu->timer_c))
 		lcd->base.time = tc_elapsed(cpu->timer_c);
+	//else if (tc_elapsed(cpu->timer_c) - lcd->base.time > (2.0 / STEADY_FREQ_MIN))
+	//	lcd->base.time = tc_elapsed(cpu->timer_c) - (2.0 / STEADY_FREQ_MIN);
 
-	if ((tc_elapsed(cpu->timer_c) - lcd->base.time) >= (1.0 / lcd->frame_rate)) {
-		ColorLCD_enqueue(lcd);
+#ifdef REAL_LCD
+	if (((tc_elapsed(cpu->timer_c) - lcd->base.time) >= (1.0 / lcd->frame_rate)) && !lcd->is_drawing) {
+		ColorLCD_enqueue(cpu, lcd);
 		lcd->base.time += (1.0 / lcd->frame_rate);
 	}
+
+	while (tc_elapsed(cpu->timer_c) - lcd->last_draw >= lcd->line_time) {
+		ColorLCD_enqueue(cpu, lcd);
+	}
+#else
+	if (((tc_elapsed(cpu->timer_c) - lcd->base.time) >= (1.0 / lcd->frame_rate)) && !lcd->is_drawing) {
+		ColorLCD_enqueue(cpu, lcd);
+		lcd->base.time += (1.0 / lcd->frame_rate);
+	}
+#endif
 }
 
 static int read_pixel(ColorLCD_t *lcd) {
@@ -496,7 +599,7 @@ static int read_pixel(ColorLCD_t *lcd) {
 	return pixel;
 }
 
-static void write_pixel(ColorLCD_t *lcd, timerc *timer_c, int red, int green, int blue) {
+static void write_pixel(ColorLCD_t *lcd, uint8_t red, uint8_t green, uint8_t blue) {
 	int x = lcd->base.x;
 	int y = lcd->base.y;
 
@@ -522,9 +625,9 @@ static void write_pixel(ColorLCD_t *lcd, timerc *timer_c, int red, int green, in
 	}
 }
 
-static void write_pixel18(ColorLCD_t *lcd, timerc *timerc) {
+static void write_pixel18(ColorLCD_t *lcd) {
 	int pixel_val;
-	int red, green, blue;
+	uint8_t red, green, blue;
 	if (LCD_REG_MASK(ENTRY_MODE_REG, UNPACKED_MASK)) {
 		pixel_val = lcd->write_buffer & 0xfcfcfc;
 		red = (pixel_val >> 18) & 0x3F;
@@ -537,19 +640,19 @@ static void write_pixel18(ColorLCD_t *lcd, timerc *timerc) {
 		blue = pixel_val & 0x3F;
 	}
 
-	write_pixel(lcd, timerc, red, green, blue);
+	write_pixel(lcd, red, green, blue);
 }
 
-static void write_pixel16(ColorLCD_t *lcd, timerc *timerc) {
+static void write_pixel16(ColorLCD_t *lcd) {
 	int pixel_val = lcd->write_buffer;
 	int red_significant_bit = pixel_val & BIT(15) ? 1 : 0;
 	int blue_significant_bit = pixel_val & BIT(4) ? 1 : 0;
 
-	int red = (pixel_val >> 10) | red_significant_bit;
-	int green = (pixel_val >> 5) & 0x3F;
-	int blue = ((pixel_val << 1) | blue_significant_bit) & 0x3F;
+	uint8_t red = ((pixel_val >> 10) | red_significant_bit) & 0x3F;
+	uint8_t green = (pixel_val >> 5) & 0x3F;
+	uint8_t blue = ((pixel_val << 1) | blue_significant_bit) & 0x3F;
 
-	write_pixel(lcd, timerc, red, green, blue);
+	write_pixel(lcd, red, green, blue);
 }
 
 static void update_y(ColorLCD_t *lcd, BOOL should_update) {
@@ -612,12 +715,26 @@ void ColorLCD_LCDreset(ColorLCD_t *lcd) {
 	lcd->base.width = COLOR_LCD_WIDTH;
 	lcd->base.display_width = COLOR_LCD_WIDTH;
 	lcd->base.height = COLOR_LCD_HEIGHT;
+	lcd->base.contrast = 0;
 
-	lcd->current_register = 0xFFFFFFFF;
+	lcd->display_lines = COLOR_LCD_WIDTH;
+	lcd->frame_rate = 69;
+	lcd->back_porch = 2;
+	lcd->front_porch = 2;
+	lcd->clocks_per_line = 16;
+	lcd->clock_divider = 1;
+	lcd->backlight_active = TRUE;
+
+	set_line_time(lcd);
 
 	lcd->registers[DRIVER_CODE_REG] = DRIVER_CODE_VER;
-	lcd->base.x = 319;
-	lcd->base.y = 239;
+	lcd->registers[DISPLAY_CONTROL2_REG] = 0x0202;
+	lcd->registers[FRAME_RATE_COLOR_CONTROL_REG] = 0x000B;
+	lcd->registers[GATE_SCAN_CONTROL_REG] = 0x2700;
+	lcd->registers[PANEL_INTERFACE_CONTROL1_REG] = 0x0010;
+	lcd->registers[PANEL_INTERFACE_CONTROL2_REG] = 0x0600;
+	lcd->registers[PANEL_INTERFACE_CONTROL4_REG] = 0x0600;
+	lcd->registers[PANEL_INTERFACE_CONTROL5_REG] = 0x0C00;
 	lcd->base.bytes_per_pixel = 3;
 }
 
@@ -627,17 +744,29 @@ void ColorLCD_reset(CPU_t *cpu) {
 }
 
 static void draw_row_floating(uint8_t *dest, int size) {
-	for (int i = 0; i < size; i++) {
-		if (dest[i] < 0x3f) {
-			dest[i]++;
-		}
-	}
+	// this should fade to in reality white
+	memset(dest, 0xFF, size);
 }
-
 static void draw_row_image(ColorLCD_t *lcd, uint8_t *dest, uint8_t *src, int size) {
 	uint8_t *red, *green, *blue;
 	BOOL level_invert = !LCD_REG_MASK(BASE_IMAGE_DISPLAY_CONTROL_REG, LEVEL_INVERT_MASK);
 	BOOL color8bit = LCD_REG_MASK(DISPLAY_CONTROL1_REG, COLOR8_MASK);
+
+	int contrast = MAX_BACKLIGHT_LEVEL - lcd->base.contrast;
+	int alpha = (contrast * 100 / MAX_BACKLIGHT_LEVEL) +0x1F;
+	if (alpha > 100) {
+		alpha = 100;
+	}
+
+	int contrast_color = 0x00;
+	if (lcd->base.contrast == MAX_BACKLIGHT_LEVEL - 1) {
+		alpha = 0;
+	}
+	
+	int alpha_overlay = ((100 - alpha) * contrast_color / 100);
+	int inverse_alpha = alpha;
+	uint8_t r, g, b;
+	int bits = color8bit ? 1 : 6;
 
 	if (level_invert) {
 		red = src;
@@ -651,26 +780,39 @@ static void draw_row_image(ColorLCD_t *lcd, uint8_t *dest, uint8_t *src, int siz
 			green += size - 3;
 			blue += size - 3;
 			for (int i = 0; i < size; i += 3) {
-				dest[i] = TRUCOLOR(red[-i] ^ 0x3f, 6);
-				dest[i + 1] = TRUCOLOR(green[-i] ^ 0x3f, 6);
-				dest[i + 2] = TRUCOLOR(blue[-i] ^ 0x3f, 6);
+				r = red[-i] ^ 0x3f;
+				g = green[-i] ^ 0x3f;
+				b = blue[-i] ^ 0x3f;
+				if (color8bit) {
+					r >>= 5;
+					g >>= 5;
+					b >>= 5;
+				}
+
+				dest[i] = (uint8_t)(alpha_overlay + TRUCOLOR(r, bits) * inverse_alpha / 100);
+				dest[i + 1] = (uint8_t)(alpha_overlay + TRUCOLOR(g, bits) * inverse_alpha / 100);
+				dest[i + 2] = (uint8_t)(alpha_overlay + TRUCOLOR(b, bits) * inverse_alpha / 100);
 			}
 		} else {
 			for (int i = 0; i < size; i += 3) {
-				dest[i] = TRUCOLOR(red[i] ^ 0x3f, 6);
-				dest[i + 1] = TRUCOLOR(green[i] ^ 0x3f, 6);
-				dest[i + 2] = TRUCOLOR(blue[i] ^ 0x3f, 6);
+				r = src[i] ^ 0x3f;
+				g = green[i] ^ 0x3f;
+				b = blue[i] ^ 0x3f;
+				if (color8bit) {
+					r >>= 5;
+					g >>= 5;
+					b >>= 5;
+				}
+
+				dest[i] = (uint8_t)(alpha_overlay + TRUCOLOR(r, bits) * inverse_alpha / 100);
+				dest[i + 1] = (uint8_t)(alpha_overlay + TRUCOLOR(g, bits) * inverse_alpha / 100);
+				dest[i + 2] = (uint8_t)(alpha_overlay + TRUCOLOR(b, bits) * inverse_alpha / 100);
 			}
 		}
 	} else {
 		for (int i = 0; i < size; i++) {
-			dest[i] = TRUCOLOR(src[i], 6);
-		}
-	}
-
-	if (color8bit) {
-		for (int i = 0; i < size; i++) {
-			dest[i] = TRUCOLOR(dest[i] >> 5, 3);
+			uint8_t val = color8bit ? src[i] >> 5 : src[i];
+			dest[i] = (uint8_t)(alpha_overlay + TRUCOLOR(val, bits) * inverse_alpha / 100);
 		}
 	}
 }
@@ -710,7 +852,8 @@ static void draw_row(ColorLCD_t *lcd, uint8_t *dest, uint8_t* src,
 {
 	uint8_t interlace_buf[COLOR_LCD_WIDTH * COLOR_LCD_DEPTH];
 
-	int non_display_area_color = LCD_REG_MASK(BASE_IMAGE_DISPLAY_CONTROL_REG, NDL_MASK) ? 0x3F : 0x00;
+	int non_display_area_color = LCD_REG_MASK(BASE_IMAGE_DISPLAY_CONTROL_REG, NDL_MASK) ? 
+		TRUCOLOR(0x00, 6) : TRUCOLOR(0x3F, 6);
 	BOOL interlace_cols = LCD_REG_MASK(DRIVER_OUTPUT_CONTROL1_REG, INTERLACED_MASK) ? TRUE : FALSE;
 
 	uint8_t *optr = interlace_cols ? interlace_buf : dest;
@@ -768,12 +911,25 @@ uint8_t *ColorLCD_Image(LCDBase_t *lcdBase) {
 
 	int p1pos, p1start, p1end, p1width, p2pos, p2start, p2end, p2width;
 
-	if (!lcdBase->active) {
+	if (!lcdBase->active || !lcd->backlight_active) {
 		return buffer;
 	}
 
-	int start_x = LCD_REG_MASK(GATE_SCAN_CONTROL_REG, BASE_START_MASK) << 3;
-	int pixel_width = (LCD_REG_MASK(GATE_SCAN_CONTROL_REG, BASE_NLINES_MASK) >> 5) + 8;
+	if (lcd->panic_mode) {
+		// this is not exactly what happens in panic mode
+		// but the main point is you know you fucked up
+		for (int i = 0; i < COLOR_LCD_HEIGHT; i++) {
+			for (int j = 0; j < COLOR_LCD_HEIGHT; j += 2) {
+				buffer[PIXEL_OFFSET(j, i)] = 0xFF;
+				buffer[PIXEL_OFFSET(j, i) + 1] = 0xFF;
+				buffer[PIXEL_OFFSET(j, i) + 2] = 0xFF;
+			}
+		}
+		return buffer;
+	}
+
+	int start_x = LCD_REG_MASK(GATE_SCAN_CONTROL_REG, BASE_START_MASK) * 8;
+	int pixel_width = ((LCD_REG_MASK(GATE_SCAN_CONTROL_REG, BASE_NLINES_MASK) >> 8) + 1) * 8;
 	if (start_x > COLOR_LCD_WIDTH) {
 		start_x = COLOR_LCD_WIDTH;
 	}
@@ -782,8 +938,8 @@ uint8_t *ColorLCD_Image(LCDBase_t *lcdBase) {
 		pixel_width = COLOR_LCD_WIDTH - start_x;
 	}
 
-	start_x = start_x * COLOR_LCD_DEPTH;
 	int display_width = (COLOR_LCD_WIDTH - (start_x + pixel_width)) * COLOR_LCD_DEPTH;
+	start_x = start_x * COLOR_LCD_DEPTH;
 
 	if (LCD_REG_MASK(DISPLAY_CONTROL1_REG, BASEE_MASK)) {
 		p2pos = 0;

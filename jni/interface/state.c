@@ -6,15 +6,38 @@
 void state_userpages(CPU_t *, upages_t*);
 TCHAR *symbol_to_string(CPU_t *, symbol83P_t *, TCHAR *);
 
-int find_header(u_char (*dest)[PAGE_SIZE], int page, int ident1, int ident2) {
-	int i;
-	//apparently non user apps have a slightly different header
-	//therefore we have to actually find the identifier
-	for (i = 0; i < PAGE_SIZE; i++)
-		if (dest[page][i] == ident1 && dest[page][i + 1] == ident2)
-			return dest[page][i + 2];
-	return -1;	
+// output contains field data
+// returns field size
+u_char find_field(u_char *dest, u_char id1, u_char id2, u_char **output) {
+	for (int i = 0; i < PAGE_SIZE; i++) {
+		if (dest[i] == id1 && (dest[i + 1] & 0xF0) == (id2 & 0xF0)) {
+			if (output != NULL) {
+				*output = dest + i + 2;
+			}
+			return dest[i + 1] & 0x0F;
+		}
+	}
+
+	if (output != NULL) {
+		*output = NULL;
+	}
+
+	return 0;
 }
+
+/*
+* Finds the page size identifier and returns the number of pages specified.
+* If the identifiers cannot be found, 0 is returned.
+*/
+u_int get_page_size(u_char *dest) {
+	find_field(dest, 0x80, 0x80, &dest);
+	if (dest == NULL) {
+		return 0;
+	}
+
+	return *dest;
+}
+
 
 /* Generate a list of applications */
 void state_build_applist(CPU_t *cpu, applist_t *applist) {
@@ -31,7 +54,9 @@ void state_build_applist(CPU_t *cpu, applist_t *applist) {
 	// fetch the userpages for this model
 	upages_t upages;
 	state_userpages(cpu, &upages);
-	if (upages.start == -1) return;
+	if (upages.start == 0) {
+		return;
+	}
 	
 	// Starting at the first userpage, search for all the apps
 	// As soon as page doesn't have one, you're done
@@ -40,20 +65,27 @@ void state_build_applist(CPU_t *cpu, applist_t *applist) {
 			page >= upages.end &&
 			applist->count < ARRAYSIZE(applist->apps) &&
 			flash[page][0x00] == 0x80 && flash[page][0x01] == 0x0F &&
-			find_header(flash, page, 0x80, 0x48) != -1 &&
-			(page_size = find_header(flash, page, 0x80, 0x81)) != -1;
-			
-			page -= page_size, applist->count++) {
+			find_field(flash[page], 0x80, 0x40, NULL) &&
+			(page_size = get_page_size(flash[page])) != 0;
+
+			page -= page_size, applist->count++) 
+	{
 		
 		apphdr_t *ah = &applist->apps[applist->count];
-		u_int i;
-		for (i = 0; i < PAGE_SIZE; i++)
-			if (flash[page][i] == 0x80 && flash[page][i + 1] == 0x48)
-				break;
-		memcpy(ah->name, &flash[page][i + 2], 8);
+		u_char *appName;
+		int nameLen = find_field(flash[page], 0x80, 0x40, &appName);
+#ifdef _UNICODE
+		char nameBuffer[12] = { 0 };
+		StringCbCopyNA(nameBuffer, sizeof(nameBuffer), (char *) appName, nameLen);
+		size_t size;
+		ZeroMemory(ah->name, sizeof(ah->name));
+		mbstowcs_s(&size, ah->name, 9, nameBuffer, sizeof(ah->name));
+#else
+		memcpy(ah->name, appName, nameLen);
+#endif
 		ah->name[8] = '\0';
 		ah->page = page;
-		ah->page_count = find_header(flash, page, 0x80, 0x81);
+		ah->page_count = page_size;
 
 	}
 }
@@ -71,6 +103,7 @@ symlist_t *state_build_symlist_86(CPU_t *cpu, symlist_t *symlist) {
 	stp.is_ram = TRUE;
 	stp.page = 7;
 
+	symlist->count = 0;
 
 	symbol83P_t *sym;
 	// Loop through while stp is still in the symbol table
@@ -85,7 +118,7 @@ symlist_t *state_build_symlist_86(CPU_t *cpu, symlist_t *symlist) {
 		stp.addr--;
 		if (sym->page > 0) {
 			int total = (sym->page << 16) + sym->address;
-			sym->page = (total - 0x10000) / PAGE_SIZE + 1;
+			sym->page = (uint8_t)((total - 0x10000) / PAGE_SIZE + 1);
 			sym->address %= PAGE_SIZE;
 		}
 		sym->type_ID2		= wmem_read(mem, stp);
@@ -99,6 +132,7 @@ symlist_t *state_build_symlist_86(CPU_t *cpu, symlist_t *symlist) {
 			stp.addr--;
 		}
 		sym->name[i] = '\0';
+		symlist->count++;
 		symlist->last = sym;
 	}
 	
@@ -107,21 +141,23 @@ symlist_t *state_build_symlist_86(CPU_t *cpu, symlist_t *symlist) {
 
 symlist_t* state_build_symlist_83P(CPU_t *cpu, symlist_t *symlist) {
 	memc *mem = cpu->mem_c;
-	int pTemp = cpu->pio.model >= TI_84PCSE ? PTEMP_84PCSE : PTEMP_83P;
-	int progPtr = cpu->pio.model >= TI_84PCSE ? PROGPTR_84PCSE : PROGPTR_83P;
-	int symTable = cpu->pio.model >= TI_84PCSE ? SYMTABLE_84PCSE : SYMTABLE_83P;
+	uint16_t pTemp = cpu->pio.model >= TI_84PCSE ? PTEMP_84PCSE : PTEMP_83P;
+	uint16_t progPtr = cpu->pio.model >= TI_84PCSE ? PROGPTR_84PCSE : PROGPTR_83P;
+	uint16_t symTable = cpu->pio.model >= TI_84PCSE ? SYMTABLE_84PCSE : SYMTABLE_83P;
 	// end marks the end of the symbol table
 	uint16_t 	end = mem_read16(mem, pTemp),
 	// prog denotes where programs start
 	prog = mem_read16(mem, progPtr),
 	// stp (symbol table pointer) marks the start
 	stp = symTable;
+	symlist->count = 0;
 	
 	// Verify VAT integrity
 	if (cpu->pio.model < TI_83P) return NULL;
 	if (stp < end || stp < prog) return NULL;
 	if (end > prog || end < 0x9D95) return NULL;
 	if (prog < 0x9D95) return NULL;
+	if (symlist == NULL) return NULL;
 
 	symbol83P_t *sym;
 	// Loop through while stp is still in the symbol table
@@ -147,6 +183,15 @@ symlist_t* state_build_symlist_83P(CPU_t *cpu, symlist_t *symlist) {
 			sym->name[i] = '\0';
 			symlist->last = sym;
 		}
+
+		TCHAR buffer[255];
+		// check if the symbol is valid
+		if (Symbol_Name_to_String(cpu->pio.model, sym, buffer) == NULL) {
+			sym--;
+			continue;
+		}
+
+		symlist->count++;
 	}
 	
 	return symlist;
@@ -177,7 +222,12 @@ TCHAR *Symbol_Name_to_String(int model, symbol83P_t *sym, TCHAR *buffer) {
 	}
 	
 	if (model == TI_86) {
-		StringCbCopy(buffer, 10, (TCHAR *) sym->name);
+#ifdef UNICODE
+		size_t size;
+		mbstowcs_s(&size, buffer, 10, sym->name, sizeof(buffer));
+#else
+		StringCbCopy(buffer, 10, sym->name);
+#endif
 		return buffer;
 	} else {
 		switch(sym->type_ID) {
@@ -253,6 +303,7 @@ TCHAR *Symbol_Name_to_String(int model, symbol83P_t *sym, TCHAR *buffer) {
 						default: 
 							return NULL;
 					}
+					break;
 				}
 			default:
 				return NULL;
@@ -260,7 +311,7 @@ TCHAR *Symbol_Name_to_String(int model, symbol83P_t *sym, TCHAR *buffer) {
 	}
 }
 
-TCHAR *GetRealAns(CPU_t *cpu) {
+TCHAR *GetRealAns(CPU_t *cpu, TCHAR *buffer) {
 	symlist_t *symlist = (symlist_t *) malloc(sizeof(symlist_t));
 	memset(symlist, 0, sizeof(symlist_t));
 	symlist = state_build_symlist_83P(cpu, symlist);
@@ -273,12 +324,6 @@ TCHAR *GetRealAns(CPU_t *cpu) {
 	if (sym == NULL) {
 		return NULL;
 	}
-
-#ifdef WINVER
-	TCHAR *buffer = (TCHAR *) LocalAlloc(LMEM_FIXED, 2048);
-#else
-	char *buffer = (char *) malloc(2048);
-#endif
 	
 	symbol_to_string(cpu, sym, buffer);
 	free(symlist);
@@ -294,23 +339,33 @@ TCHAR *symbol_to_string(CPU_t *cpu, symbol83P_t *sym, TCHAR *buffer) {
 		uint16_t ptr = sym->address;
 		TCHAR *p = buffer;
 		BOOL is_imaginary = FALSE;
-	TI_num_extract:
-		;
+TI_num_extract:;
 		uint8_t type = mem_read(cpu->mem_c, ptr++);
-		int exp = (TCHAR) (mem_read(cpu->mem_c, ptr++) ^ 0x80);
-		if (exp == -128) exp = 128;
+		int exp = (int) (mem_read(cpu->mem_c, ptr++) ^ 0x80);
+		if (exp == -128) {
+			exp = 128;
+		}
 		
 		u_char FP[14];
 		int i, sigdigs = 1;
-		for (i = 0; i < 14; i+=2, ptr++) {
-			FP[i] 	= mem_read(cpu->mem_c, ptr) >> 4;
-			FP[i+1]	= mem_read(cpu->mem_c, ptr) & 0x0F;
-			if (FP[i]) sigdigs = i + 1;
-			if (FP[i+1]) sigdigs = i + 2;
+		for (i = 0; i < 14; i += 2, ptr++) {
+			u_char next_byte = mem_read(cpu->mem_c, ptr);
+			FP[i] = next_byte >> 4;
+			FP[i + 1] = next_byte & 0x0F;
+			if (FP[i]) {
+				sigdigs = i + 1;
+			}
+
+			if (FP[i + 1]) {
+				sigdigs = i + 2;
+			}
 		}
 		
-		if (type & 0x80) *p++ = '-';
-		else if (is_imaginary) *p++ = '+';
+		if (type & 0x80) {
+			*p++ = '-';
+		} else if (is_imaginary) {
+			*p++ = '+';
+		}
 		
 		if (abs(exp) > 14) {
 			for (i = 0; i < sigdigs; i++) {
@@ -318,12 +373,14 @@ TCHAR *symbol_to_string(CPU_t *cpu, symbol83P_t *sym, TCHAR *buffer) {
 				if ((i + 1) < sigdigs && i == 0) *p++ = '.';
 			}
 
-			StringCbPrintf(p, _tcslen(p), _T("*10^%d"), exp);
+			StringCbPrintf(p, 32, _T("*10^%d"), exp);
 			p += _tcslen(p);
 		} else {
-			for (i = min(exp, 0); i < sigdigs || i < exp; i++) {
+			for (i = min(exp, 0); i < sigdigs || i < (exp + 1); i++) {
 				*p++ = (i >= 0 ? FP[i] : 0) + '0';
-				if ((i + 1) < sigdigs && i == exp) *p++ = '.';
+				if ((i + 1) < sigdigs && i == exp) {
+					*p++ = '.';
+				}
 			}
 		}
 		
@@ -447,7 +504,7 @@ void state_userpages(CPU_t *cpu, upages_t *upages) {
 			upages->end = upages->start - TI_84PCSE_USERPAGES;
 			break;
 		default:
-			upages->start	= -1;
+			upages->start	= 0;
 			upages->end		= 0;
 			break;
 	}	

@@ -1,9 +1,11 @@
 #include "com_Revsoft_Wabbitemu_CalcInterface.h"
 #include <jni.h>
 #include <android/log.h>
+//__android_log_print(ANDROID_LOG_VERBOSE, "LCDActive", "%d", lpCalc->cpu.pio.lcd == NULL);
 #include "calc.h"
 #include "keys.h"
 #include "lcd.h"
+#include "linksendvar.h"
 #include "colorlcd.h"
 #include "sendfile.h"
 #include "exportvar.h"
@@ -83,13 +85,17 @@ JNIEXPORT jint JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_CreateRom
 	writeboot(file, &lpCalc->mem_c, -1);
 	fclose(file);
 	remove(bootPath);
-	//if you don't want to load an OS, fine...
 	TIFILE_t *tifile = importvar(osPath, FALSE);
 	if (tifile == NULL) {
 		calc_slot_free(lpCalc);
-		return -1;
+		return -2;
 	}
-	forceload_os(&lpCalc->cpu, tifile);
+	int link_error = forceload_os(&lpCalc->cpu, tifile);
+	if (link_error != LERR_SUCCESS) {
+		calc_slot_free(lpCalc);
+		return -2;
+	}
+
 	calc_erase_certificate(lpCalc->mem_c.flash,lpCalc->mem_c.flash_size);
 	calc_reset(lpCalc);
 	//write the output from file
@@ -97,27 +103,30 @@ JNIEXPORT jint JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_CreateRom
 	if (romfile != NULL) {
 		mclose(romfile);
 		calc_slot_free(lpCalc);
-		return -1;
+		return 0;
 	}
+
 	calc_slot_free(lpCalc);
-	return 0;
+	return -3;
 }
 
 JNIEXPORT jint JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_LoadFile
 		(JNIEnv *env, jclass classObj, jstring filePath) {
 	const char *path = (*env)->GetStringUTFChars(env, filePath, JNI_FALSE);
 	TIFILE_t *tifile = importvar(path, TRUE);
-	__android_log_print(ANDROID_LOG_INFO, "native", "%d %d %s", !tifile, !lpCalc, path);
 	if (!tifile || !lpCalc) {
 		return (jint) LERR_FILE;
 	}
-	return SendFile(lpCalc, path, SEND_CUR);
+	int result = SendFile(lpCalc, path, SEND_CUR);
+	return result;
 }
 
 JNIEXPORT void JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_ResetCalc
 		(JNIEnv *env, jclass classObj) {
 	if (lpCalc) {
+		lpCalc->fake_running = TRUE;
 		calc_reset(lpCalc);
+		lpCalc->fake_running = FALSE;
 	}
 }
 
@@ -159,9 +168,9 @@ JNIEXPORT jint JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_GetModel
 	return lpCalc->model;
 }
 
-JNIEXPORT jint JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_Tstates
+JNIEXPORT jlong JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_Tstates
   (JNIEnv *env, jclass classObj) {
-	return (int) lpCalc->timer_c.tstates;
+	return lpCalc->timer_c.tstates;
 }
 
 /*
@@ -219,35 +228,29 @@ JNIEXPORT void JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_ReleaseKey
 	keypad_release(&lpCalc->cpu, (int) group, (int) bit);
 }
 
-void CopyWideGrayscale(JNIEnv *env, jintArray bytes, uint8_t *image) {
-	int screen[LCD_HEIGHT * LCD_WIDTH];
+void CopyWideGrayscale(JNIEnv *env, int *screen, uint8_t *image) {
 	for (int i = 0, j = 0; i < LCD_HEIGHT * 128; i++) {
 		uint8_t val = image[i];
-		screen[j++] = bluePalette[val] + (greenPalette[val] << 8) +
-				(redPalette[val] << 16) + 0xFF000000;
+		screen[j++] = redPalette[val] + (greenPalette[val] << 8) +
+				(bluePalette[val] << 16) + 0xFF000000;
 	}
-	(*env)->SetIntArrayRegion(env, bytes, 0, 128*LCD_HEIGHT, (const jint *) screen);
 }
 
-void CopyGrayscale(JNIEnv *env, jintArray bytes, uint8_t *image) {
-	int screen[LCD_HEIGHT * 96];
+void CopyGrayscale(JNIEnv *env, int *screen, uint8_t *image) {
 	for (int i = 0, j = 0; i < LCD_HEIGHT * 128;) {
 		for (int k = 0; k < 96; i++, k++) {
 			uint8_t val = image[i];
-			screen[j++] = bluePalette[val] + (greenPalette[val] << 8) +
-					(redPalette[val] << 16) + 0xFF000000;
+			screen[j++] = redPalette[val] + (greenPalette[val] << 8) +
+					(bluePalette[val] << 16) + 0xFF000000;
 		}
 		i += 32;
 	}
-	(*env)->SetIntArrayRegion(env, bytes, 0, 96*LCD_HEIGHT, (const jint *) screen);
 }
 
-void CopyColor(JNIEnv *env, jintArray bytes, uint8_t *image) {
-	int screen[COLOR_LCD_DISPLAY_SIZE];
+void CopyColor(JNIEnv *env, int *screen, uint8_t *image) {
 	for (int i = 0, j = 0; i < COLOR_LCD_DISPLAY_SIZE; i+=3) {
-		screen[j++] = image[i] + (image[i+1] << 8) + (image[i + 2] << 16) + 0xFF000000;
+		screen[j++] = image[i + 2] + (image[i+1] << 8) + (image[i] << 16) + 0xFF000000;
 	}
-	(*env)->SetIntArrayRegion(env, bytes, 0, COLOR_LCD_WIDTH * COLOR_LCD_HEIGHT, (const jint *) screen);
 }
 
 /*
@@ -274,10 +277,20 @@ JNIEXPORT jboolean JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_IsLCDActive
  * Signature: ()[B
  */
 JNIEXPORT jint JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_GetLCD
-  (JNIEnv *env, jclass classObj, jintArray bytes) {
+  (JNIEnv *env, jclass classObj, jobject intBuffer) {
 	LCDBase_t *lcd = lpCalc->cpu.pio.lcd;
+	if (lcd == NULL) {
+		return FALSE;
+	}
+
+	if (intBuffer == NULL) {
+		return FALSE;
+	}
+
+	int *bytes = (int *) (*env)->GetDirectBufferAddress(env, intBuffer);
+
 	if (bytes == NULL) {
-		return lcd->active;
+		return FALSE;
 	}
 
 	uint8_t *image;

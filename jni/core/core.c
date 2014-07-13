@@ -5,7 +5,6 @@
 #include "alu.h"
 #include "indexcb.h"
 #include "control.h"
-#include "83psehw.h"
 #include "optable.h"
 #ifdef WITH_REVERSE
 #include "alu_reverse.h"
@@ -67,16 +66,30 @@ uint8_t wmem_write(memc *mem, waddr_t waddr, uint8_t data) {
 /*
  * Convert a Z80 address to a waddr
  */
-waddr_t addr_to_waddr(memc *mem_c, uint16_t addr) {
+waddr_t addr16_to_waddr(memc *mem_c, uint16_t addr) {
 	waddr_t waddr;
 	bank_t *bank = &mem_c->banks[mc_bank(addr)];
 
 	waddr.addr = addr;
-	waddr.page = bank->page;
+	waddr.page = (uint8_t) bank->page;
 	waddr.is_ram = bank->ram;
 
 	return waddr;
 }
+
+/*
+* Convert a 32 bit address to a waddr
+*/
+waddr_t addr32_to_waddr(unsigned int addr, BOOL is_ram) {
+	waddr_t waddr;
+
+	waddr.page = (uint8_t)(addr / PAGE_SIZE);
+	waddr.addr = (uint16_t)(addr % PAGE_SIZE);
+	waddr.is_ram = is_ram;
+
+	return waddr;
+}
+
 
 BOOL check_break(memc *mem, waddr_t waddr) {
 	if (!(mem->breaks[waddr.is_ram][PAGE_SIZE * waddr.page + mc_base(waddr.addr)] & NORMAL_BREAK))
@@ -203,110 +216,69 @@ int CPU_reset(CPU_t *cpu) {
 	cpu->mem_c->banks = cpu->mem_c->normal_banks;
 	cpu->mem_c->boot_mapped = FALSE;
 	cpu->mem_c->hasChangedPage0 = FALSE;
+	memset(cpu->mem_c->protected_page, 0, sizeof(cpu->mem_c->protected_page));
+	cpu->mem_c->protected_page_set = 0;
 #ifdef WITH_REVERSE
 	cpu->prev_instruction = cpu->prev_instruction_list;
 	memset(cpu->prev_instruction_list, 0, sizeof(cpu->prev_instruction_list));
 	cpu->reverse_instr = 0;
 #endif
-	// TODO: eliminate this
+	
 	switch (cpu->pio.model) {
 	case TI_81: {
-					bank_state_t banks[5] = {
-						{ cpu->mem_c->flash, 0, FALSE, FALSE, FALSE },
-						{ cpu->mem_c->flash + 0x1 * PAGE_SIZE, 0x1, FALSE, FALSE, FALSE },
-						{ cpu->mem_c->flash + 0x1 * PAGE_SIZE, 0x1, FALSE, FALSE, FALSE },
-						{ cpu->mem_c->ram, 0, FALSE, TRUE, FALSE },
-						{ NULL, 0, FALSE, FALSE, FALSE }
-					};
-					memcpy(cpu->mem_c->normal_banks, banks, sizeof(banks));
-					break;
+		bank_state_t banks[5] = {
+			{ cpu->mem_c->flash, 0, FALSE, FALSE, FALSE },
+			{ cpu->mem_c->flash + 0x1 * PAGE_SIZE, 0x1, FALSE, FALSE, FALSE },
+			{ cpu->mem_c->flash + 0x1 * PAGE_SIZE, 0x1, FALSE, FALSE, FALSE },
+			{ cpu->mem_c->ram, 0, FALSE, TRUE, FALSE },
+			{ NULL, 0, FALSE, FALSE, FALSE }
+		};
+		memcpy(cpu->mem_c->normal_banks, banks, sizeof(banks));
+		break;
 	}
 	case TI_82:
 	case TI_83: {
-					bank_state_t banks[5] = {
-						{ cpu->mem_c->flash, 0, FALSE, FALSE, FALSE },
-						{ cpu->mem_c->flash + 0x00 * PAGE_SIZE, 0x00, FALSE, FALSE, FALSE },
-						{ cpu->mem_c->ram + 0x01 * PAGE_SIZE, 0x01, FALSE, TRUE, FALSE },
-						{ cpu->mem_c->ram, 0, FALSE, TRUE, FALSE },
-						{ NULL, 0, FALSE, FALSE, FALSE }
-					};
-					memcpy(cpu->mem_c->normal_banks, banks, sizeof(banks));
-					break;
+		bank_state_t banks[5] = {
+			{ cpu->mem_c->flash, 0, FALSE, FALSE, FALSE },
+			{ cpu->mem_c->flash + 0x00 * PAGE_SIZE, 0x00, FALSE, FALSE, FALSE },
+			{ cpu->mem_c->ram + 0x01 * PAGE_SIZE, 0x01, FALSE, TRUE, FALSE },
+			{ cpu->mem_c->ram, 0, FALSE, TRUE, FALSE },
+			{ NULL, 0, FALSE, FALSE, FALSE }
+		};
+		memcpy(cpu->mem_c->normal_banks, banks, sizeof(banks));
+		break;
 	}
 	case TI_85:
 	case TI_86: {
-					bank_state_t banks[5] = {
-						{ cpu->mem_c->flash, 0, FALSE, FALSE, FALSE },
-						{ cpu->mem_c->flash + 0x0F * PAGE_SIZE, 0x0F, FALSE, FALSE, FALSE },
-						{ cpu->mem_c->flash, 0, FALSE, FALSE, FALSE },
-						{ cpu->mem_c->ram, 0, FALSE, TRUE, FALSE },
-						{ NULL, 0, FALSE, FALSE, FALSE }
-					};
+		bank_state_t banks[5] = {
+			{ cpu->mem_c->flash, 0, FALSE, FALSE, FALSE },
+			{ cpu->mem_c->flash + 0x0F * PAGE_SIZE, 0x0F, FALSE, FALSE, FALSE },
+			{ cpu->mem_c->flash, 0, FALSE, FALSE, FALSE },
+			{ cpu->mem_c->ram, 0, FALSE, TRUE, FALSE },
+			{ NULL, 0, FALSE, FALSE, FALSE }
+		};
 
-					memcpy(cpu->mem_c->normal_banks, banks, sizeof(banks));
-					break;
+		memcpy(cpu->mem_c->normal_banks, banks, sizeof(banks));
+		break;
 	}
 	case TI_73:
-	case TI_83P: {
-					 /*bank_state_t banks[5] = {
-					 {cpu->mem_c->flash, 						0, 		FALSE,	FALSE, 	FALSE},
-					 {cpu->mem_c->flash + 0x1f * PAGE_SIZE,	0x1f, 	FALSE, 	FALSE, 	FALSE},
-					 {cpu->mem_c->flash + 0x1f * PAGE_SIZE,	0x1f, 	FALSE, 	FALSE, 	FALSE},
-					 {cpu->mem_c->ram,							0,		FALSE,	TRUE,	FALSE},
-					 {NULL,										0,		FALSE,	FALSE,	FALSE}
-					 };
-					 cpu->pc = 0x4000;*/
-					 memset(cpu->mem_c->protected_page, 0, sizeof(cpu->mem_c->protected_page));
-					 cpu->mem_c->protected_page_set = 0;
-					 /*	Address										page	write?	ram?	no exec?	*/
-					 bank_state_t banks[5] = {
-						 { cpu->mem_c->flash + 0x1f * PAGE_SIZE, 0x1f, FALSE, FALSE, FALSE },
-						 { cpu->mem_c->flash, 0, FALSE, FALSE, FALSE },
-						 { cpu->mem_c->flash, 0, FALSE, FALSE, FALSE },
-						 { cpu->mem_c->ram, 0, FALSE, TRUE, FALSE },
-						 { NULL, 0, FALSE, FALSE, FALSE }
-					 };
-					 memcpy(cpu->mem_c->normal_banks, banks, sizeof(banks));
-					 break;
-	}
+	case TI_83P:
 	case TI_83PSE:
-	case TI_84PSE: {
-					   /*	Address										page	write?	ram?	no exec?	*/
-					   bank_state_t banks[5] = {
-						   { cpu->mem_c->flash + 0x7f * PAGE_SIZE, 0x7f, FALSE, FALSE, FALSE },
-						   { cpu->mem_c->flash, 0, FALSE, FALSE, FALSE },
-						   { cpu->mem_c->flash, 0, FALSE, FALSE, FALSE },
-						   { cpu->mem_c->ram, 0, FALSE, TRUE, FALSE },
-						   { NULL, 0, FALSE, FALSE, FALSE }
-					   };
-
-					   memcpy(cpu->mem_c->normal_banks, banks, sizeof(banks));
-					   break;
-	}
-	case TI_84P: {
-					 /*	Address										page	write?	ram?	no exec?	*/
-					 bank_state_t banks[5] = {
-						 { cpu->mem_c->flash + 0x3f * PAGE_SIZE, 0x3f, FALSE, FALSE, FALSE },
-						 { cpu->mem_c->flash, 0, FALSE, FALSE, FALSE },
-						 { cpu->mem_c->flash, 0, FALSE, FALSE, FALSE },
-						 { cpu->mem_c->ram, 0, FALSE, TRUE, FALSE },
-						 { NULL, 0, FALSE, FALSE, FALSE }
-					 };
-					 memcpy(cpu->mem_c->normal_banks, banks, sizeof(banks));
-					 break;
-	}
+	case TI_84PSE: 
+	case TI_84P:
 	case TI_84PCSE: {
-					/*	Address										page	write?	ram?	no exec?	*/
-					bank_state_t banks[5] = {
-						{ cpu->mem_c->flash + 0xff * PAGE_SIZE, 0xff, FALSE, FALSE, FALSE },
-						{ cpu->mem_c->flash, 0, FALSE, FALSE, FALSE },
-						{ cpu->mem_c->flash, 0, FALSE, FALSE, FALSE },
-						{ cpu->mem_c->ram, 0, FALSE, TRUE, FALSE },
-						{ NULL, 0, FALSE, FALSE, FALSE }
-					};
+		int bootPage = cpu->mem_c->flash_pages - 1;
+		/*	Address		page	write?	ram?	no exec?	*/
+		bank_state_t banks[5] = {
+			{ cpu->mem_c->flash + bootPage * PAGE_SIZE, bootPage, FALSE, FALSE, FALSE },
+			{ cpu->mem_c->flash, 0, FALSE, FALSE, FALSE },
+			{ cpu->mem_c->flash, 0, FALSE, FALSE, FALSE },
+			{ cpu->mem_c->ram, 0, FALSE, TRUE, FALSE },
+			{ NULL, 0, FALSE, FALSE, FALSE }
+		};
 
-					memcpy(cpu->mem_c->normal_banks, banks, sizeof(banks));
-					break;
+		memcpy(cpu->mem_c->normal_banks, banks, sizeof(banks));
+		break;
 	}
 	}
 	return 0;
@@ -517,7 +489,7 @@ static unsigned char flash_read(CPU_t *cpu, unsigned short addr) {
 }
 
 unsigned char CPU_mem_read(CPU_t *cpu, unsigned short addr) {
-	if (check_mem_read_break(cpu->mem_c, addr_to_waddr(cpu->mem_c, addr))) {
+	if (check_mem_read_break(cpu->mem_c, addr16_to_waddr(cpu->mem_c, addr))) {
 		if (cpu->mem_read_break_callback) {
 			cpu->mem_read_break_callback(cpu);
 		}
@@ -601,9 +573,15 @@ static void flash_write(CPU_t *cpu, unsigned short addr, unsigned char data) {
 		}
 		break;
 	case FLASH_PROGRAM: {
-							flash_write_byte(mem_c, addr, data);
-							endflash(mem_c);
-							break;
+		flash_write_byte(mem_c, addr, data);
+		if (check_mem_write_break(cpu->mem_c, addr16_to_waddr(cpu->mem_c, addr))) {
+			if (cpu->mem_write_break_callback) {
+				cpu->mem_write_break_callback(cpu);
+			}
+		}
+
+		endflash(mem_c);
+		break;
 	}
 	case FLASH_ERASE:
 		if (((addr & 0x0FFF) == 0x0AAA) && (data == 0xAA)) {
@@ -626,40 +604,51 @@ static void flash_write(CPU_t *cpu, unsigned short addr, unsigned char data) {
 			// DrDnar 7/8/11: boot sector is included
 			for (int i = 0; i < cpu->mem_c->flash_size; i++) {
 				cpu->mem_c->flash[i] = 0xFF;
+
+				if (check_mem_write_break(cpu->mem_c, addr32_to_waddr(i, FALSE))) {
+					if (cpu->mem_write_break_callback) {
+						cpu->mem_write_break_callback(cpu);
+					}
+				}
 			}
 		} else if (data == 0x30) {
 			// erase sectors
-			int i;
 			int spage = (mem_c->banks[bank].page << 1) + ((addr >> 13) & 0x01);
 			int pages = mem_c->flash_pages;
 			int totalPages = pages * 2;
+			int startaddr, endaddr;
 
 			if (spage < totalPages - 8) {
-				int startaddr = (spage & 0x01FF) * 0x2000;
-				int endaddr = startaddr + PAGE_SIZE * 4;
-				for (i = startaddr; i < endaddr; i++) {
-					mem_c->flash[i] = 0xFF;
-				}
+				startaddr = (spage & 0x01FF) * 0x2000;
+				endaddr = startaddr + PAGE_SIZE * 4;
 			} else if (spage < totalPages - 4) {
-				for (i = (pages - 4) * PAGE_SIZE; i < (pages - 2) * PAGE_SIZE; i++) {
-					mem_c->flash[i] = 0xFF;
-				}
+				startaddr = (pages - 4) * PAGE_SIZE;
+				endaddr = (pages - 2) * PAGE_SIZE;
 			} else if (spage < totalPages - 3) {
-				for (i = (pages - 2) * PAGE_SIZE; i < (pages - 2) * PAGE_SIZE + PAGE_SIZE / 2; i++) {
-					mem_c->flash[i] = 0xFF;
-
-				}
+				startaddr = (pages - 2) * PAGE_SIZE;
+				endaddr = (pages - 2) * PAGE_SIZE + PAGE_SIZE / 2;
 			} else if (spage < totalPages - 2) {
-				for (i = (pages - 2) * PAGE_SIZE + PAGE_SIZE / 2; i < (pages - 1) * PAGE_SIZE; i++) {
-					mem_c->flash[i] = 0xFF;
-				}
+				startaddr = (pages - 2) * PAGE_SIZE + PAGE_SIZE / 2;
+				endaddr = (pages - 1) * PAGE_SIZE;
 			} else if (spage < totalPages) {
 				// I comment this off because this is the boot page
 				// it suppose to be write protected...
 				// BuckeyeDude 6/27/11: new info has been discovered boot code
 				// is writable under certain conditions
-				for (i = (pages - 1) * PAGE_SIZE; i < pages * PAGE_SIZE; i++) {
-					mem_c->flash[i] = 0xFF;
+				startaddr = (pages - 1) * PAGE_SIZE;
+				endaddr = pages * PAGE_SIZE;
+			} else {
+				endflash_break(cpu);
+				break;
+			}
+
+			for (int i = startaddr; i < endaddr; i++) {
+				mem_c->flash[i] = 0xFF;
+
+				if (check_mem_write_break(cpu->mem_c, addr32_to_waddr(i, FALSE))) {
+					if (cpu->mem_write_break_callback) {
+						cpu->mem_write_break_callback(cpu);
+					}
 				}
 			}
 		} else {
@@ -683,7 +672,12 @@ static void flash_write(CPU_t *cpu, unsigned short addr, unsigned char data) {
 		mem_c->step = FLASH_FASTMODE;
 		break;
 	case FLASH_FASTMODE_PROG: {
-		flash_write_byte(mem_c, addr, data);
+		flash_write_byte(cpu->mem_c, addr, data);
+		if (check_mem_write_break(cpu->mem_c, addr16_to_waddr(cpu->mem_c, addr))) {
+			if (cpu->mem_write_break_callback) {
+				cpu->mem_write_break_callback(cpu);
+			}
+		}
 		break;
 	}
 	default:
@@ -693,24 +687,22 @@ static void flash_write(CPU_t *cpu, unsigned short addr, unsigned char data) {
 }
 
 BOOL check_flash_write_valid(CPU_t *cpu, int page) {
-	// TODO: remove
 	return !cpu->mem_c->flash_locked && cpu->pio.model >= TI_73 &&
-		(((page != 0x3F && page != 0x2F) || (cpu->pio.se_aux->model_bits & 0x3)) &&
-		((page != 0x7F && page != 0x6F) || (cpu->pio.se_aux->model_bits & 0x2) || !(cpu->pio.se_aux->model_bits & 0x1)));
+		(((page != 0x3F && page != 0x2F) || (cpu->model_bits & 0x3)) &&
+		((page != 0x7F && page != 0x6F) || (cpu->model_bits & 0x2) || !(cpu->model_bits & 0x1)));
 }
 
 void CPU_mem_write(CPU_t *cpu, unsigned short addr, unsigned char data) {
-	if (check_mem_write_break(cpu->mem_c, addr_to_waddr(cpu->mem_c, addr))) {
-		if (cpu->mem_write_break_callback) {
-			cpu->mem_write_break_callback(cpu);
-		}
-	}
-
 	bank_state_t *bank = &cpu->mem_c->banks[mc_bank(addr)];
 
 	if (bank->ram) {
 		if (!bank->read_only) {
 			mem_write(cpu->mem_c, addr, data);
+			if (check_mem_write_break(cpu->mem_c, addr16_to_waddr(cpu->mem_c, addr))) {
+				if (cpu->mem_write_break_callback) {
+					cpu->mem_write_break_callback(cpu);
+				}
+			}
 		}
 		SEtc_add(cpu->timer_c, cpu->mem_c->write_ram_tstates);
 	} else {
@@ -883,7 +875,7 @@ static void handle_interrupt(CPU_t *cpu) {
 			tc_add(cpu->timer_c, 19);
 			cpu->halt = FALSE;
 			unsigned short vector = (cpu->i << 8) + cpu->bus;
-			int reg = CPU_mem_read(cpu, vector++);
+			unsigned short reg = CPU_mem_read(cpu, vector++);
 			reg += CPU_mem_read(cpu, vector) << 8;
 			CPU_mem_write(cpu, --cpu->sp, (cpu->pc >> 8) & 0xFF);
 			CPU_mem_write(cpu, --cpu->sp, cpu->pc & 0xFF);
@@ -940,10 +932,28 @@ int CPU_connected_step(CPU_t *cpu) {
 	return 0;
 }
 
+void handle_profiling(CPU_t *cpu, uint64_t oldTStates, uint16_t oldPC) {
+	uint64_t time = tc_tstates(cpu->timer_c) - oldTStates;
+	cpu->profiler.totalTime += time;
+	bank_t bank = cpu->mem_c->banks[mc_bank(oldPC)];
+	int block = (oldPC % PAGE_SIZE) / cpu->profiler.blockSize;
+
+	if (bank.ram) {
+		uint64_t(*ram_data)[PROFILER_NUM_BLOCKS] = 
+			(uint64_t(*)[PROFILER_NUM_BLOCKS]) cpu->profiler.ram_data;
+		ram_data[bank.page][block] += time;
+	} else {
+		uint64_t(*flash_data)[PROFILER_NUM_BLOCKS] = 
+			(uint64_t(*)[PROFILER_NUM_BLOCKS]) cpu->profiler.flash_data;
+		flash_data[bank.page][block] += time;
+	}
+}
+
 int CPU_step(CPU_t* cpu) {
 	cpu->interrupt = 0;
 	cpu->ei_block = FALSE;
-	cpu->old_pc = cpu->pc;
+	unsigned short old_pc = cpu->old_pc = cpu->pc;
+	unsigned long long old_tstates = tc_tstates(cpu->timer_c);
 
 #ifdef WITH_REVERSE
 	CPU_add_prev_instr(cpu);
@@ -976,6 +986,11 @@ int CPU_step(CPU_t* cpu) {
 		}
 		handle_interrupt(cpu);
 	}
+
+	if (cpu->profiler.running) {
+		handle_profiling(cpu, old_tstates, old_pc);
+	}
+
 	return 0;
 }
 

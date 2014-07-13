@@ -39,21 +39,24 @@ void rem_breakpoint(memc *mem, BREAK_TYPE type, waddr_t waddr)
 // returns true if it should break, false otherwise
 BOOL check_break_callback(memc *mem, BREAK_TYPE type, waddr_t waddr) {
 	LPCALC lpCalc = calc_from_memc(mem);
-	breakpoint_t *lpBreak = lpCalc->cond_breakpoints[waddr.is_ram][PAGE_SIZE * waddr.page + mc_base(waddr.addr)];
-	if (lpBreak == NULL)
+	if (lpCalc == NULL) {
 		return FALSE;
+	}
+
+	breakpoint_t *lpBreak = lpCalc->cond_breakpoints[waddr.is_ram][PAGE_SIZE * waddr.page + mc_base(waddr.addr)];
+	if (lpBreak == NULL || !lpBreak->active) {
+		return FALSE;
+	}
 
 	//necessary because of page handling
 	waddr.addr %= PAGE_SIZE;
 
-	if (!lpBreak->active)
-		return FALSE;
 	int result = TRUE;
 	for (int i = 0; i < lpBreak->num_conditions; i++) {
 		switch (lpBreak->conditions[i].type) {
 		case CONDITION_HIT_COUNT: {
 			condition_hitcount_t *cond = (condition_hitcount_t *)lpBreak->conditions[i].data;
-			waddr_t pcWaddr = addr_to_waddr(lpCalc->cpu.mem_c, lpCalc->cpu.pc);
+			waddr_t pcWaddr = addr16_to_waddr(lpCalc->cpu.mem_c, lpCalc->cpu.pc);
 			if (pcWaddr.addr % PAGE_SIZE == waddr.addr && pcWaddr.page == waddr.page && pcWaddr.is_ram == waddr.is_ram) {
 				cond->hit_count++;
 			}

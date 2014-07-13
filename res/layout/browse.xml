@@ -7,18 +7,11 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent" >
 
-    <ListView
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_above="@+id/adView4"
-            android:id="@id/android:list" />
-    
-<!--     <TextView android:id="@id/android:empty" -->
-<!--                android:layout_width="match_parent" -->
-<!--                android:layout_height="match_parent" -->
-<!--                android:layout_centerInParent="true" -->
-<!--                android:visibility="gone" -->
-<!--                android:text="@string/noFilesFound" /> -->
+    <FrameLayout
+        android:id="@+id/browse_frame"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@+id/adView4" />
     
     <com.google.android.gms.ads.AdView android:id="@+id/adView4"
         android:layout_width="match_parent"

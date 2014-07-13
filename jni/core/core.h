@@ -2,18 +2,7 @@
 #define CORE_H
 
 #include "coretypes.h"
-
-#define TI_81		0
-#define TI_82		1
-#define TI_83		2
-#define TI_85		3
-#define TI_86		4
-#define TI_73		5
-#define TI_83P		6
-#define TI_83PSE	7
-#define TI_84P		8
-#define TI_84PSE	9
-#define TI_84PCSE	10
+#include "modeltypes.h"
 
 /*defines the start of the app page*/
 /*this page starts in HIGH mem and grows to LOW */
@@ -40,8 +29,6 @@
 #ifndef BIT
 #define BIT(bit) (1 << (bit))
 #endif
-
-#define NumElm(array) (sizeof (array) / sizeof ((array)[0]))
 
 #ifdef MACVER
 #define FPS 30
@@ -267,6 +254,19 @@ typedef struct reverse_time {
 	BYTE r;
 } reverse_time_t;
 
+#define MIN_BLOCK_SIZE 16
+#define PROFILER_NUM_BLOCKS (PAGE_SIZE / MIN_BLOCK_SIZE)
+
+typedef struct profiler {
+	BOOL running;
+	int blockSize;
+	uint64_t totalTime;
+	uint64_t **flash_data;
+	uint64_t **ram_data;
+	BOOL show_disassembly;
+	BOOL sort_output;
+} profiler_t;
+
 typedef struct CPU {
 	/* Register bank 0 */
 	regpair(a, f, af);
@@ -281,7 +281,7 @@ typedef struct CPU {
 	/* Remaining CPU registers */
 	regpair(ixh, ixl, ix);
 	regpair(iyh, iyl, iy);
-	unsigned short pc, sp, old_pc;
+	unsigned short pc, sp;
 	unsigned char i, r, bus, link_write;
 	int imode;
 	BOOL interrupt;
@@ -294,6 +294,7 @@ typedef struct CPU {
 	memc *mem_c;
 	timerc *timer_c;
 	int cpu_version;
+	int model_bits;
 	reverse_time_t prev_instruction_list[512];
 	reverse_time_t *prev_instruction;
 	int reverse_instr;
@@ -303,10 +304,14 @@ typedef struct CPU {
 	unsigned long long linking_time;
 	unsigned long long hasHitEnter;
 
+	profiler_t profiler;
+	unsigned short old_pc;
+
 	void(*exe_violation_callback)(struct CPU *);
 	void(*invalid_flash_callback)(struct CPU *);
 	void(*mem_read_break_callback)(struct CPU *);
 	void(*mem_write_break_callback)(struct CPU *);
+	void(*lcd_enqueue_callback)(struct CPU *);
 } CPU_t;
 
 typedef void (*opcodep)(CPU_t*);
@@ -318,7 +323,8 @@ uint16_t wmem_read16(memc *mem, waddr_t waddr);
 unsigned short mem_read16(memc*, unsigned short);
 unsigned char mem_write(memc*, unsigned short, char);
 uint8_t wmem_write(memc *mem, waddr_t waddr, uint8_t data);
-waddr_t addr_to_waddr(memc*, uint16_t);
+waddr_t addr16_to_waddr(memc*, uint16_t);
+waddr_t addr32_to_waddr(unsigned int addr, BOOL is_ram);
 
 void set_break(memc *, waddr_t waddr);
 void set_mem_write_break(memc *, waddr_t waddr);

@@ -1,23 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
-    <CheckBoxPreference
+    <PreferenceCategory
+        android:title="@string/calcSettings"
+        android:key="calcSettings">
+	    <CheckBoxPreference
+	            android:key="alwaysAwake"
+	            android:title="@string/alwaysAwake"
+	            android:summary="@string/alwaysAwakeSummary"
+	            android:defaultValue="false" />
+	    <CheckBoxPreference
+	            android:key="autoTurnOn"
+	            android:title="@string/autoTurnOn"
+	            android:summary="@string/autoTurnOnSummary"
+	            android:defaultValue="true" />
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:title="@string/skinSettings"
+        android:key="skinSettings">
+	    <net.margaritov.preference.colorpicker.ColorPickerPreference
+			    android:key="faceplateColor"
+			    android:title="@string/faceplateColor"
+			    android:summary="@string/faceplateColorSummary"
+			    android:defaultValue="0xff000000" />
+	     <CheckBoxPreference
             android:key="useVibration"
             android:title="@string/useVibration"
             android:summary="@string/useVibrationSummary"
             android:defaultValue="true" />
-    <CheckBoxPreference
-            android:key="alwaysAwake"
-            android:title="@string/alwaysAwake"
-            android:summary="@string/alwaysAwakeSummary"
-            android:defaultValue="false" />
-    <CheckBoxPreference
-            android:key="autoTurnOn"
-            android:title="@string/autoTurnOn"
-            android:summary="@string/autoTurnOnSummary"
-            android:defaultValue="true" />
-    <net.margaritov.preference.colorpicker.ColorPickerPreference
-		    android:key="faceplateColor"
-		    android:title="@string/faceplateColor"
-		    android:summary="@string/faceplateColorSummary"
-		    android:defaultValue="0xff000000" />
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:title="@string/screenSettings"
+        android:key="screenSettings">
+	    <CheckBoxPreference
+	            android:key="correctScreenRatio"
+	            android:title="@string/correctScreenRatio"
+	            android:summary="@string/correctScreenRatioSummary"
+	            android:defaultValue="false" />
+	    <CheckBoxPreference
+	            android:key="largeScreen"
+	            android:title="@string/largeScreen"
+	            android:summary="@string/largeScreenSummary"
+	            android:defaultValue="false" />
+	</PreferenceCategory>
 </PreferenceScreen>

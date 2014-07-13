@@ -5,7 +5,7 @@
     android:orientation="vertical" >
 
     <com.Revsoft.Wabbitemu.WabbitLCD
-        android:id="@+id/surfaceView"
+        android:id="@+id/textureView"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
         android:layout_gravity="center_horizontal" />

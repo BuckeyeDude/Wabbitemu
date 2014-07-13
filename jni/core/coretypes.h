@@ -12,13 +12,14 @@ typedef intptr_t INT_PTR;
 typedef uint8_t BYTE, *LPBYTE;
 typedef uint16_t WORD, *LPWORD;
 typedef uint32_t DWORD, *LPDWORD;
+typedef unsigned int UINT;
 
 #ifndef MAX_PATH
 #define MAX_PATH 256
 #endif
 #endif
 
-#ifdef WINVER
+#ifdef _WINDOWS
 typedef int BOOL;
 #else
 #ifndef OBJC_BOOL_DEFINED

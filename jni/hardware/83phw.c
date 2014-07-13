@@ -7,7 +7,8 @@
 #include "device.h"
 #include "83psehw.h"
 
-#define BIT(bit) (1 << (bit))
+#pragma warning(push)
+#pragma warning( disable : 4100 )
 
 static double timer_freq83p[4] = { 1.0f / 560.0f, 1.0f / 248.0f, 1.0f / 170.0f, 1.0f / 118.0f };
 
@@ -238,28 +239,30 @@ static void port5(CPU_t *cpu, device_t *dev) {
 
 static void port6(CPU_t *cpu, device_t *dev) {
 	if (cpu->input) {
-		cpu->bus = (cpu->mem_c->banks[1].ram << 6) + cpu->mem_c->banks[1].page;
+		cpu->bus = (unsigned char)((cpu->mem_c->banks[1].ram << 6) + cpu->mem_c->banks[1].page);
 		cpu->input = FALSE;
 	} else if (cpu->output) {
 		BOOL ram = (cpu->bus >> 6) & 1;
-		if (ram)
+		if (ram) {
 			change_page(cpu->mem_c, 1, (cpu->bus & 0x1f) % cpu->mem_c->ram_pages, ram);
-		else
+		} else {
 			change_page(cpu->mem_c, 1, (cpu->bus & 0x1f) % cpu->mem_c->flash_pages, ram);
+		}
 		cpu->output = FALSE;
 	}
 }
 
 static void port7(CPU_t *cpu, device_t *dev) {
 	if (cpu->input) {
-		cpu->bus = ((cpu->mem_c->banks[2].ram) << 6) + cpu->mem_c->banks[2].page;
+		cpu->bus = (unsigned char)((cpu->mem_c->banks[2].ram << 6) + cpu->mem_c->banks[2].page);
 		cpu->input = FALSE;
 	} else if (cpu->output) {
 		BOOL ram = (cpu->bus >> 6) & 1;
-		if (ram)
+		if (ram) {
 			change_page(cpu->mem_c, 2, (cpu->bus & 0x1f) % cpu->mem_c->ram_pages, ram);
-		else
+		} else {
 			change_page(cpu->mem_c, 2, (cpu->bus & 0x1f) % cpu->mem_c->flash_pages, ram);
+		}
 		cpu->output = FALSE;
 	}
 }
@@ -314,7 +317,7 @@ static STDINT_t* INT83P_init(CPU_t* cpu) {
 	return stdint;
 }
 
-static link_t* link83p_init(CPU_t* cpu) {
+static link_t* link83p_init() {
 	link_t * link = (link_t *) malloc(sizeof(link_t));
 	if (!link) {
 		printf("Couldn't allocate memory for link\n");
@@ -331,12 +334,12 @@ int device_init_83p(CPU_t *cpu) {
 	
 	LINKASSIST_t *assist = (LINKASSIST_t *) malloc(sizeof(LINKASSIST_t));
 	assist->link_enable = 0;
-	link_t *link = link83p_init(cpu);
+	link_t *link = link83p_init();
 	cpu->pio.devices[0x00].active = TRUE;
 	cpu->pio.devices[0x00].aux = assist;
 	cpu->pio.devices[0x00].code = (devp) port0;
 
-	keypad_t *keyp = keypad_init(cpu);
+	keypad_t *keyp = keypad_init();
 	cpu->pio.devices[0x01].active = TRUE;
 	cpu->pio.devices[0x01].aux = keyp;
 	cpu->pio.devices[0x01].code = (devp) keypad;
@@ -452,5 +455,4 @@ int memory_init_83p(memc *mc) {
 	return 0;
 }
 
-
-
+#pragma warning(pop)

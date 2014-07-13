@@ -9,21 +9,17 @@ typedef struct keypad {
 } keypad_t;
 
 typedef struct KEYPROG {
-	int vk;
+	UINT vk;
 	int group;
 	int bit;
 } keyprog_t;
 
-//shhh..Redefine for sake of ease
-#define VKF_EQUAL	0xBB
-#define VKF_COMMA	0xBC
-#define VKF_MINUS	0xBD
-#define VKF_PERIOD	0xBE
-#define VKF_LBRACKET 0xDB
-#define VKF_RBRACKET 0xDD
-#define VKF_QUOTE	0xDE
+#define MAX_KEY_MAPPINGS 256
+#define VK_EQUAL	VK_OEM_PLUS
+#define VK_LBRACKET VK_OEM_4
+#define VK_RBRACKET VK_OEM_6
 
-keypad_t *keypad_init(CPU_t*);
+keypad_t *keypad_init();
 void keypad(CPU_t *, device_t *);
 
 keyprog_t *keypad_key_press(CPU_t*, unsigned int vk, BOOL *changed);
@@ -42,7 +38,5 @@ keyprog_t * keypad_keyprog_from_groupbit(CPU_t *cpu, int group, int bit);
 
 #define KEYGROUP_ON			0x05
 #define KEYBIT_ON			0x00
-
-#define NumElm(array) (sizeof (array) / sizeof ((array)[0]))
 
 #endif /*#ifndef KEYS_H*/

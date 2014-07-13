@@ -8,16 +8,21 @@
 extern HINSTANCE g_hInst;
 
 #define EXPAND_PANE_BASE_ID	1137
-static int ID = EXPAND_PANE_BASE_ID;
+static int IDArray[MAX_CALCS] = {
+	EXPAND_PANE_BASE_ID,
+	EXPAND_PANE_BASE_ID,
+	EXPAND_PANE_BASE_ID,
+	EXPAND_PANE_BASE_ID,
+	EXPAND_PANE_BASE_ID,
+	EXPAND_PANE_BASE_ID,
+	EXPAND_PANE_BASE_ID,
+	EXPAND_PANE_BASE_ID
+};
 
-//#define MAX_SLIDE_SPEED 	8
-//#define SLIDE_ACCEL 		0.65
-
-#define MAX_SLIDE_SPEED 	20
-#define SLIDE_ACCEL 		1.3
+#define MAX_SLIDE_SPEED 	40
+#define SLIDE_ACCEL 		3.5
 
 #define MAX_FADE (600/20)
-//static int expand_pane_selection = -1;
 
 typedef enum {
 	EP_CLOSED,
@@ -56,7 +61,7 @@ HWND CreateExpandPane(HWND hwndParent, LPDEBUGWINDOWINFO lpDebugInfo, TCHAR *nam
 	eps->lpDebugInfo = lpDebugInfo;
 	//eps->bFading = TRUE;
 
-	if (ID == EXPAND_PANE_BASE_ID) {
+	if (IDArray[lpDebugInfo->lpCalc->slot] == EXPAND_PANE_BASE_ID) {
 		lpDebugInfo->TotalPanes = 0;
 	}
 
@@ -65,7 +70,7 @@ HWND CreateExpandPane(HWND hwndParent, LPDEBUGWINDOWINFO lpDebugInfo, TCHAR *nam
 			name,
 			WS_VISIBLE | WS_CHILD,
 			0, 0, 1, 1,
-			hwndParent, (HMENU) ID++, g_hInst,
+			hwndParent, (HMENU)IDArray[lpDebugInfo->lpCalc->slot]++, g_hInst,
 			eps);
 	if (hwndExp == NULL)
 		return NULL;
@@ -84,7 +89,6 @@ HWND CreateExpandPane(HWND hwndParent, LPDEBUGWINDOWINFO lpDebugInfo, TCHAR *nam
 		SetWindowPos(contents, HWND_BOTTOM, 16, tm.tmHeight*3/2, 0, 0, SWP_NOSIZE);
 		//DestroyWindow(contents);
 	}
-
 
 	lpDebugInfo->ExpandPanes[lpDebugInfo->TotalPanes++] = hwndExp;
 	return hwndExp;
@@ -279,7 +283,7 @@ static LRESULT CALLBACK ExpandButtonProc(HWND hwnd, UINT Message, WPARAM wParam,
 			}
 
 			HDC hdcDest, hdc;
-			HBITMAP hbm;
+			HBITMAP hbm = NULL;
 			PAINTSTRUCT ps;
 
 			RECT rc;
@@ -322,7 +326,10 @@ static LRESULT CALLBACK ExpandButtonProc(HWND hwnd, UINT Message, WPARAM wParam,
 						hdcDest, 	0, 0, rc.right - rc.left, rc.bottom - rc.top,
 						hdc, 		0, 0, rc.right - rc.left, rc.bottom - rc.top, bf);
 
-				DeleteObject(hbm);
+				if (hbm != NULL) {
+					DeleteObject(hbm);
+				}
+
 				DeleteDC(hdc);
 
 			}
@@ -476,12 +483,10 @@ LRESULT CALLBACK ExpandPaneProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM l
 
 			DWORD dwHeight = tm.tmHeight*3/2;
 			DWORD dwWidth = prc.right - prc.left - GetSystemMetrics(SM_CXVSCROLL);
-			// TODO: bug here, this takes into account all panes in all debug windows
-			// need to only be local to the debug window
 			int index = GetWindowLongPtr(hwnd, GWLP_ID) - EXPAND_PANE_BASE_ID;
 
 			// Add in all the previous windows
-			int cy = eps->lpDebugInfo->regPanesYScroll;
+			int cy = eps->lpDebugInfo->reg_panes_yoffset;
 			int i;
 			for (i = 0; i < index; i++) {
 				RECT rc;
@@ -517,7 +522,7 @@ LRESULT CALLBACK ExpandPaneProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM l
 				}
 
 				SetWindowPos(eps->contents, HWND_BOTTOM, 16, tm.tmHeight*3 + (int) eps->VisibleHeight - eps->dwHeight, 0, 0, SWP_NOSIZE);
-				InvalidateRect(eps->contents, NULL, TRUE);
+				InvalidateRect(eps->contents, NULL, FALSE);
 				UpdateWindow(eps->contents);
 			}
 
@@ -573,7 +578,7 @@ LRESULT CALLBACK ExpandPaneProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM l
 			TCHAR name[256];
 			GetWindowText(hwnd, name, ARRAYSIZE(name));
 			SaveDebugKey(name, REG_DWORD, &eps->ExpandState);
-			ID--;
+			IDArray[eps->lpDebugInfo->lpCalc->slot]--;
 			free(eps);
 		}
 		default:

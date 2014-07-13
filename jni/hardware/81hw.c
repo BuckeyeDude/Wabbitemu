@@ -5,6 +5,9 @@
 #include "keys.h"
 #include "device.h"
 
+#pragma warning(push)
+#pragma warning( disable : 4100 )
+
 static double timer_freq81[4] = { 1.0 / 800.0, 1.0 / 400.0, 3.0 / 800.0, 1.0 / 200.0 };
 
 // 81 screen offset
@@ -15,6 +18,7 @@ static void port0(CPU_t *cpu, device_t *dev) {
 	} else if (cpu->output) {
 		LCD_t *lcd = (LCD_t *)cpu->pio.lcd;
 		lcd->screen_addr = (0x100 * ((cpu->bus % 0x20) + 0xE0));
+		dev->aux = lcd;
 		port10(cpu, dev);
 		cpu->output = FALSE;
 		device_t devt;
@@ -30,10 +34,11 @@ static void port2(CPU_t *cpu, device_t *dev) {
 	if (cpu->input) {
 		cpu->input = FALSE;
 	} else if (cpu->output) {
-		//HACK: still not sure exactly how this works :P
-		lcd->base.contrast = lcd->base_level - 19 + cpu->bus;
-		if (lcd->base.contrast > 64)
-			lcd->base.contrast = 64;
+		lcd->base.contrast = cpu->bus & 0x1F;
+		if (lcd->base.contrast >= LCD_MAX_CONTRAST) {
+			lcd->base.contrast = LCD_MAX_CONTRAST - 1;
+		}
+
 		cpu->output = FALSE;
 	}
 	return;
@@ -131,7 +136,7 @@ static void port7(CPU_t *cpu, device_t *dev) {
 }
 
 static void port10(CPU_t *cpu, device_t *dev) {
-	LCD_t *lcd = (LCD_t *)cpu->pio.lcd;
+	LCD_t *lcd = (LCD_t *)dev->aux;
 	int screen_addr = lcd->screen_addr;
 	// Output the entire LCD
 	unsigned char *base_addr = cpu->mem_c->banks[mc_bank(screen_addr)].addr + mc_base(screen_addr);
@@ -210,7 +215,7 @@ int device_init_81(CPU_t *cpu) {
 	cpu->pio.devices[0x00].aux = NULL;
 	cpu->pio.devices[0x00].code = (devp) &port0;
 
-	keypad_t *keyp = keypad_init(cpu);
+	keypad_t *keyp = keypad_init();
 	cpu->pio.devices[0x01].active = TRUE;
 	cpu->pio.devices[0x01].aux = keyp;
 	cpu->pio.devices[0x01].code = (devp) &keypad;
@@ -251,8 +256,10 @@ int device_init_81(CPU_t *cpu) {
 	
 	//Append_interrupt_device(cpu, 0x00, 1);
 	Append_interrupt_device(cpu, 0x03, 1);
-	Append_interrupt_device(cpu, 0x10, 16000);
-	Append_interrupt_device(cpu, 0x11, 16000);
+	Append_interrupt_device(cpu, 0x10, 255);
+	Append_interrupt_device(cpu, 0x11, 255);
 	//Append_interrupt_device(cpu, 0x11, 128);
 	return 0;
 }
+
+#pragma warning(pop)

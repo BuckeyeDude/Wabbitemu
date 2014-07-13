@@ -62,7 +62,7 @@ void MyDrawText(LPCALC lpCalc, HDC hdc, RECT *rc, Z80_info_t* zinf, ViewType typ
 	if (calc_size == FALSE) {
 		calc_size = TRUE;
 		
-		MyDrawText(lpCalc, hdc, rc, zinf, REGULAR, fmt, zinf->a1, zinf->a2, zinf->a3, zinf->a4);
+		MyDrawText(lpCalc, hdc, rc, zinf, type, fmt, zinf->a1, zinf->a2, zinf->a3, zinf->a4);
 		
 		TCHAR szFilltext[1024];
 		memset(szFilltext, 'A', mspf_size);
@@ -102,9 +102,9 @@ void MyDrawText(LPCALC lpCalc, HDC hdc, RECT *rc, Z80_info_t* zinf, ViewType typ
 					char val	= (char) va_arg(argp, INT_PTR);
 					TCHAR szOffset[8];
 					if (val & 0x80) {
-						_stprintf_s(szOffset, _T("%d"), val);
+						StringCbPrintf(szOffset, sizeof(szOffset), _T("%d"), val);
 					} else {
-						_stprintf_s(szOffset, _T("+%d"), val);
+						StringCbPrintf(szOffset, sizeof(szOffset), _T("+%d"), val);
 					}
 
 					press_text(szOffset, RGB(0, 0, 0));
@@ -113,7 +113,7 @@ void MyDrawText(LPCALC lpCalc, HDC hdc, RECT *rc, Z80_info_t* zinf, ViewType typ
 				case 'd': {		//number
 					int val	= (int) va_arg(argp, INT_PTR);
 					TCHAR szAddr[16];
-					_stprintf_s(szAddr, _T("%d"), val);
+					StringCbPrintf(szAddr, sizeof(szAddr), _T("%d"), val);
 
 					press_text(szAddr, RGB(0, 0, 0));		
 					break;
@@ -132,7 +132,7 @@ void MyDrawText(LPCALC lpCalc, HDC hdc, RECT *rc, Z80_info_t* zinf, ViewType typ
 				}
 				case 'g':
 				{
-					waddr_t waddr = OffsetWaddr(lpCalc->cpu.mem_c, REGULAR, zinf->waddr, 2 + ((char) va_arg(argp, INT_PTR)));
+					waddr_t waddr = OffsetWaddr(lpCalc->cpu.mem_c, type, zinf->waddr, 2 + ((char)va_arg(argp, INT_PTR)));
 					TCHAR *name;
 					
 					name = FindAddressLabel(lpCalc, waddr);
@@ -140,25 +140,50 @@ void MyDrawText(LPCALC lpCalc, HDC hdc, RECT *rc, Z80_info_t* zinf, ViewType typ
 					if (name) {
 						press_text(name, RGB(0, 0, 0));
 					} else {
-						TCHAR szAddr[16];
-						_stprintf_s(szAddr, _T("$%04X"), waddr.addr);
+						TCHAR szAddr[255];
+						StringCbPrintf(szAddr, sizeof(szAddr), _T("$%04X"), waddr.addr);
 						press_text(szAddr, RGB(0, 0, 0));
 					}
 					break;
 				}
 				case 'a': //address
 					{
-						waddr_t waddr = OffsetWaddr(lpCalc->cpu.mem_c, REGULAR, zinf->waddr, 2);
 						TCHAR *name;
-						int val = (int) va_arg(argp, INT_PTR);
+						int val = (int)va_arg(argp, INT_PTR);
+						waddr_t waddr;
+						switch (type) {
+						case REGULAR:
+							waddr = addr16_to_waddr(lpCalc->cpu.mem_c, (uint16_t)val);
+							break;
+						case FLASH: {
+							// assumption here is that page 0 will always be in bank 0
+							// unless we haven't changed it out
+							if (val < 0x4000) {
+								waddr.page = lpCalc->mem_c.banks[0].page;
+								waddr.is_ram = FALSE;
+							} else if (val > 0x4000 && val < 0x8000) {
+								waddr.page = zinf->waddr.page;
+								waddr.is_ram = FALSE;
+							}
 
-						name = FindAddressLabel(lpCalc, addr_to_waddr(lpCalc->cpu.mem_c, val));
+							waddr.addr = mc_base(val);
+							break;
+						}
+						case RAM: {
+							bank_state_t *bank = &lpCalc->mem_c.banks[val > 0xC000 ? 3 : 2];
+							waddr.page = bank->page;
+							waddr.addr = mc_base(val);							
+							waddr.is_ram = TRUE;
+							break;
+						}
+						}
+						name = FindAddressLabel(lpCalc, waddr);
 						
 						if (name) {
 							press_text(name, RGB(0, 0, 0));
 						} else {
-							TCHAR szAddr[16];
-							_stprintf_s(szAddr, _T("$%04X"), val);
+							TCHAR szAddr[255];
+							StringCbPrintf(szAddr, sizeof(szAddr), _T("$%04X"), val);
 							press_text(szAddr, RGB(0, 0, 0));
 						}
 						break;
@@ -177,7 +202,7 @@ void MyDrawText(LPCALC lpCalc, HDC hdc, RECT *rc, Z80_info_t* zinf, ViewType typ
 				case 'x':
 				{
 					int val	= (int) va_arg(argp, INT_PTR);
-					TCHAR szAddr[16];
+					TCHAR szAddr[255];
 					StringCbPrintf(szAddr, sizeof(szAddr), _T("$%02X"), val);
 					press_text(szAddr, RGB(0, 0, 0));	
 					break;	
@@ -219,11 +244,7 @@ void mysprintf(LPCALC lpCalc, TCHAR *output, int outputLength, Z80_info_t* zinf,
 				case 'h': {//offset
 					int val	= (int) va_arg(argp, INT_PTR);
 					TCHAR szOffset[8];
-#ifdef WINVER
-					_stprintf_s(szOffset, _T("%+d"),val);
-#else
-					sprintf(szOffset, "%+d",val);
-#endif
+					StringCbPrintf(szOffset, sizeof(szOffset), _T("%+d"),val);
 					StringCbCat(output, outputLength, szOffset);
 					break;
 				}
@@ -231,11 +252,7 @@ void mysprintf(LPCALC lpCalc, TCHAR *output, int outputLength, Z80_info_t* zinf,
 				{
 					int val	= (int) va_arg(argp, INT_PTR);
 					TCHAR szAddr[16];
-#ifdef WINVER
-					_stprintf_s(szAddr, _T("%d"), val);
-#else
-					sprintf(szAddr, "%d",val);
-#endif
+					StringCbPrintf(szAddr, sizeof(szAddr), _T("%d"), val);
 					StringCbCat(output, outputLength, szAddr);		
 					break;
 				}
@@ -261,7 +278,7 @@ void mysprintf(LPCALC lpCalc, TCHAR *output, int outputLength, Z80_info_t* zinf,
 					if (name) {
 						StringCbCat(output, outputLength, name);
 					} else {
-						TCHAR szAddr[16];
+						TCHAR szAddr[255];
 						StringCbPrintf(szAddr, sizeof(szAddr), _T("$%04X"), waddr.addr);
 						StringCbCat(output, outputLength, szAddr);
 					}
@@ -269,17 +286,24 @@ void mysprintf(LPCALC lpCalc, TCHAR *output, int outputLength, Z80_info_t* zinf,
 				}
 				case 'a': //address
 					{
-						unsigned short addr = zinf->waddr.addr + 2;
 						TCHAR *name;
-						int val;
-						val = (int) va_arg(argp, INT_PTR);
-
-						name = FindAddressLabel(lpCalc, addr_to_waddr(lpCalc->cpu.mem_c, val));
+						int val = (int)va_arg(argp, INT_PTR);
+						waddr_t waddr;
+						switch (type) {
+						case REGULAR:
+							waddr = addr16_to_waddr(lpCalc->cpu.mem_c, (uint16_t)val);
+							break;
+						case FLASH:
+						case RAM:
+							waddr = addr32_to_waddr(val, type == RAM);
+							break;
+						}
+						name = FindAddressLabel(lpCalc, waddr);
 						
 						if (name) {
 							StringCbCat(output, outputLength, name);
 						} else {
-							TCHAR szAddr[16];
+							TCHAR szAddr[255];
 							StringCbPrintf(szAddr, sizeof(szAddr), _T("$%04X"), val);
 							StringCbCat(output, outputLength, szAddr);
 						}
@@ -290,14 +314,15 @@ void mysprintf(LPCALC lpCalc, TCHAR *output, int outputLength, Z80_info_t* zinf,
 					TCHAR *szReg = va_arg(argp, TCHAR *);
 					if (!_tcscmp(szReg, _T("(hl)"))) {
 						StringCbCat(output, outputLength, _T("(hl)"));
-					} else
-					StringCbCat(output, outputLength, szReg);
+					} else {
+						StringCbCat(output, outputLength, szReg);
+					}
 					break;
 				}
 				case 'x':
 				{
 					int val	= (int) va_arg(argp, INT_PTR);
-					TCHAR szAddr[16];
+					TCHAR szAddr[255];
 					StringCbPrintf(szAddr, sizeof(szAddr), _T("$%02X"), val);
 					StringCbCat(output, outputLength, szAddr);
 					break;	

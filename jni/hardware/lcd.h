@@ -19,6 +19,8 @@
 #define GRAY_DISPLAY_SIZE 	(DISPLAY_SIZE * 8)
 // Frames to spread gray generation over
 #define LCD_GRAY_SPREAD		6.0
+#define LCD_MAX_CONTRAST	40
+#define LCD_MID_CONTRAST	(LCD_MAX_CONTRAST / 2)
 
 /* 
  * Maximum shades the LCD will be able to
@@ -68,7 +70,7 @@ typedef struct LCDBase {
 	devp data;								// Port 11 function
 	BOOL active;							// TRUE = on, FALSE = off
 	u_int x, y, z;							// LCD cursors
-	u_int contrast;							// 0 to 63
+	u_int contrast;							// 0 to 39 or 31
 	LCD_CURSOR_MODE cursor_mode;			// Y_UP, Y_DOWN, X_UP, X_DOWN
 	int width;
 	int display_width;
@@ -78,6 +80,7 @@ typedef struct LCDBase {
 	double time;							// Last lcd update in seconds
 	long long last_tstate;					// timer_c->tstate of the last write
 	double lastgifframe;
+	double lastaviframe;
 	int bytes_per_pixel;
 } LCDBase_t;
 
@@ -99,5 +102,6 @@ typedef struct LCD {
 
 /* Device functions */
 LCD_t* LCD_init(CPU_t *, int);
+void set_model_baselevel(LCD_t *lcd, int model);
 
 #endif /* #ifndef LCD_H */

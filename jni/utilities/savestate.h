@@ -3,6 +3,7 @@
 
 #include "lcd.h"
 #include "colorlcd.h"
+#include "calc.h"
 
 typedef struct {
 	char tag[4];
@@ -18,7 +19,7 @@ typedef struct {
 	int version_major;
 	int version_minor;
 	int version_build;
-	int model;
+	CalcModel model;
 	int chunk_count;
 	char author[32];
 	char comment[64];	
@@ -28,11 +29,14 @@ typedef struct {
 
 #define CUR_MAJOR 0
 #define CUR_MINOR 1
-#define CUR_BUILD 2
+#define CUR_BUILD 3
 
 // old save state compatibility
-#define MEM_C_CMD_BUILD 1
-#define LCD_SCREEN_ADDR_BUILD 2
+#define MEM_C_CMD_BUILD				1
+#define LCD_SCREEN_ADDR_BUILD		2
+#define SEAUX_MODEL_BITS_BUILD		1
+#define CPU_MODEL_BITS_BUILD		2
+#define NEW_CONTRAST_MODEL_BUILD	3
 
 #define DETECT_STR		"*WABBIT*"
 #define DETECT_CMP_STR	"*WABCMP*"
@@ -64,15 +68,16 @@ typedef struct {
 #define MAX_SAVESTATE_AUTHOR_LENGTH 32
 #define MAX_SAVESTATE_COMMENT_LENGTH 64
 
+LPCALC DuplicateCalc(LPCALC lpCalc);
 void WriteSave(const TCHAR *, SAVESTATE_t *, int);
-void LoadSlot(SAVESTATE_t* , void *);
-SAVESTATE_t* SaveSlot(void *, TCHAR *author, TCHAR *comment);
+BOOL LoadSlot(SAVESTATE_t* , LPCALC);
+SAVESTATE_t* SaveSlot(LPCALC, TCHAR *author, TCHAR *comment);
 SAVESTATE_t* CreateSave(TCHAR *, TCHAR *, int);
 SAVESTATE_t* ReadSave(FILE *ifile);
 void FreeSave(SAVESTATE_t *);
 char* GetRomOnly(SAVESTATE_t *save, int *);
-void LoadLCD(SAVESTATE_t *, LCD_t *);
-void LoadColorLCD(SAVESTATE_t *, ColorLCD_t *);
+BOOL LoadLCD(SAVESTATE_t *, LCD_t *);
+BOOL LoadColorLCD(SAVESTATE_t *, ColorLCD_t *);
 
 #endif
 

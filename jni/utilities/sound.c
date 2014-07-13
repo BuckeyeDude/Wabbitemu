@@ -7,21 +7,19 @@
 #include "gif.h"
 
 
-#ifdef WINVER
-static void CALLBACK FillSoundBuffer(HWAVEOUT hWaveOut,
+#ifdef _WINDOWS
+static void CALLBACK FillSoundBuffer(HWAVEOUT,
 									 UINT uMsg,
 									 DWORD_PTR dwInstance,
 									 DWORD_PTR dwParam1,
-									 DWORD_PTR dwParam2 ) {
+									 DWORD_PTR) {
 
 	WAVEHDR* waveheader = (WAVEHDR*) dwParam1;
 	AUDIO_t *audio = (AUDIO_t *) dwInstance;
-	int i;
 
 	switch(uMsg) {
 		case WOM_DONE:
 		{
-
 			waveOutUnprepareHeader(audio->hWaveOut, waveheader, sizeof(WAVEHDR));
 
 			if (!audio->enabled) {
@@ -31,34 +29,34 @@ static void CALLBACK FillSoundBuffer(HWAVEOUT hWaveOut,
 					waveOutWrite(audio->hWaveOut,waveheader,sizeof(WAVEHDR));
 				} else audio->endsnd++;
 			} else {
-
 				if ((audio->PlayTime + (BankTime * 1.5f)) < (tc_elapsed(audio->timer_c))) {
-
 					if ((audio->PlayTime+(BankTime * ((float) (BUFFER_BANKS * 2)))) < tc_elapsed(audio->timer_c)) {
 
 						audio->PlayTime = tc_elapsed(audio->timer_c) - (BankTime * ((float) BUFFER_BANKS));
 						audio->PlayPnt = (audio->CurPnt - (PREFERED_SAMPLES * BUFFER_BANKS)) % BUFFER_SMAPLES;
 					}
+
 					unsigned char* dataout	= (unsigned char *) &audio->buffer[audio->PlayPnt];
 					unsigned char* datain	= (unsigned char *) waveheader->lpData;
 					unsigned char* dataend	= (unsigned char *) &audio->buffer[BUFFER_SMAPLES];
-					for(i = 0; i < BankSize; i++) {
+					for(int i = 0; i < BankSize; i++) {
 						if (dataout >= dataend) {
 							dataout = (unsigned char *) &audio->buffer[0];
 						}
+
 						datain[i] = dataout[0];
 						dataout++;
 					}
+
 					waveheader->dwFlags = 0;
-					waveOutPrepareHeader(audio->hWaveOut,waveheader,sizeof(WAVEHDR));
-					waveOutWrite(audio->hWaveOut,waveheader,sizeof(WAVEHDR));
+					waveOutPrepareHeader(audio->hWaveOut, waveheader, sizeof(WAVEHDR));
+
+					audio->audio_frame_callback(audio->cpu);
+
+					waveOutWrite(audio->hWaveOut, waveheader, sizeof(WAVEHDR));
 					audio->PlayPnt = (audio->PlayPnt + PREFERED_SAMPLES) % BUFFER_SMAPLES;
 					audio->PlayTime += BankTime;
-					if (gif_write_state == GIF_FRAME) {
-						//WriteAVIAudioFrame(datain, BankSize);
-					}
 				} else {
-
 					memset(waveheader->lpData, 0x80, BankSize);
 					waveOutPrepareHeader(audio->hWaveOut, waveheader, sizeof(WAVEHDR));
 					waveOutWrite(audio->hWaveOut, waveheader, sizeof(WAVEHDR));
@@ -126,7 +124,7 @@ int soundinit(AUDIO_t *audio) {
 	
 	audio->volume			= 0.33f;
 
-#ifdef WINVER
+#ifdef _WINDOWS
 	audio->wfx.nSamplesPerSec	= SAMPLE_RATE;
 	audio->wfx.wBitsPerSample	= SampleSizeBits;
 	audio->wfx.nChannels		= CHANNELS;
@@ -175,7 +173,7 @@ void KillSound(AUDIO_t* audio) {
 		audio->endsnd = 0;
 		audio->enabled	= FALSE;
 		audio->init = 0;
-#ifdef WINVER
+#ifdef _WINDOWS
 		for(i = 0; audio->endsnd < BUFFER_BANKS && i < 200; i++) Sleep(5);
 		waveOutClose(audio->hWaveOut);
 		for(i = 0; audio->endsnd < 100 && i < 200; i++) Sleep(5);
@@ -202,7 +200,7 @@ int playsound(AUDIO_t *audio) {
 			}
 		}
 
-#ifdef WINVER
+#ifdef _WINDOWS
 		waveOutRestart(audio->hWaveOut);
 #endif
 		audio->enabled = 1;
@@ -213,7 +211,7 @@ int playsound(AUDIO_t *audio) {
 int pausesound(AUDIO_t *audio) {
 	if (audio->init == 0) return 0;
 	audio->enabled = 0;
-#ifdef WINVER
+#ifdef _WINDOWS
 	waveOutPause(audio->hWaveOut);
 #endif
 	return 0;

@@ -6,10 +6,11 @@
 #include "link.h"
 #include "device.h"
 
+#pragma warning(push)
+#pragma warning( disable : 4100 )
+
 static double timer_freq[4] = { 1.0 / 800.0, 1.0 / 400.0, 3.0 / 800.0, 1.0 / 200.0 };
 
-//this would make it impossible to open multiple 86s...
-//static int screen_addr = 0xFC00;
 static void port10(CPU_t *, device_t *);
 
 // 86 screen offset
@@ -36,11 +37,11 @@ static void port2(CPU_t *cpu, device_t *dev) {
 	if (cpu->input) {
 		cpu->input = FALSE;
 	} else if (cpu->output) {
-		//lcd->contrast ranges from 24 - 64
-		//HACK: still not sure exactly how this works :P
-		lcd->base.contrast = lcd->base_level - 15 + cpu->bus;
-		if (lcd->base.contrast > 64)
-			lcd->base.contrast = 64;
+		lcd->base.contrast = (cpu->bus & 0x1F) + 16;
+		if (lcd->base.contrast >= LCD_MAX_CONTRAST) {
+			lcd->base.contrast = LCD_MAX_CONTRAST - 1;
+		}
+
 		cpu->output = FALSE;
 	}
 	return;
@@ -115,7 +116,7 @@ static void port4(CPU_t *cpu, device_t *dev) {
 // ROM port
 static void port5(CPU_t *cpu, device_t *dev) {
 	if ( cpu->input ) {
-		cpu->bus = (cpu->mem_c->banks[1].ram << 6) + cpu->mem_c->banks[1].page;
+		cpu->bus = (unsigned char)((cpu->mem_c->banks[1].ram << 6) + cpu->mem_c->banks[1].page);
 		cpu->input = FALSE;
 	} else if (cpu->output) {
 		cpu->mem_c->banks[1].ram = (cpu->bus >> 6) & 1;
@@ -138,7 +139,7 @@ static void port5(CPU_t *cpu, device_t *dev) {
 // RAM port
 static void port6(CPU_t *cpu, device_t *dev) {
 	if (cpu->input) {
-		cpu->bus = (cpu->mem_c->banks[2].ram << 6) + cpu->mem_c->banks[2].page;
+		cpu->bus = (unsigned char)((cpu->mem_c->banks[2].ram << 6) + cpu->mem_c->banks[2].page);
 		cpu->input = FALSE;
 	} else if (cpu->output) {
 		cpu->mem_c->banks[2].ram = (cpu->bus >> 6) & 1;
@@ -204,7 +205,7 @@ static STDINT_t* INT86_init(CPU_t* cpu) {
 	return stdint;
 }
 
-static link_t* link_init(CPU_t* cpu) {
+static link_t* link86_init() {
 	link_t * link = (link_t *) malloc(sizeof(link_t));
 	if (!link) {
 		printf("Couldn't allocate memory for link\n");
@@ -220,9 +221,9 @@ static link_t* link_init(CPU_t* cpu) {
 int device_init_86(CPU_t *cpu) {
 	ClearDevices(cpu);
 
-	keypad_t *keyp = keypad_init(cpu);
+	keypad_t *keyp = keypad_init();
 	STDINT_t* stdint = INT86_init(cpu);
-	link_t * link = link_init(cpu);
+	link_t * link = link86_init();
 	LCD_t *lcd = LCD_init(cpu, TI_86);
 	
 	cpu->pio.devices[0x00].active = TRUE;
@@ -278,8 +279,8 @@ int device_init_86(CPU_t *cpu) {
 	// Interrupt
 	Append_interrupt_device(cpu, 0x03, 1);
 	// LCD
-	Append_interrupt_device(cpu, 0x10, 16000);
-	Append_interrupt_device(cpu, 0x11, 16000);
+	Append_interrupt_device(cpu, 0x10, 255);
+	Append_interrupt_device(cpu, 0x11, 255);
 	
 	return 0;
 }
@@ -326,5 +327,4 @@ int memory_init_86(memc *mc) {
 	return 0;
 }
 
-
-
+#pragma warning(pop)

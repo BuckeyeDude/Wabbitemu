@@ -2,7 +2,6 @@
 #define STATE_H_
 
 #include "core.h"
-#include "var.h"		// TIFILE
 
 typedef struct apphdr {
 	TCHAR name[12];
@@ -11,7 +10,7 @@ typedef struct apphdr {
 
 typedef struct applist {
 	u_int count;
-	apphdr_t apps[96];
+	apphdr_t apps[255];
 } applist_t;
 
 typedef struct {
@@ -28,7 +27,8 @@ typedef struct {
 typedef struct symlist {
 	symbol83P_t *programs;
 	symbol83P_t *last;
-	symbol83P_t symbols[512];
+	symbol83P_t symbols[2048];
+	u_int count;
 } symlist_t;
 
 // 83p
@@ -53,8 +53,10 @@ void state_build_applist(CPU_t *, applist_t *);
 void state_userpages(CPU_t *, upages_t *);
 symlist_t *state_build_symlist_86(CPU_t *, symlist_t *);
 symlist_t *state_build_symlist_83P(CPU_t *, symlist_t *);
-TCHAR *GetRealAns(CPU_t*);
+TCHAR *GetRealAns(CPU_t *, TCHAR *);
 TCHAR *Symbol_Name_to_String(int model, symbol83P_t *, TCHAR *);
 TCHAR *App_Name_to_String(apphdr_t *, TCHAR *);
+u_char find_field(u_char *dest, u_char id1, u_char id2, u_char **output);
+u_int get_page_size(u_char *dest);
 
 #endif /*STATE_H_*/

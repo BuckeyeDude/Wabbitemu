@@ -34,7 +34,7 @@ typedef struct {
 	int init;
 	int enabled;
 	volatile int endsnd;
-#ifdef WINVER
+#ifdef _WINDOWS
 	HWAVEOUT hWaveOut;
 	WAVEFORMATEX wfx;
 
@@ -60,7 +60,10 @@ typedef struct {
 	double HighLengRight;
 	
 	double volume;
+
+	CPU_t *cpu;
 	timerc *timer_c;
+	void(*audio_frame_callback)(struct CPU *);
 
 } AUDIO_t;
 

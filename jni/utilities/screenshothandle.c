@@ -5,9 +5,7 @@
 #include "lcd.h"
 #include "colorlcd.h"
 #include "screenshothandle.h"
-#ifdef WINVER
 #include "fileutilities.h"
-#endif
 
 TCHAR pngext[5] = _T("png");
 TCHAR gifext[5] = _T("ext");
@@ -38,11 +36,7 @@ void get_next_filename(TCHAR *ext) {
 
 	do {
 		generate_screenshot_name(screenshot_fn_backup, i, screenshot_file_name, ext);
-#ifdef _WINDOWS
 		_tfopen_s(&test, screenshot_file_name, _T("r"));
-#else
-		test = fopen(screenshot_file_name, "r");
-#endif
 		i++;
 		if (test) {
 			fclose(test);
@@ -96,15 +90,15 @@ uint8_t* generate_gif_image(LCDBase_t *lcd, int gif_size) {
 			uint8_t color = 0;
 			if (lcd->bytes_per_pixel > 1) {
 				int idx = (row / gif_size) * lcd->width * lcd->bytes_per_pixel + (col / gif_size) * lcd->bytes_per_pixel;
-				double b = image[idx];
-				double g = image[idx+1];
-				double r = image[idx+2];
+				uint8_t b = image[idx];
+				uint8_t g = image[idx + 1];
+				uint8_t r = image[idx + 2];
 				color = (uint8_t) gif_convert_color_to_index(r, g, b);
 			}
 			else {
 				int part = 255 / gif_colors;
 				color = image[(row / gif_size) * lcd->width * lcd->bytes_per_pixel + (col / gif_size) * lcd->bytes_per_pixel];
-				color = (color + (part / 2)) / part;
+				color = (uint8_t)((color + (part / 2)) / part);
 			}
 
 			gif[row * gif_width + col] = color;
@@ -115,7 +109,7 @@ uint8_t* generate_gif_image(LCDBase_t *lcd, int gif_size) {
 	return (uint8_t*) gif;
 }
 
-void handle_screenshot() {
+void handle_screenshot(LPCALC lpCalc, LPVOID lParam) {
 	LCDBase_t* lcd;
 	int i, j;
 	u_int shades = 0;
@@ -166,7 +160,7 @@ void handle_screenshot() {
 				lcd = calcs[calc_num].cpu.pio.lcd;
 
 				gif_indiv_xs = lcd->display_width * size;
-				gif_base_delay = gif_base_delay_start;
+				gif_base_delay = (WORD)gif_base_delay_start;
 				gif_time = 0;
 				gif_newframe = 1;
 				gif_colors = shades + 1;

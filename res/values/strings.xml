@@ -76,17 +76,27 @@
     <string name="sendingFile">Sending file</string>
     <string name="screenshotSuccess">Screenshot saved to %s</string>
     
+    <string name="calcSettings">Calc</string>
+    <string name="skinSettings">Skin</string>
+    <string name="screenSettings">Screen</string>
+    
     <string name="useVibration">Vibrate on keypress</string>
     <string name="useVibrationSummary">Vibrate when a key is pressed on the skin</string>
     <string name="alwaysAwake">Always awake</string>
     <string name="alwaysAwakeSummary">Keep the screen on while the calculator is running</string>
     <string name="autoTurnOn">Automatically turn the calc on</string>
-    <string name="autoTurnOnSummary">If the calculator is launched and not turned on, Wabbitemu will attempt to automatically turn it on.</string>
+    <string name="autoTurnOnSummary">If the calculator is launched and not turned on, Wabbitemu will attempt to automatically turn it on</string>
     <string name="faceplateColor">Faceplate Color</string>
     <string name="faceplateColorSummary">Color of the TI-84PSE faceplate</string>
+    <string name="correctScreenRatio">Fix screen aspect ratio</string>
+    <string name="correctScreenRatioSummary">On smaller devices, make sure the screen is the correct 
+        proportions compared to the real screen</string>
+        <string name="largeScreen">Largest screen size</string>
+    <string name="largeScreenSummary">On smaller devices, make the screen as large as possible on the skin</string>
     
     <string name="errorTitle">Error</string>
     <string name="errorOsDownloadDescription">Error downloading the OS</string>
+    <string name="errorRomCreateDescription">Error creating the ROM</string>
     <string name="errorLink">There was an error sending the file to the calculator</string>
     <string name="errorScreenshot">Error taking screenshot.</string>
     <string name="errorMissingSdCard">No external storage was detected. Please add a storage device to save a screenshot.</string>
