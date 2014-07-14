@@ -1,14 +1,17 @@
 #include "stdafx.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include "calc.h"
 #include "core.h"
 #include "link.h"
 #include "savestate.h"
 #include "83psehw.h"
 #include "fileutilities.h"
-
-extern int def(FILE *, FILE *, int);
-extern int inf(FILE *, FILE *);
+#ifdef __cplusplus
+}
+#endif
 
 LPCALC DuplicateCalc(LPCALC lpCalc) {
 	BOOL running_backup = lpCalc->running;
@@ -1275,13 +1278,12 @@ BOOL LoadSlot_Unsafe(SAVESTATE_t *save, LPCALC lpCalc) {
 }
 
 BOOL LoadSlot(SAVESTATE_t *save, LPCALC lpCalc) {
-	try {
+	//try {
 		return LoadSlot_Unsafe(save, lpCalc);
-	}
-	catch (std::exception e) {
-		_tprintf(_T("Exception loading save state: %s", e.what()));
-		return FALSE;
-	}
+	//}
+	//catch (std::exception& e) {
+	//	return FALSE;
+	//}
 }
 
 char* GetRomOnly(SAVESTATE_t *save, int *size) {
@@ -1454,31 +1456,32 @@ SAVESTATE_t* ReadSave(FILE *ifile) {
 		save->chunks[i] = NULL;
 	}
 
-	try {
-		save->chunk_count = 0;
-		for (i = 0; i < chunk_count; i++) {
-			string[0] = (char)fgetc(ifile);
-			string[1] = (char)fgetc(ifile);
-			string[2] = (char)fgetc(ifile);
-			string[3] = (char)fgetc(ifile);
-			string[4] = 0;
-			if (feof(ifile)) {
-				FreeSave(save);
-				return NULL;
-			}
-			chunk = NewChunk(save, string);
-			chunk->size = fgeti(ifile);
-			if (feof(ifile)) {
-				FreeSave(save);
-				return NULL;
-			}
-			chunk->data = (unsigned char *)malloc(chunk->size);
-			fread(chunk->data, 1, chunk->size, ifile);
+
+	for(i = 0; i < MAX_CHUNKS; i++) {
+		save->chunks[i] = NULL;
+	}
+
+	save->chunk_count = 0;
+	for (i = 0; i < chunk_count; i++) {
+		string[0] = (char)fgetc(ifile);
+		string[1] = (char)fgetc(ifile);
+		string[2] = (char)fgetc(ifile);
+		string[3] = (char)fgetc(ifile);
+		string[4] = 0;
+		if (feof(ifile)) {
+			FreeSave(save);
+			return NULL;
 		}
+		chunk = NewChunk(save, string);
+		chunk->size = fgeti(ifile);
+		if (feof(ifile)) {
+			FreeSave(save);
+			return NULL;
+		}
+		chunk->data = (unsigned char *)malloc(chunk->size);
+		fread(chunk->data, 1, chunk->size, ifile);
 	}
-	catch (std::exception& e) {
-		save = NULL;
-	}
+
 	if (compressed == TRUE) {
 		fclose(ifile);
 	}
