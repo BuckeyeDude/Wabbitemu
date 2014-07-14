@@ -37,7 +37,7 @@ LOCAL_CPPFLAGS  := $(WABBIT_CPPFLAGS) -DHIGH_SHADE_GIF -DVERBOSE -D_ANDROID -std
 LOCAL_SRC_FILES := core/core.c interface/calc.c interface/state.c hardware/81hw.c hardware/83hw.c \
 		hardware/83phw.c hardware/83psehw.c hardware/86hw.c hardware/lcd.c hardware/link.c \
 		hardware/colorlcd.c hardware/keys.c core/indexcb.c core/alu.c core/device.c core/control.c utilities/var.c \
-		utilities/savestate.c utilities/sendfile.c utilities/label.c utilities/gif.cpp utilities/linksendvar.c \
+		utilities/savestate.cpp utilities/sendfile.c utilities/label.c utilities/gif.cpp utilities/linksendvar.c \
 		utilities/screenshothandle.c utilities/exportvar.c utilities/sound.c utilities/breakpoint.c javaInterface.c
 
 include $(BUILD_SHARED_LIBRARY)

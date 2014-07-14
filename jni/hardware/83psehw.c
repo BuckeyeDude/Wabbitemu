@@ -1,7 +1,7 @@
 #include "stdafx.h"
 
-#include "83phw.h"
 #include "83psehw.h"
+#include "83phw.h"
 #include "lcd.h"
 #include "colorlcd.h"
 #include "keys.h"
@@ -1129,10 +1129,11 @@ void port4D_83pse(CPU_t *cpu, device_t *dev) {
 		cpu->bus = (unsigned char)usb->USBLineState;
 		// not too worried about this next stuff, no good reading D+/-
 		if ((usb->Port54 & BIT(2)) && (usb->Port54 & BIT(6)) &&
-				(usb->Port4C & BIT(3)) && (usb->USBLineState & VBUS_HIGH_MASK))
+			(usb->Port4C & BIT(3)) && (usb->USBLineState & VBUS_HIGH_MASK)) {
 			cpu->bus |= BIT(1) & ~BIT(0);
-		else
+		} else {
 			cpu->bus |= BIT(0) & ~BIT(1);
+		}
 
 		cpu->input = FALSE;
 	} else if (cpu->output) {

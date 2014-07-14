@@ -11,10 +11,10 @@ CC=gcc
 all: wabbitemu
 
 wabbitemu: ./core/*.c ./interface/*.c ./hardware/*.c ./utilities/gif.c \
- ./utilities/var.c utilities/gifhandle.c ./utilities/label.c ./utilities/savestate.c \
+ ./utilities/var.c utilities/gifhandle.c ./utilities/label.c ./utilities/savestate.cpp \
  ./utilities/sendfile.c
 	$(CC) $(CFLAGS) -c ./core/*.c ./interface/*.c ./hardware/*.c ./utilities/gif.c \
- ./utilities/var.c utilities/gifhandle.c ./utilities/label.c ./utilities/savestate.c \
+ ./utilities/var.c utilities/gifhandle.c ./utilities/label.c ./utilities/savestate.cpp \
  ./utilities/sendfile.c
 
 clean :

@@ -576,8 +576,16 @@ static LINK_ERR forceload_app(CPU_t *cpu, TIFILE_t *tifile) {
 		return LERR_MODEL;
 	}
 
-	if (tifile->flash->rev[1] > 0x01 && cpu->pio.model < TI_84PCSE) {
-		return LERR_MODEL;
+	u_char *dev_key;
+	find_field(tifile->flash->data[0], 0x80, 0x10, &dev_key);
+	if (dev_key != NULL) {
+		if ((dev_key[1] == 0x04 || dev_key[1] == 0x0A) && cpu->pio.model == TI_84PCSE) {
+			return LERR_MODEL;
+		}
+
+		if (dev_key[1] == 0x0F && cpu->pio.model < TI_84PCSE) {
+			return LERR_MODEL;
+		}
 	}
 
 	u_int page;
