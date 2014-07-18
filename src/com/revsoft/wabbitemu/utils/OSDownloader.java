@@ -133,7 +133,7 @@ public class OSDownloader extends AsyncTask<Integer, Integer, Boolean> {
 
 	@Override
 	protected void onPostExecute(final Boolean result) {
-		super.onPreExecute();
+		super.onPostExecute(result);
 		mProgressDialog.dismiss();
 	}
 }

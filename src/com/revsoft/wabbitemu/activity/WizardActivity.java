@@ -33,6 +33,7 @@ import android.widget.TextView;
 import android.widget.ViewFlipper;
 
 import com.Revsoft.Wabbitemu.CalcInterface;
+import com.Revsoft.Wabbitemu.R;
 import com.Revsoft.Wabbitemu.fragment.BrowseFragment;
 import com.Revsoft.Wabbitemu.utils.AdUtils;
 import com.Revsoft.Wabbitemu.utils.AnalyticsConstants;
@@ -45,9 +46,27 @@ import com.google.analytics.tracking.android.EasyTracker;
 import com.google.analytics.tracking.android.MapBuilder;
 import com.google.analytics.tracking.android.Tracker;
 import com.google.android.gms.ads.AdView;
-import com.Revsoft.Wabbitemu.R;
 
 public class WizardActivity extends FragmentActivity implements BrowseCallback {
+
+	private class OsTypeButtonClickListener implements OnClickListener {
+		@Override
+		public void onClick(final View v) {
+			final RadioButton button = (RadioButton) v;
+			if (!button.isChecked()) {
+				return;
+			}
+
+			switch (button.getId()) {
+			case R.id.browseOsRadio:
+				mFinishButton.setText(R.string.next);
+				break;
+			case R.id.downloadOsRadio:
+				mFinishButton.setText(R.string.finish);
+				break;
+			}
+		}
+	}
 
 	private static final int BROWSE_CODE = 0;
 
@@ -86,6 +105,8 @@ public class WizardActivity extends FragmentActivity implements BrowseCallback {
 	private RadioButton mBrowseOsRadio;
 	private ViewFlipper mViewFlipper;
 
+	private OSDownloader mOsDownloader;
+
 	@Override
 	public void onCreate(final Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -112,10 +133,11 @@ public class WizardActivity extends FragmentActivity implements BrowseCallback {
 		step4BackButton.setOnClickListener(getBackButtonOnClick());
 		final Button step5BackButton = (Button) findViewById(R.id.backStep5Button);
 		step5BackButton.setOnClickListener(getBackButtonOnClick());
+		final OnClickListener osTypeClickListener = new OsTypeButtonClickListener();
 		mBrowseOsRadio = (RadioButton) findViewById(R.id.browseOsRadio);
-		mBrowseOsRadio.setOnClickListener(getOsButtonOnClick());
+		mBrowseOsRadio.setOnClickListener(osTypeClickListener);
 		final RadioButton downloadOsRadio = (RadioButton) findViewById(R.id.downloadOsRadio);
-		downloadOsRadio.setOnClickListener(getOsButtonOnClick());
+		downloadOsRadio.setOnClickListener(osTypeClickListener);
 
 		final AdView adView = (AdView) this.findViewById(R.id.adView1);
 		final AdView adView2 = (AdView) this.findViewById(R.id.adView2);
@@ -129,28 +151,9 @@ public class WizardActivity extends FragmentActivity implements BrowseCallback {
 	public void onStop() {
 		super.onStop();
 		EasyTracker.getInstance(this).activityStop(this);
-	}
-
-	private OnClickListener getOsButtonOnClick() {
-		return new OnClickListener() {
-
-			@Override
-			public void onClick(final View v) {
-				final RadioButton button = (RadioButton) v;
-				if (!button.isChecked()) {
-					return;
-				}
-
-				switch (button.getId()) {
-				case R.id.browseOsRadio:
-					mFinishButton.setText(R.string.next);
-					break;
-				case R.id.downloadOsRadio:
-					mFinishButton.setText(R.string.finish);
-					break;
-				}
-			}
-		};
+		if (mOsDownloader != null) {
+			mOsDownloader.cancel(true);
+		}
 	}
 
 	@Override
@@ -165,24 +168,17 @@ public class WizardActivity extends FragmentActivity implements BrowseCallback {
 		switch (item.getItemId()) {
 		case R.id.helpMenuItem:
 			final Tracker tracker = EasyTracker.getInstance(this);
-			tracker.send(MapBuilder.createEvent(
-					AnalyticsConstants.WIZARD_ACTIVITY,
-					AnalyticsConstants.HELP,
-					null,
-					null).build());
+			tracker.send(MapBuilder
+					.createEvent(AnalyticsConstants.WIZARD_ACTIVITY, AnalyticsConstants.HELP, null, null).build());
 
-			final AlertDialog.Builder builder = new AlertDialog.Builder(
-					WizardActivity.this);
-			builder.setMessage(R.string.aboutRomDescription)
-			.setTitle(R.string.aboutRomTitle)
-			.setPositiveButton(android.R.string.ok,
-					new DialogInterface.OnClickListener() {
-				@Override
-				public void onClick(final DialogInterface dialog,
-						final int id) {
-					dialog.dismiss();
-				}
-			});
+			final AlertDialog.Builder builder = new AlertDialog.Builder(WizardActivity.this);
+			builder.setMessage(R.string.aboutRomDescription).setTitle(R.string.aboutRomTitle)
+					.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+						@Override
+						public void onClick(final DialogInterface dialog, final int id) {
+							dialog.dismiss();
+						}
+					});
 			final AlertDialog dialog = builder.create();
 			dialog.show();
 			return true;
@@ -214,8 +210,7 @@ public class WizardActivity extends FragmentActivity implements BrowseCallback {
 
 	private void launchBrowseRom() {
 		final String extensions = "\\.(rom|sav)";
-		final String description = getResources().getString(
-				R.string.browseRomDescription);
+		final String description = getResources().getString(R.string.browseRomDescription);
 
 		launchBrowse(extensions, description, R.id.browseRomFragment);
 	}
@@ -236,25 +231,20 @@ public class WizardActivity extends FragmentActivity implements BrowseCallback {
 			break;
 		}
 
-		final String description = getResources().getString(
-				R.string.browseOSDescription);
+		final String description = getResources().getString(R.string.browseOSDescription);
 		launchBrowse(extensions, description, R.id.browseOsFragment);
 	}
 
 	private void launchBrowse(final String extensions, final String description, final int fragId) {
 		final Bundle setupBundle = new Bundle();
-		setupBundle
-		.putString(IntentConstants.EXTENSION_EXTRA_REGEX, extensions);
-		setupBundle.putString(IntentConstants.BROWSE_DESCRIPTION_EXTRA_STRING,
-				description);
-		setupBundle.putInt(IntentConstants.RETURN_ID,
-				mViewFlipper.getDisplayedChild());
+		setupBundle.putString(IntentConstants.EXTENSION_EXTRA_REGEX, extensions);
+		setupBundle.putString(IntentConstants.BROWSE_DESCRIPTION_EXTRA_STRING, description);
+		setupBundle.putInt(IntentConstants.RETURN_ID, mViewFlipper.getDisplayedChild());
 
 		final BrowseFragment fragInfo = new BrowseFragment();
 		fragInfo.setArguments(setupBundle);
 
-		final FragmentTransaction transaction = getSupportFragmentManager()
-				.beginTransaction();
+		final FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
 		transaction.replace(fragId, fragInfo);
 		transaction.commit();
 	}
@@ -323,8 +313,7 @@ public class WizardActivity extends FragmentActivity implements BrowseCallback {
 					break;
 				}
 
-				final SpinnerAdapter adapter = new SpinnerDropDownAdapter(
-						WizardActivity.this, items);
+				final SpinnerAdapter adapter = new SpinnerDropDownAdapter(WizardActivity.this, items);
 				spinner.setAdapter(adapter);
 				spinner.setSelection(0);
 				mViewFlipper.showNext();
@@ -357,14 +346,10 @@ public class WizardActivity extends FragmentActivity implements BrowseCallback {
 	private void createRomCopyOs() {
 		extractBootpage();
 
-		final int error = CalcInterface.CreateRom(mOsFilePath, mBootPagePath,
-				mCreatedFilePath, mCalcModel);
+		final int error = CalcInterface.CreateRom(mOsFilePath, mBootPagePath, mCreatedFilePath, mCalcModel);
 
 		final Tracker tracker = EasyTracker.getInstance(this);
-		tracker.send(MapBuilder.createEvent(
-				AnalyticsConstants.WIZARD_ACTIVITY,
-				AnalyticsConstants.BOOTFREE_ROM,
-				null,
+		tracker.send(MapBuilder.createEvent(AnalyticsConstants.WIZARD_ACTIVITY, AnalyticsConstants.BOOTFREE_ROM, null,
 				(long) error).build());
 
 		if (error == 0) {
@@ -459,15 +444,14 @@ public class WizardActivity extends FragmentActivity implements BrowseCallback {
 		}
 
 		mOsFilePath = osDownloadPath.getAbsolutePath();
-		final OSDownloader task = new OSDownloader(this, mOsFilePath) {
+		mOsDownloader = new OSDownloader(this, mOsFilePath) {
 
 			@Override
 			protected void onPostExecute(final Boolean success) {
 				super.onPostExecute(success);
 
 				if (success) {
-					final int error = CalcInterface.CreateRom(mOsFilePath, mBootPagePath,
-							mCreatedFilePath, mCalcModel);
+					final int error = CalcInterface.CreateRom(mOsFilePath, mBootPagePath, mCreatedFilePath, mCalcModel);
 					if (error == 0) {
 						finishSuccess();
 					} else {
@@ -478,7 +462,7 @@ public class WizardActivity extends FragmentActivity implements BrowseCallback {
 				}
 			}
 		};
-		task.execute(mCalcModel, osVersion);
+		mOsDownloader.execute(mCalcModel, osVersion);
 	}
 
 	private void finishOsError() {
@@ -491,8 +475,7 @@ public class WizardActivity extends FragmentActivity implements BrowseCallback {
 
 	private void finishSuccess() {
 		final Intent resultIntent = new Intent();
-		resultIntent.putExtra(IntentConstants.FILENAME_EXTRA_STRING,
-				mCreatedFilePath);
+		resultIntent.putExtra(IntentConstants.FILENAME_EXTRA_STRING, mCreatedFilePath);
 		setResult(RESULT_OK, resultIntent);
 		finish();
 	}
@@ -563,15 +546,11 @@ public class WizardActivity extends FragmentActivity implements BrowseCallback {
 			createRomCopyOs();
 		case BROWSE_ROM_CHILD:
 			final Tracker tracker = EasyTracker.getInstance(this);
-			tracker.send(MapBuilder.createEvent(
-					AnalyticsConstants.WIZARD_ACTIVITY,
-					AnalyticsConstants.HAVE_OWN_ROM,
-					null,
-					null).build());
+			tracker.send(MapBuilder.createEvent(AnalyticsConstants.WIZARD_ACTIVITY, AnalyticsConstants.HAVE_OWN_ROM,
+					null, null).build());
 
 			final Intent returnIntent = new Intent();
-			returnIntent.putExtra(IntentConstants.FILENAME_EXTRA_STRING,
-					fileName);
+			returnIntent.putExtra(IntentConstants.FILENAME_EXTRA_STRING, fileName);
 			setResult(Activity.RESULT_OK, returnIntent);
 			finish();
 			break;

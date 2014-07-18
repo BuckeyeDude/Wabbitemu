@@ -10,7 +10,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
-import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -30,9 +29,9 @@ import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 
 import com.Revsoft.Wabbitemu.CalcInterface;
+import com.Revsoft.Wabbitemu.R;
 import com.Revsoft.Wabbitemu.utils.KeyMapping;
 import com.Revsoft.Wabbitemu.utils.PreferenceConstants;
-import com.Revsoft.Wabbitemu.R;
 
 public class MainThread extends Thread {
 
@@ -50,84 +49,50 @@ public class MainThread extends Thread {
 	private final ArrayList<KeyMapping> mKeysDown = new ArrayList<KeyMapping>();
 	private final long[][] mKeyTimePressed;
 
-	public final Point[] mRectPoints = { new Point(150, 1350),
-			new Point(190, 1366), new Point(524, 1364), new Point(558, 1350),
-			new Point(632, 1070), new Point(632, 546), new Point(74, 546),
-			new Point(74, 1136), new Point(SKIN_WIDTH - 74, 1136),
-			new Point(SKIN_WIDTH - 74, 546), new Point(SKIN_WIDTH - 632, 546),
-			new Point(SKIN_WIDTH - 632, 1070),
-			new Point(SKIN_WIDTH - 558, 1350),
-			new Point(SKIN_WIDTH - 524, 1364),
-			new Point(SKIN_WIDTH - 190, 1366),
-			new Point(SKIN_WIDTH - 150, 1350) };
+	public final Point[] mRectPoints = { new Point(150, 1350), new Point(190, 1366), new Point(524, 1364),
+			new Point(558, 1350), new Point(632, 1070), new Point(632, 546), new Point(74, 546), new Point(74, 1136),
+			new Point(SKIN_WIDTH - 74, 1136), new Point(SKIN_WIDTH - 74, 546), new Point(SKIN_WIDTH - 632, 546),
+			new Point(SKIN_WIDTH - 632, 1070), new Point(SKIN_WIDTH - 558, 1350), new Point(SKIN_WIDTH - 524, 1364),
+			new Point(SKIN_WIDTH - 190, 1366), new Point(SKIN_WIDTH - 150, 1350) };
 
-	public final KeyMapping[] keyMappings = {
-			new KeyMapping(KeyEvent.KEYCODE_DPAD_DOWN, 0, 0),
-			new KeyMapping(KeyEvent.KEYCODE_DPAD_LEFT, 0, 1),
-			new KeyMapping(KeyEvent.KEYCODE_DPAD_RIGHT, 0, 2),
-			new KeyMapping(KeyEvent.KEYCODE_DPAD_UP, 0, 3),
-			new KeyMapping(KeyEvent.KEYCODE_ENTER, 1, 0),
-			new KeyMapping(KeyEvent.KEYCODE_AT, 5, 0),
-			new KeyMapping(KeyEvent.KEYCODE_A, 5, 6),
-			new KeyMapping(KeyEvent.KEYCODE_B, 4, 6),
-			new KeyMapping(KeyEvent.KEYCODE_C, 3, 6),
-			new KeyMapping(KeyEvent.KEYCODE_D, 5, 5),
-			new KeyMapping(KeyEvent.KEYCODE_E, 4, 5),
-			new KeyMapping(KeyEvent.KEYCODE_F, 3, 5),
-			new KeyMapping(KeyEvent.KEYCODE_G, 2, 5),
-			new KeyMapping(KeyEvent.KEYCODE_H, 1, 5),
-			new KeyMapping(KeyEvent.KEYCODE_I, 5, 4),
-			new KeyMapping(KeyEvent.KEYCODE_J, 4, 4),
-			new KeyMapping(KeyEvent.KEYCODE_K, 3, 4),
-			new KeyMapping(KeyEvent.KEYCODE_L, 2, 4),
-			new KeyMapping(KeyEvent.KEYCODE_M, 1, 4),
-			new KeyMapping(KeyEvent.KEYCODE_N, 5, 3),
-			new KeyMapping(KeyEvent.KEYCODE_O, 4, 3),
-			new KeyMapping(KeyEvent.KEYCODE_P, 3, 3),
-			new KeyMapping(KeyEvent.KEYCODE_Q, 2, 3),
-			new KeyMapping(KeyEvent.KEYCODE_R, 1, 3),
-			new KeyMapping(KeyEvent.KEYCODE_S, 5, 2),
-			new KeyMapping(KeyEvent.KEYCODE_T, 4, 2),
-			new KeyMapping(KeyEvent.KEYCODE_U, 3, 2),
-			new KeyMapping(KeyEvent.KEYCODE_V, 2, 2),
-			new KeyMapping(KeyEvent.KEYCODE_W, 1, 2),
-			new KeyMapping(KeyEvent.KEYCODE_X, 5, 1),
-			new KeyMapping(KeyEvent.KEYCODE_Y, 4, 1),
-			new KeyMapping(KeyEvent.KEYCODE_Z, 3, 1),
-			new KeyMapping(KeyEvent.KEYCODE_SPACE, 4, 0),
-			new KeyMapping(KeyEvent.KEYCODE_0, 4, 0),
-			new KeyMapping(KeyEvent.KEYCODE_1, 4, 1),
-			new KeyMapping(KeyEvent.KEYCODE_2, 3, 1),
-			new KeyMapping(KeyEvent.KEYCODE_3, 2, 1),
-			new KeyMapping(KeyEvent.KEYCODE_4, 4, 2),
-			new KeyMapping(KeyEvent.KEYCODE_5, 3, 2),
-			new KeyMapping(KeyEvent.KEYCODE_6, 2, 2),
-			new KeyMapping(KeyEvent.KEYCODE_7, 4, 3),
-			new KeyMapping(KeyEvent.KEYCODE_8, 3, 3),
-			new KeyMapping(KeyEvent.KEYCODE_9, 2, 3),
-			new KeyMapping(KeyEvent.KEYCODE_PERIOD, 3, 0),
-			new KeyMapping(KeyEvent.KEYCODE_COMMA, 4, 4),
-			new KeyMapping(KeyEvent.KEYCODE_PLUS, 1, 1),
-			new KeyMapping(KeyEvent.KEYCODE_MINUS, 1, 2),
-			new KeyMapping(KeyEvent.KEYCODE_STAR, 2, 3),
-			new KeyMapping(KeyEvent.KEYCODE_SLASH, 1, 4),
-			new KeyMapping(KeyEvent.KEYCODE_LEFT_BRACKET, 3, 4),
-			new KeyMapping(KeyEvent.KEYCODE_RIGHT_BRACKET, 2, 4),
-			new KeyMapping(KeyEvent.KEYCODE_SHIFT_LEFT, 6, 5),
-			new KeyMapping(KeyEvent.KEYCODE_SHIFT_RIGHT, 1, 6),
-			new KeyMapping(KeyEvent.KEYCODE_ALT_LEFT, 5, 7),
-			new KeyMapping(KeyEvent.KEYCODE_EQUALS, 4, 7),
-			/*
-			 * { VK_F1 , 6 , 4 }, { VK_F2 , 6 , 3 }, { VK_F3 , 6 , 2 }, { VK_F4 , 6 , 1
-			 * }, { VK_F5 , 6 , 0 },
-			 */
+	public final KeyMapping[] keyMappings = { new KeyMapping(KeyEvent.KEYCODE_DPAD_DOWN, 0, 0),
+			new KeyMapping(KeyEvent.KEYCODE_DPAD_LEFT, 0, 1), new KeyMapping(KeyEvent.KEYCODE_DPAD_RIGHT, 0, 2),
+			new KeyMapping(KeyEvent.KEYCODE_DPAD_UP, 0, 3), new KeyMapping(KeyEvent.KEYCODE_ENTER, 1, 0),
+			new KeyMapping(KeyEvent.KEYCODE_AT, 5, 0), new KeyMapping(KeyEvent.KEYCODE_A, 5, 6),
+			new KeyMapping(KeyEvent.KEYCODE_B, 4, 6), new KeyMapping(KeyEvent.KEYCODE_C, 3, 6),
+			new KeyMapping(KeyEvent.KEYCODE_D, 5, 5), new KeyMapping(KeyEvent.KEYCODE_E, 4, 5),
+			new KeyMapping(KeyEvent.KEYCODE_F, 3, 5), new KeyMapping(KeyEvent.KEYCODE_G, 2, 5),
+			new KeyMapping(KeyEvent.KEYCODE_H, 1, 5), new KeyMapping(KeyEvent.KEYCODE_I, 5, 4),
+			new KeyMapping(KeyEvent.KEYCODE_J, 4, 4), new KeyMapping(KeyEvent.KEYCODE_K, 3, 4),
+			new KeyMapping(KeyEvent.KEYCODE_L, 2, 4), new KeyMapping(KeyEvent.KEYCODE_M, 1, 4),
+			new KeyMapping(KeyEvent.KEYCODE_N, 5, 3), new KeyMapping(KeyEvent.KEYCODE_O, 4, 3),
+			new KeyMapping(KeyEvent.KEYCODE_P, 3, 3), new KeyMapping(KeyEvent.KEYCODE_Q, 2, 3),
+			new KeyMapping(KeyEvent.KEYCODE_R, 1, 3), new KeyMapping(KeyEvent.KEYCODE_S, 5, 2),
+			new KeyMapping(KeyEvent.KEYCODE_T, 4, 2), new KeyMapping(KeyEvent.KEYCODE_U, 3, 2),
+			new KeyMapping(KeyEvent.KEYCODE_V, 2, 2), new KeyMapping(KeyEvent.KEYCODE_W, 1, 2),
+			new KeyMapping(KeyEvent.KEYCODE_X, 5, 1), new KeyMapping(KeyEvent.KEYCODE_Y, 4, 1),
+			new KeyMapping(KeyEvent.KEYCODE_Z, 3, 1), new KeyMapping(KeyEvent.KEYCODE_SPACE, 4, 0),
+			new KeyMapping(KeyEvent.KEYCODE_0, 4, 0), new KeyMapping(KeyEvent.KEYCODE_1, 4, 1),
+			new KeyMapping(KeyEvent.KEYCODE_2, 3, 1), new KeyMapping(KeyEvent.KEYCODE_3, 2, 1),
+			new KeyMapping(KeyEvent.KEYCODE_4, 4, 2), new KeyMapping(KeyEvent.KEYCODE_5, 3, 2),
+			new KeyMapping(KeyEvent.KEYCODE_6, 2, 2), new KeyMapping(KeyEvent.KEYCODE_7, 4, 3),
+			new KeyMapping(KeyEvent.KEYCODE_8, 3, 3), new KeyMapping(KeyEvent.KEYCODE_9, 2, 3),
+			new KeyMapping(KeyEvent.KEYCODE_PERIOD, 3, 0), new KeyMapping(KeyEvent.KEYCODE_COMMA, 4, 4),
+			new KeyMapping(KeyEvent.KEYCODE_PLUS, 1, 1), new KeyMapping(KeyEvent.KEYCODE_MINUS, 1, 2),
+			new KeyMapping(KeyEvent.KEYCODE_STAR, 2, 3), new KeyMapping(KeyEvent.KEYCODE_SLASH, 1, 4),
+			new KeyMapping(KeyEvent.KEYCODE_LEFT_BRACKET, 3, 4), new KeyMapping(KeyEvent.KEYCODE_RIGHT_BRACKET, 2, 4),
+			new KeyMapping(KeyEvent.KEYCODE_SHIFT_LEFT, 6, 5), new KeyMapping(KeyEvent.KEYCODE_SHIFT_RIGHT, 1, 6),
+			new KeyMapping(KeyEvent.KEYCODE_ALT_LEFT, 5, 7), new KeyMapping(KeyEvent.KEYCODE_EQUALS, 4, 7),
+	/*
+	 * { VK_F1 , 6 , 4 }, { VK_F2 , 6 , 3 }, { VK_F3 , 6 , 2 }, { VK_F4 , 6 , 1
+	 * }, { VK_F5 , 6 , 0 },
+	 */
 	};
 
 	private final OnSharedPreferenceChangeListener mPrefListener = new OnSharedPreferenceChangeListener() {
 
 		@Override
-		public void onSharedPreferenceChanged(
-				final SharedPreferences sharedPreferences, final String key) {
+		public void onSharedPreferenceChanged(final SharedPreferences sharedPreferences, final String key) {
 			if (key.equals(PreferenceConstants.FACEPLATE_COLOR)) {
 				// the theory here is that its better memory wise
 				// to throw away our scaled skin and to reload it
@@ -166,7 +131,6 @@ public class MainThread extends Thread {
 	private boolean mLargeScreen;
 	private boolean mCorrectRatio;
 
-
 	public MainThread(final SurfaceHolder surfaceHolder, final Context context) {
 		super();
 		mSurfaceHolder = surfaceHolder;
@@ -178,10 +142,8 @@ public class MainThread extends Thread {
 
 		mKeyTimePressed = new long[8][8];
 
-		mVibrator = (Vibrator) context
-				.getSystemService(Context.VIBRATOR_SERVICE);
-		final SharedPreferences sharedPrefs = PreferenceManager
-				.getDefaultSharedPreferences(mContext);
+		mVibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
+		final SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(mContext);
 		mHasVibrationEnabled = sharedPrefs.getBoolean(PreferenceConstants.USE_VIBRATION, true);
 		mLargeScreen = sharedPrefs.getBoolean(PreferenceConstants.LARGE_SCREEN, false);
 		mCorrectRatio = sharedPrefs.getBoolean(PreferenceConstants.CORRECT_SCREEN_RATIO, false);
@@ -237,11 +199,11 @@ public class MainThread extends Thread {
 
 	private boolean hasCalcProcessedKey(final int group, final int bit) {
 		if (group == CalcInterface.ON_KEY_GROUP && bit == CalcInterface.ON_KEY_BIT) {
-			return ((mKeyTimePressed[group][bit] + MIN_TSTATE_ON_KEY) <= CalcInterface.Tstates()) &&
-					((mKeyTimePressed[group][bit] + MAX_TSTATE_ON_KEY) <= CalcInterface.Tstates());
+			return ((mKeyTimePressed[group][bit] + MIN_TSTATE_ON_KEY) <= CalcInterface.Tstates())
+					&& ((mKeyTimePressed[group][bit] + MAX_TSTATE_ON_KEY) <= CalcInterface.Tstates());
 		} else {
-			return ((mKeyTimePressed[group][bit] + MIN_TSTATE_KEY) <= CalcInterface.Tstates()) &&
-					((mKeyTimePressed[group][bit] + MAX_TSTATE_KEY) <= CalcInterface.Tstates());
+			return ((mKeyTimePressed[group][bit] + MIN_TSTATE_KEY) <= CalcInterface.Tstates())
+					&& ((mKeyTimePressed[group][bit] + MAX_TSTATE_KEY) <= CalcInterface.Tstates());
 		}
 	}
 
@@ -303,7 +265,7 @@ public class MainThread extends Thread {
 		}
 
 		final int group = Color.green(color) >> 4;
-			final int bit = Color.blue(color) >> 4;
+		final int bit = Color.blue(color) >> 4;
 		if ((group > 7) || (bit > 7)) {
 			return true;
 		}
@@ -322,8 +284,8 @@ public class MainThread extends Thread {
 
 	public Bitmap getScreen() {
 		if (!CalcInterface.IsLCDActive()) {
-			final int lcdColor = CalcInterface.GetModel() == CalcInterface.TI_84PCSE ?
-					Color.BLACK : Color.argb(0xFF, 0x9E, 0xAB, 0x88);
+			final int lcdColor = CalcInterface.GetModel() == CalcInterface.TI_84PCSE ? Color.BLACK : Color.argb(0xFF,
+					0x9E, 0xAB, 0x88);
 			mScreenBitmap.eraseColor(lcdColor);
 		} else {
 			mScreenBuffer.rewind();
@@ -478,8 +440,7 @@ public class MainThread extends Thread {
 		if (!mHasDrawnSkin.get()) {
 			try {
 				canvas = mSurfaceHolder.lockCanvas();
-				if (canvas != null && mRenderedSkinImage != null && mHasRenderedSkin.get())
-				{
+				if (canvas != null && mRenderedSkinImage != null && mHasRenderedSkin.get()) {
 					Log.i("WabbitLCD", String.format("Is hardware accelerated %s", canvas.isHardwareAccelerated()));
 					canvas.drawColor(Color.DKGRAY);
 					canvas.drawBitmap(mRenderedSkinImage, 0, mSkinY, null);
@@ -508,9 +469,8 @@ public class MainThread extends Thread {
 		}
 	}
 
-	private synchronized void setSurfaceSize(final int width, final int height,
-			final int skinImageId, final int keymapImageId)
-	{
+	private synchronized void setSurfaceSize(final int width, final int height, final int skinImageId,
+			final int keymapImageId) {
 		final Resources resources = mContext.getResources();
 		final BitmapFactory.Options options = new BitmapFactory.Options();
 		options.inScaled = false;
@@ -530,9 +490,8 @@ public class MainThread extends Thread {
 		int skinHeight = height;
 		mRatio = 1.0;
 
-		if ((mContext.getResources().getConfiguration().screenLayout & Configuration.SCREENLAYOUT_SIZE_MASK) >= Configuration.SCREENLAYOUT_SIZE_LARGE) {
-			mRatio = Math.min((double) width / skinResourceWidth,
-					(double) height / skinResourceHeight);
+		if (resources.getConfiguration().smallestScreenWidthDp >= 600) {
+			mRatio = Math.min((double) width / skinResourceWidth, (double) height / skinResourceHeight);
 			skinWidth = (int) (skinResourceWidth * mRatio);
 			skinHeight = (int) (skinResourceHeight * mRatio);
 			mSkinX = (width - skinWidth) / 2;
@@ -545,10 +504,10 @@ public class MainThread extends Thread {
 		mKeymapWidth = keymapImage.getWidth();
 		mKeymapHeight = keymapImage.getHeight();
 		mKeymapPixels = new int[mKeymapWidth * mKeymapHeight];
-		keymapImage.getPixels(mKeymapPixels, 0, mKeymapWidth, 0, 0,
-				mKeymapWidth, mKeymapHeight);
+		keymapImage.getPixels(mKeymapPixels, 0, mKeymapWidth, 0, 0, mKeymapWidth, mKeymapHeight);
 		int foundX = -1, foundY = -1, foundWidth = 0, foundHeight = 0;
-		outerloop: for (int y = 0; y < mKeymapHeight; y++) {
+		outerloop:
+		for (int y = 0; y < mKeymapHeight; y++) {
 			for (int x = 0; x < mKeymapWidth; x++) {
 				if (getKeymapPixel(x, y) == 0xFFFF0000) {
 					foundX = x;
@@ -588,8 +547,8 @@ public class MainThread extends Thread {
 			break;
 		}
 		mLcdRect = new Rect(0, 0, lcdWidth, lcdHeight);
-		mScreenRect = new Rect(foundX + mSkinX, foundY + mSkinY, foundWidth
-				+ foundX + mSkinX, foundY + foundHeight + mSkinY);
+		mScreenRect = new Rect(foundX + mSkinX, foundY + mSkinY, foundWidth + foundX + mSkinX, foundY + foundHeight
+				+ mSkinY);
 		if (mCorrectRatio) {
 			final int screenWidth, screenHeight;
 			final double screenRatio = (double) lcdWidth / lcdHeight;
@@ -606,23 +565,19 @@ public class MainThread extends Thread {
 				screenWidth = mScreenRect.width();
 				screenHeight = (int) (screenWidth * screenRatio);
 				mScreenRect.bottom = mScreenRect.top + screenHeight;
-				final int shift = (foundHeight - screenHeight ) / 2;
+				final int shift = (foundHeight - screenHeight) / 2;
 				mScreenRect.top += shift;
 				mScreenRect.bottom += shift;
 			}
 		}
 
-		mScreenBitmap = Bitmap.createBitmap(mLcdRect.width(),
-				mLcdRect.height(), Bitmap.Config.ARGB_8888);
-		mScreenBuffer = ByteBuffer.allocateDirect(mLcdRect.width() * mLcdRect.height() * 4)
-				.asIntBuffer();
+		mScreenBitmap = Bitmap.createBitmap(mLcdRect.width(), mLcdRect.height(), Bitmap.Config.ARGB_8888);
+		mScreenBuffer = ByteBuffer.allocateDirect(mLcdRect.width() * mLcdRect.height() * 4).asIntBuffer();
 
-		final Bitmap skinImage = Bitmap.createScaledBitmap(
-				BitmapFactory.decodeResource(resources, skinImageId),
+		final Bitmap skinImage = Bitmap.createScaledBitmap(BitmapFactory.decodeResource(resources, skinImageId),
 				skinWidth, skinHeight, true);
 
-		final SharedPreferences sharedPrefs = PreferenceManager
-				.getDefaultSharedPreferences(mContext);
+		final SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(mContext);
 		mFaceplateColor = sharedPrefs.getInt(PreferenceConstants.FACEPLATE_COLOR, Color.GRAY);
 		sharedPrefs.registerOnSharedPreferenceChangeListener(mPrefListener);
 		createRenderSkin(width, height, skinImage);
@@ -632,13 +587,10 @@ public class MainThread extends Thread {
 		return mKeymapPixels[y * mKeymapWidth + x];
 	}
 
-	private void createRenderSkin(final int width, final int height,
-			final Bitmap skinImage)
-	{
+	private void createRenderSkin(final int width, final int height, final Bitmap skinImage) {
 		mHasDrawnSkin.set(false);
 		mHasRenderedSkin.set(false);
-		mRenderedSkinImage = Bitmap.createBitmap(width, height,
-				Bitmap.Config.ARGB_8888);
+		mRenderedSkinImage = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
 		final Canvas skinCanvas = new Canvas(mRenderedSkinImage);
 		skinCanvas.setDensity(Bitmap.DENSITY_NONE);
 		mFaceplatePath = getSkinPath();
@@ -648,12 +600,9 @@ public class MainThread extends Thread {
 	}
 
 	private void drawFaceplate(final Canvas canvas) {
-		if (CalcInterface.GetModel() == CalcInterface.TI_84PSE ||
-				CalcInterface.GetModel() == CalcInterface.TI_84PCSE) {
-			final SharedPreferences sharedPrefs = PreferenceManager
-					.getDefaultSharedPreferences(mContext);
-			mFaceplateColor = sharedPrefs.getInt(
-					PreferenceConstants.FACEPLATE_COLOR, Color.GRAY);
+		if (CalcInterface.GetModel() == CalcInterface.TI_84PSE || CalcInterface.GetModel() == CalcInterface.TI_84PCSE) {
+			final SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(mContext);
+			mFaceplateColor = sharedPrefs.getInt(PreferenceConstants.FACEPLATE_COLOR, Color.GRAY);
 
 			if (mSkinX > 0) {
 				final Paint faceplatePaint = new Paint();
