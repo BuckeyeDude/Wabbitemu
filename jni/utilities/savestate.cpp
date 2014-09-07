@@ -36,7 +36,7 @@ LPCALC DuplicateCalc(LPCALC lpCalc) {
 	return duplicate_calc;
 }
 
-BOOL cmpTags(char *str1, char *str2) {
+BOOL cmpTags(const char *str1, const char *str2) {
 	int i;
 	for(i = 0; i < 4; i++) {
 		if (str1[i] != str2[i]) return FALSE;
@@ -123,7 +123,7 @@ void FreeSave(SAVESTATE_t* save) {
 	free(save);
 }
 
-CHUNK_t* FindChunk(SAVESTATE_t* save, char* tag) {
+CHUNK_t* FindChunk(SAVESTATE_t* save, const char* tag) {
 	int i;
 	for(i = 0; i < save->chunk_count; i++) {
 		if (cmpTags(save->chunks[i]->tag, tag) == TRUE) {
@@ -134,7 +134,7 @@ CHUNK_t* FindChunk(SAVESTATE_t* save, char* tag) {
 	return NULL;
 }
 
-CHUNK_t* NewChunk(SAVESTATE_t* save, char* tag) {
+CHUNK_t* NewChunk(SAVESTATE_t* save, const char* tag) {
 	int chunk = save->chunk_count;
 
 	if (FindChunk(save, tag) != NULL) {

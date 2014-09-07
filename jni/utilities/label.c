@@ -132,7 +132,7 @@ int labels_app_load(LPCALC lpCalc, LPCTSTR lpszFileName) {
 
 		i = 0;
 		if (buffer[0] != ';')
-			i = _stscanf_s(buffer, _T("%s = $%X"), name, ARRAYSIZE(name) - 1, &equate);
+			i = _stscanf_s(buffer, _T("%s = $%X"), name, &equate);
 		if (i == 2) {
 			length = (int) _tcslen(name);
 			if (!label_search_tios(name, equate, lpCalc->model)) {
