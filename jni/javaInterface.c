@@ -14,12 +14,25 @@ static LPCALC lpCalc;
 static int redPalette[256];
 static int bluePalette[256];
 static int greenPalette[256];
+char cache_dir[MAX_PATH];
+
+/*
+ * Class:     com_Revsoft_Wabbitemu_CalcInterface
+ * Method:    SetCacheDir
+ * Signature: (Ljava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_SetCacheDir
+		(JNIEnv *env, jclass classObj, jstring filePath) {
+	const char *path = (*env)->GetStringUTFChars(env, filePath, JNI_FALSE);
+	strcpy(cache_dir, path);
+}
+
 /*
  * Class:     com_Revsoft_Wabbitemu_CalcInterface
  * Method:    CreateCalc
  * Signature: (Ljava/lang/String;)V
  */
-JNIEXPORT void JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_CreateCalc
+JNIEXPORT jboolean JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_CreateCalc
 		(JNIEnv *env, jclass classObj, jstring filePath) {
 	const char *path = (*env)->GetStringUTFChars(env, filePath, JNI_FALSE);
 	//Do not allow more than one calc currently
@@ -29,7 +42,13 @@ JNIEXPORT void JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_CreateCalc
 
 	lpCalc = calc_slot_new();
 	lpCalc->model = -1;
-	rom_load(lpCalc, path);
+	BOOL was_sucessful = rom_load(lpCalc, path);
+	if (!was_sucessful) {
+		calc_slot_free(lpCalc);
+		lpCalc = NULL;
+		return JNI_FALSE;
+	}
+
 	lpCalc->running = TRUE;
 	lpCalc->speed = 100;
 
@@ -38,6 +57,8 @@ JNIEXPORT void JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_CreateCalc
 		bluePalette[i] = (0x88 * (256 - i)) / 255;
 		greenPalette[i] = (0xAB * (256 - i)) / 255;
 	}
+
+	return JNI_TRUE;
 }
 
 
@@ -46,15 +67,17 @@ JNIEXPORT void JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_CreateCalc
  * Method:    SaveCalcState
  * Signature: (Ljava/lang/String;)V
  */
-JNIEXPORT void JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_SaveCalcState
+JNIEXPORT jboolean JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_SaveCalcState
 		(JNIEnv *env, jclass classObj, jstring filePath) {
 	const char *path = (*env)->GetStringUTFChars(env, filePath, JNI_FALSE);
 
 	SAVESTATE_t* save = SaveSlot(lpCalc, "Wabbitemu", "Automatic save state");
 	if (save != NULL) {
-		WriteSave(path, save, 0);
+		WriteSave(path, save, ZLIB_CMP);
 		FreeSave(save);
 	}
+
+	return save != NULL;
 }
 
 /*

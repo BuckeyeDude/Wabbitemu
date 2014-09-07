@@ -1,7 +1,9 @@
 package com.Revsoft.Wabbitemu.utils;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.regex.Matcher;
@@ -13,10 +15,10 @@ import android.os.FileObserver;
 
 public class FileUtils {
 
-	private static final FileUtils instance = new FileUtils();
+	private static final FileUtils INSTANCE = new FileUtils();
 
 	public static FileUtils getInstance() {
-		return instance;
+		return INSTANCE;
 	}
 
 	private List<String> mFiles;
@@ -28,6 +30,10 @@ public class FileUtils {
 
 		mObservers = new ArrayList<FileObserver>();
 		startFileSearch(regex);
+	}
+
+	public void startInitialSearch() {
+
 	}
 
 	private void startFileSearch(final String regex) {
@@ -122,22 +128,48 @@ public class FileUtils {
 		return validFiles;
 	}
 
-	private List<String> findValidFiles(final String extensionsRegex,
-			final String dir) {
-		final File rootDir = new File(dir);
-		final File files[] = rootDir.listFiles();
+	private List<String> findValidFiles(final String extensionsRegex, final String dir) {
+		final List<File> searchedFiles = new ArrayList<File>();
 		final List<String> validFiles = new ArrayList<String>();
-		if (files != null) {
-			for (final File file : files) {
-				if (file.isDirectory()) {
-					validFiles.addAll(findValidFiles(extensionsRegex,
-							file.getAbsolutePath()));
-				} else if (file.isFile()) {
-					final boolean isValid = isValidFile(extensionsRegex,
-							file.getName());
-					if (isValid) {
-						validFiles.add(file.getAbsolutePath());
+
+		final File rootDir = new File(dir);
+		final File[] rootDirArray = rootDir.listFiles();
+		if (rootDirArray == null) {
+			return validFiles;
+		}
+
+		final List<File> filesToSearch = new ArrayList<File>();
+		filesToSearch.addAll(Arrays.asList(rootDirArray));
+
+		while (!filesToSearch.isEmpty()) {
+			final File file = filesToSearch.remove(0);
+			searchedFiles.add(file);
+
+			if (file.isDirectory()) {
+				final File[] subDirArray = file.listFiles(new FileFilter() {
+
+					@Override
+					public boolean accept(final File pathname) {
+						if (pathname.isDirectory()) {
+							return true;
+						}
+
+						return isValidFile(extensionsRegex, pathname.getName());
 					}
+				});
+				if (subDirArray == null) {
+					continue;
+				}
+
+				for (final File subFile : subDirArray) {
+					if (!searchedFiles.contains(subFile)) {
+						filesToSearch.add(subFile);
+					}
+				}
+			} else if (file.isFile()) {
+				final boolean isValid = isValidFile(extensionsRegex, file.getName());
+				if (isValid) {
+					validFiles.add(file.getAbsolutePath());
 				}
 			}
 		}

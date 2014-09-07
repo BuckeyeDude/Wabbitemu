@@ -5,8 +5,9 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
     
-    <FrameLayout
+    <fragment 
         android:id="@+id/content_frame"
+        android:name="com.Revsoft.Wabbitemu.fragment.EmulatorFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
     

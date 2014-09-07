@@ -11,8 +11,7 @@ public abstract class ProgressTask extends AsyncTask<Void, Void, Boolean> {
 	private final Context mContext;
 	private final boolean mIsCancelable;
 
-	public ProgressTask(final Context context, final String descriptionString,
-			final boolean isCancelable) {
+	public ProgressTask(final Context context, final String descriptionString, final boolean isCancelable) {
 		mContext = context;
 		mDescriptionString = descriptionString;
 		mIsCancelable = isCancelable;
@@ -36,5 +35,9 @@ public abstract class ProgressTask extends AsyncTask<Void, Void, Boolean> {
 		if (mProgress != null && mProgress.isShowing()) {
 			mProgress.dismiss();
 		}
+	}
+
+	protected Context getContext() {
+		return mContext;
 	}
 }

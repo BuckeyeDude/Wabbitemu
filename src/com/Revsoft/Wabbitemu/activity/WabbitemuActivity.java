@@ -6,13 +6,15 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
 
+import org.acra.annotation.ReportsCrashes;
+
+import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.support.v4.app.FragmentActivity;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v4.widget.DrawerLayout.DrawerListener;
 import android.view.Menu;
@@ -27,28 +29,48 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import com.Revsoft.Wabbitemu.CalcInterface;
+import com.Revsoft.Wabbitemu.R;
 import com.Revsoft.Wabbitemu.fragment.EmulatorFragment;
 import com.Revsoft.Wabbitemu.utils.AnalyticsConstants;
 import com.Revsoft.Wabbitemu.utils.ErrorUtils;
+import com.Revsoft.Wabbitemu.utils.FileUtils;
 import com.Revsoft.Wabbitemu.utils.IntentConstants;
 import com.Revsoft.Wabbitemu.utils.PreferenceConstants;
 import com.Revsoft.Wabbitemu.utils.StorageUtils;
 import com.google.analytics.tracking.android.EasyTracker;
 import com.google.analytics.tracking.android.MapBuilder;
 import com.google.analytics.tracking.android.Tracker;
-import com.Revsoft.Wabbitemu.R;
 
-public class WabbitemuActivity extends FragmentActivity {
-
+@ReportsCrashes(formKey = "", formUri = "http://www.yourselectedbackend.com/reportpath")
+public class WabbitemuActivity extends Activity {
+	private final FileUtils mFileUtils = FileUtils.getInstance();
 	private static final int LOAD_FILE_CODE = 1;
 	private static final int SETUP_WIZARD = 2;
 
-	private static final int LOAD_FILE_MENU_ITEM = 0;
-	private static final int WIZARD_MENU_ITEM = 1;
-	private static final int RESET_MENU_ITEM = 2;
-	private static final int SCREENSHOT_MENU_ITEM = 3;
-	private static final int SETTINGS_MENU_ITEM = 4;
-	private static final int ABOUT_MENU_ITEM = 5;
+	private enum MainMenuItem {
+		LOAD_FILE_MENU_ITEM(0),
+		WIZARD_MENU_ITEM(1),
+		RESET_MENU_ITEM(2),
+		SCREENSHOT_MENU_ITEM(3),
+		SETTINGS_MENU_ITEM(4),
+		ABOUT_MENU_ITEM(5);
+
+		private final int mPosition;
+
+		private MainMenuItem(final int position) {
+			mPosition = position;
+		}
+
+		public static MainMenuItem fromPosition(final int position) {
+			for (final MainMenuItem item : values()) {
+				if (item.mPosition == position) {
+					return item;
+				}
+			}
+
+			return null;
+		}
+	}
 
 	private static final String DEFAULT_FILE_REGEX = "\\.(rom|sav|[7|8][2|3|x|c|5|6][b|c|d|g|i|k|l|m|n|p|q|s|t|u|v|w|y|z])$";
 
@@ -59,9 +81,8 @@ public class WabbitemuActivity extends FragmentActivity {
 
 	private void handleFile(final File f, final Runnable runnable) {
 		final Tracker tracker = EasyTracker.getInstance(WabbitemuActivity.this);
-		tracker.send(MapBuilder.createEvent(AnalyticsConstants.MAIN_ACTIVITY,
-				AnalyticsConstants.SEND_FILE, f.getAbsolutePath(), null)
-				.build());
+		tracker.send(MapBuilder.createEvent(AnalyticsConstants.MAIN_ACTIVITY, AnalyticsConstants.SEND_FILE,
+				f.getAbsolutePath(), null).build());
 
 		mEmulatorFragment.handleFile(f, runnable);
 	}
@@ -74,13 +95,14 @@ public class WabbitemuActivity extends FragmentActivity {
 	@Override
 	public void onCreate(final Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		// ACRA.init(getApplication());
 		EasyTracker.getInstance(this).activityStart(this);
+		CalcInterface.SetCacheDir(getCacheDir().getAbsolutePath());
+		mFileUtils.startInitialSearch();
 
 		setFullscreenMode();
 		setContentView(R.layout.main);
-		mEmulatorFragment = new EmulatorFragment();
-		getSupportFragmentManager().beginTransaction()
-		.replace(R.id.content_frame, mEmulatorFragment).commit();
+		mEmulatorFragment = (EmulatorFragment) getFragmentManager().findFragmentById(R.id.content_frame);
 		attachMenu();
 
 		if (isFirstRun()) {
@@ -94,7 +116,7 @@ public class WabbitemuActivity extends FragmentActivity {
 
 		// we expect an absolute filename
 		final String fileName = getLastRomSetting();
-		if (fileName != null && !"".equals(fileName)) {
+		if (fileName != null && !fileName.equals("")) {
 			handleFile(new File(fileName), runnable);
 		} else {
 			runnable.run();
@@ -108,21 +130,17 @@ public class WabbitemuActivity extends FragmentActivity {
 	}
 
 	private void attachMenu() {
-
 		mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
 		mDrawerList = (ListView) findViewById(R.id.left_drawer);
-		final String[] menuItems = getResources().getStringArray(
-				R.array.menu_array);
+		final String[] menuItems = getResources().getStringArray(R.array.menu_array);
 
-		mDrawerList.setAdapter(new ArrayAdapter<String>(this,
-				android.R.layout.simple_list_item_1, menuItems));
+		mDrawerList.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, menuItems));
 		mDrawerLayout.setScrimColor(Color.parseColor("#DD000000"));
 		mDrawerList.setOnItemClickListener(new OnItemClickListener() {
 
 			@Override
-			public void onItemClick(final AdapterView<?> parent,
-					final View view, final int position, final long id) {
-				handleMenuItem(position);
+			public void onItemClick(final AdapterView<?> parent, final View view, final int position, final long id) {
+				handleMenuItem(MainMenuItem.fromPosition(position));
 			}
 		});
 		mDrawerLayout.setDrawerListener(new DrawerListener() {
@@ -133,18 +151,15 @@ public class WabbitemuActivity extends FragmentActivity {
 			}
 
 			@Override
-			public void onDrawerSlide(final View drawerView,
-					final float slideOffset) {
+			public void onDrawerSlide(final View drawerView, final float slideOffset) {
 				mDrawerLayout.bringChildToFront(drawerView);
 				mDrawerLayout.requestLayout();
 			}
 
 			@Override
 			public void onDrawerOpened(final View arg0) {
-				final Tracker tracker = EasyTracker
-						.getInstance(WabbitemuActivity.this);
-				final Map<String, String> event = MapBuilder.createEvent(
-						AnalyticsConstants.MAIN_ACTIVITY,
+				final Tracker tracker = EasyTracker.getInstance(WabbitemuActivity.this);
+				final Map<String, String> event = MapBuilder.createEvent(AnalyticsConstants.MAIN_ACTIVITY,
 						AnalyticsConstants.OPEN_MENU, null, null).build();
 				tracker.send(event);
 			}
@@ -168,50 +183,40 @@ public class WabbitemuActivity extends FragmentActivity {
 	}
 
 	private String getLastRomSetting() {
-		final SharedPreferences sharedPrefs = PreferenceManager
-				.getDefaultSharedPreferences(this);
+		final SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
 		return sharedPrefs.getString(PreferenceConstants.ROM_PATH, "");
 	}
 
 	private boolean isFirstRun() {
-		final SharedPreferences sharedPrefs = PreferenceManager
-				.getDefaultSharedPreferences(this);
+		final SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
 		return sharedPrefs.getBoolean(PreferenceConstants.FIRST_RUN, true);
 	}
 
 	@Override
-	protected void onActivityResult(final int requestCode,
-			final int resultCode, final Intent data) {
+	protected void onActivityResult(final int requestCode, final int resultCode, final Intent data) {
 		switch (requestCode) {
 		case LOAD_FILE_CODE:
 			if (resultCode == RESULT_OK) {
-				final String fileName = data
-						.getStringExtra(IntentConstants.FILENAME_EXTRA_STRING);
+				final String fileName = data.getStringExtra(IntentConstants.FILENAME_EXTRA_STRING);
 				handleFile(new File(fileName), new Runnable() {
 
 					@Override
 					public void run() {
-						ErrorUtils.showErrorDialog(WabbitemuActivity.this,
-								R.string.errorLink);
-						final Tracker tracker = EasyTracker
-								.getInstance(WabbitemuActivity.this);
-						tracker.send(MapBuilder.createEvent(
-								AnalyticsConstants.MAIN_ACTIVITY,
-								AnalyticsConstants.SEND_FILE_ERROR, fileName,
-								null).build());
+						ErrorUtils.showErrorDialog(WabbitemuActivity.this, R.string.errorLink);
+						final Tracker tracker = EasyTracker.getInstance(WabbitemuActivity.this);
+						tracker.send(MapBuilder.createEvent(AnalyticsConstants.MAIN_ACTIVITY,
+								AnalyticsConstants.SEND_FILE_ERROR, fileName, null).build());
 					}
 				});
 			}
 			break;
 		case SETUP_WIZARD:
 			if (resultCode == RESULT_OK) {
-				final String fileName = data
-						.getStringExtra(IntentConstants.FILENAME_EXTRA_STRING);
+				final String fileName = data.getStringExtra(IntentConstants.FILENAME_EXTRA_STRING);
 				handleFile(new File(fileName), getLaunchRunnable());
 
 				if (isFirstRun()) {
-					final SharedPreferences sharedPrefs = PreferenceManager
-							.getDefaultSharedPreferences(this);
+					final SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
 					final SharedPreferences.Editor editor = sharedPrefs.edit();
 					editor.putBoolean(PreferenceConstants.FIRST_RUN, false);
 					editor.commit();
@@ -238,22 +243,22 @@ public class WabbitemuActivity extends FragmentActivity {
 
 	@Override
 	public boolean onOptionsItemSelected(final MenuItem item) {
-		final int position;
+		final MainMenuItem position;
 		switch (item.getItemId()) {
 		case R.id.aboutMenuItem:
-			position = ABOUT_MENU_ITEM;
+			position = MainMenuItem.ABOUT_MENU_ITEM;
 			break;
 		case R.id.settingsMenuItem:
-			position = SETTINGS_MENU_ITEM;
+			position = MainMenuItem.SETTINGS_MENU_ITEM;
 			break;
 		case R.id.resetMenuItem:
-			position = RESET_MENU_ITEM;
+			position = MainMenuItem.RESET_MENU_ITEM;
 			break;
 		case R.id.rerunWizardMenuItem:
-			position = WIZARD_MENU_ITEM;
+			position = MainMenuItem.WIZARD_MENU_ITEM;
 			break;
 		case R.id.loadFileMenuItem:
-			position = LOAD_FILE_MENU_ITEM;
+			position = MainMenuItem.LOAD_FILE_MENU_ITEM;
 			break;
 		default:
 			return super.onOptionsItemSelected(item);
@@ -262,14 +267,12 @@ public class WabbitemuActivity extends FragmentActivity {
 		return handleMenuItem(position);
 	}
 
-	private boolean handleMenuItem(final int position) {
+	private boolean handleMenuItem(final MainMenuItem position) {
 		mDrawerLayout.closeDrawer(mDrawerList);
 
 		final Tracker tracker = EasyTracker.getInstance(WabbitemuActivity.this);
-		final Map<String, String> event = MapBuilder.createEvent(
-				AnalyticsConstants.MAIN_ACTIVITY,
-				AnalyticsConstants.MENU_ITEM_SELECTED, Integer.toString(position), null)
-				.build();
+		final Map<String, String> event = MapBuilder.createEvent(AnalyticsConstants.MAIN_ACTIVITY,
+				AnalyticsConstants.MENU_ITEM_SELECTED, position.toString(), null).build();
 		tracker.send(event);
 
 		switch (position) {
@@ -298,20 +301,17 @@ public class WabbitemuActivity extends FragmentActivity {
 
 	private void screenshotCalc() {
 		final Tracker tracker = EasyTracker.getInstance(WabbitemuActivity.this);
-		final Map<String, String> event = MapBuilder.createEvent(
-				AnalyticsConstants.MAIN_ACTIVITY,
-				AnalyticsConstants.SCREENSHOT, null, null)
-				.build();
+		final Map<String, String> event = MapBuilder.createEvent(AnalyticsConstants.MAIN_ACTIVITY,
+				AnalyticsConstants.SCREENSHOT, null, null).build();
 		tracker.send(event);
 
 		final Bitmap screenshot = mEmulatorFragment.getScreenshot();
-		final Bitmap scaledScreenshot = Bitmap.createScaledBitmap(screenshot,
-				screenshot.getWidth() * 2, screenshot.getHeight() * 2, true);
+		final Bitmap scaledScreenshot = Bitmap.createScaledBitmap(screenshot, screenshot.getWidth() * 2,
+				screenshot.getHeight() * 2, true);
 		final File outputDir;
 		final File outputFile;
 		if (StorageUtils.hasExternalStorage()) {
-			outputDir = new File(new File(StorageUtils.getPrimaryStoragePath(),
-					"Wabbitemu"), "Screenshots");
+			outputDir = new File(new File(StorageUtils.getPrimaryStoragePath(), "Wabbitemu"), "Screenshots");
 			if (!outputDir.exists()) {
 				outputDir.mkdirs();
 			}
@@ -335,11 +335,9 @@ public class WabbitemuActivity extends FragmentActivity {
 			return;
 		}
 
-		final String formatString = getResources().getString(
-				R.string.screenshotSuccess);
+		final String formatString = getResources().getString(R.string.screenshotSuccess);
 		final String successString = String.format(formatString, outputFile);
-		final Toast toast = Toast.makeText(this, successString,
-				Toast.LENGTH_LONG);
+		final Toast toast = Toast.makeText(this, successString, Toast.LENGTH_LONG);
 		toast.show();
 	}
 
@@ -381,11 +379,9 @@ public class WabbitemuActivity extends FragmentActivity {
 			extensions = DEFAULT_FILE_REGEX;
 			break;
 		}
-		final String description = getResources().getString(
-				R.string.browseFileDescription);
+		final String description = getResources().getString(R.string.browseFileDescription);
 		setupIntent.putExtra(IntentConstants.EXTENSION_EXTRA_REGEX, extensions);
-		setupIntent.putExtra(IntentConstants.BROWSE_DESCRIPTION_EXTRA_STRING,
-				description);
+		setupIntent.putExtra(IntentConstants.BROWSE_DESCRIPTION_EXTRA_STRING, description);
 		startActivityForResult(setupIntent, LOAD_FILE_CODE);
 	}
 

@@ -9,6 +9,10 @@ extern "C" {
 #include "savestate.h"
 #include "83psehw.h"
 #include "fileutilities.h"
+
+extern int def(FILE *source, FILE *dest, int level);
+extern int inf(FILE *source, FILE *dest);
+extern char cache_dir[MAX_PATH];
 #ifdef __cplusplus
 }
 #endif
@@ -1299,6 +1303,7 @@ void WriteSave(const TCHAR *fn, SAVESTATE_t* save, int compress) {
 	int i;
 	FILE* ofile;
 	FILE* cfile;
+	TCHAR tmpPath[MAX_PATH] = {0};
 	
 	if (!save) {
 		_putts(_T("Save was null for write"));
@@ -1308,7 +1313,9 @@ void WriteSave(const TCHAR *fn, SAVESTATE_t* save, int compress) {
 	if (compress == 0) {
 		_tfopen_s(&ofile, fn, _T("wb"));
 	} else {
-		tmpfile_s(&ofile);
+		strcpy(tmpPath, cache_dir);
+		strcat(tmpPath, "tmppath.sav");
+		_tfopen_s(&ofile, tmpPath, _T("w+b"));
 	}
 		
 	if (!ofile) {
@@ -1347,6 +1354,8 @@ void WriteSave(const TCHAR *fn, SAVESTATE_t* save, int compress) {
 		_tfopen_s(&cfile, fn, _T("wb"));
 		if (!cfile) {
 			_putts(_T("Could not open compress file for write"));
+			fclose(ofile);
+			remove(tmpPath);
 			return;
 		}
 
@@ -1357,7 +1366,7 @@ void WriteSave(const TCHAR *fn, SAVESTATE_t* save, int compress) {
 				{
 					fputc(ZLIB_CMP, cfile);
 				
-					def(ofile, cfile, 9);
+					int error = def(ofile, cfile, 9);
 					break;
 				}
 #endif
@@ -1368,6 +1377,9 @@ void WriteSave(const TCHAR *fn, SAVESTATE_t* save, int compress) {
 		fclose(cfile);
 	}
 	fclose(ofile);
+	if (compress) {
+		remove(tmpPath);
+	}
 }
 
 SAVESTATE_t* ReadSave(FILE *ifile) {
@@ -1383,7 +1395,10 @@ SAVESTATE_t* ReadSave(FILE *ifile) {
 	string[8] = 0;
 	if (strncmp(DETECT_CMP_STR, string, 8) == 0) {
 		i = fgetc(ifile);
-		tmpfile_s(&tmpFile);
+		char tmpFilePath[MAX_PATH];
+		strcpy(tmpFilePath, cache_dir);
+		strcat(tmpFilePath, "tmpsave.sav");
+		_tfopen_s(&tmpFile, tmpFilePath, _T("w+b"));
 		if (!tmpFile) {
 			return NULL;
 		}

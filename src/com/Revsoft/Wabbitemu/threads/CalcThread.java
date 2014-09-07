@@ -2,9 +2,11 @@ package com.Revsoft.Wabbitemu.threads;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import android.graphics.Bitmap;
 import android.os.SystemClock;
+import android.util.Log;
 
 import com.Revsoft.Wabbitemu.CalcInterface;
 import com.Revsoft.Wabbitemu.WabbitLCD;
@@ -15,8 +17,8 @@ public class CalcThread extends Thread {
 	private static final int TPS = 1000 / FPS;
 	private static final int MAX_FRAME_SKIP = 5;
 
-	private volatile boolean mPaused;
-	private boolean mReset;
+	private final AtomicBoolean mIsPaused = new AtomicBoolean(false);
+	private final AtomicBoolean mReset = new AtomicBoolean(false);
 	private final WabbitLCD mSurfaceView;
 	private final List<String> mPauseList;
 
@@ -33,7 +35,11 @@ public class CalcThread extends Thread {
 		int framesSkipped;
 
 		while (true) {
-			if (mPaused) {
+			if (isInterrupted()) {
+				break;
+			}
+
+			if (mIsPaused.get()) {
 				try {
 					sleep(100);
 				} catch (final InterruptedException e) {
@@ -43,9 +49,8 @@ public class CalcThread extends Thread {
 				continue;
 			}
 
-			if (mReset) {
+			if (mReset.getAndSet(false)) {
 				CalcInterface.ResetCalc();
-				mReset = false;
 			}
 
 			synchronized (mSurfaceView) {
@@ -74,7 +79,7 @@ public class CalcThread extends Thread {
 				}
 
 				if (framesSkipped == MAX_FRAME_SKIP) {
-					android.util.Log.d("", "Frame skip: " + framesSkipped);
+					Log.d("", "Frame skip: " + framesSkipped);
 				}
 			}
 		}
@@ -90,16 +95,16 @@ public class CalcThread extends Thread {
 				mPauseList.add(key);
 			}
 
-			mPaused = true;
+			mIsPaused.set(true);
 		} else {
 			mPauseList.remove(key);
 			if (mPauseList.size() == 0) {
-				mPaused = false;
+				mIsPaused.set(false);
 			}
 		}
 	}
 
 	public void resetCalc() {
-		mReset = true;
+		mReset.set(true);
 	}
 }
