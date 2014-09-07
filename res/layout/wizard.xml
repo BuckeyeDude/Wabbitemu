@@ -330,9 +330,9 @@
         android:layout_height="match_parent"
         android:orientation="vertical" >
 
-        <fragment
+        <LinearLayout
+            android:orientation="horizontal"
             android:id="@+id/browseRomFragment"
-            android:name="com.Revsoft.Wabbitemu.fragment.BrowseFragment"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_above="@+id/step4Layout" />
@@ -368,9 +368,9 @@
         android:layout_height="match_parent"
         android:orientation="vertical" >
 
-        <fragment
+        <LinearLayout
+            android:orientation="horizontal"
             android:id="@+id/browseOsFragment"
-            android:name="com.Revsoft.Wabbitemu.fragment.BrowseFragment"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_above="@+id/step5Layout" />

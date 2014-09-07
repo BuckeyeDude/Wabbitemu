@@ -7,11 +7,33 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent" >
 
-    <FrameLayout
-        android:id="@+id/browse_frame"
+    <LinearLayout
+        android:id="@+id/browseLoadingSpinner"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:visibility="gone"
+        android:orientation="vertical" >
+
+        <ProgressBar
+            style="?android:attr/progressBarStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical|center_horizontal" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical|center_horizontal"
+            android:text="@string/loading" />
+    </LinearLayout>
+    
+    <ListView
+        android:id="@+id/browseView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_above="@+id/adView4" />
+        android:layout_above="@+id/adView4"
+        android:isScrollContainer="true" />
     
     <com.google.android.gms.ads.AdView android:id="@+id/adView4"
         android:layout_width="match_parent"

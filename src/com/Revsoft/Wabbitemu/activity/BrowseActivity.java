@@ -3,14 +3,13 @@ package com.Revsoft.Wabbitemu.activity;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.v4.app.FragmentActivity;
 
+import com.Revsoft.Wabbitemu.R;
 import com.Revsoft.Wabbitemu.fragment.BrowseFragment;
 import com.Revsoft.Wabbitemu.utils.BrowseCallback;
 import com.Revsoft.Wabbitemu.utils.IntentConstants;
-import com.Revsoft.Wabbitemu.R;
 
-public class BrowseActivity extends FragmentActivity implements BrowseCallback {
+public class BrowseActivity extends Activity implements BrowseCallback {
 
 	@Override
 	public void onCreate(final Bundle savedInstanceState) {
@@ -28,9 +27,7 @@ public class BrowseActivity extends FragmentActivity implements BrowseCallback {
 		fragment.setArguments(bundle);
 
 		setTitle(R.string.selectFile);
-		getSupportFragmentManager().beginTransaction()
-		.replace(android.R.id.content, fragment)
-		.commit();
+		getFragmentManager().beginTransaction().replace(android.R.id.content, fragment).commit();
 	}
 
 	@Override

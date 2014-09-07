@@ -7,12 +7,21 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/*
+ * Class:     com_Revsoft_Wabbitemu_CalcInterface
+ * Method:    SetCacheDir
+ * Signature: (Ljava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_SetCacheDir
+		(JNIEnv *env, jclass classObj, jstring filePath);
+
 /*
  * Class:     com_Revsoft_Wabbitemu_CalcInterface
  * Method:    CreateCalc
- * Signature: (Ljava/lang/String;)V
+ * Signature: (Ljava/lang/String;)B
  */
-JNIEXPORT void JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_CreateCalc
+JNIEXPORT jboolean JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_CreateCalc
 		(JNIEnv *, jclass, jstring);
 
 /*
@@ -26,9 +35,9 @@ JNIEXPORT jint JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_LoadFile
 /*
  * Class:     com_Revsoft_Wabbitemu_CalcInterface
  * Method:    SaveCalcState
- * Signature: (Ljava/lang/String;)V
+ * Signature: (Ljava/lang/String;)B
  */
-JNIEXPORT void JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_SaveCalcState
+JNIEXPORT jboolean JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_SaveCalcState
   (JNIEnv *, jclass, jstring);
 
 /*
