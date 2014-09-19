@@ -1,9 +1,12 @@
 package com.Revsoft.Wabbitemu;
 
 import java.util.ArrayList;
-import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
+import android.support.annotation.Nullable;
 import android.view.KeyEvent;
 
 import com.Revsoft.Wabbitemu.utils.KeyMapping;
@@ -84,7 +87,8 @@ public class CalcKeyManager {
 	}
 
 	private final ArrayList<KeyMapping> mKeysDown = new ArrayList<KeyMapping>();
-	private final long[][] mKeyTimePressed = new long[8][8];;
+	private final long[][] mKeyTimePressed = new long[8][8];
+	private final ScheduledExecutorService mRepressExecutor = new ScheduledThreadPoolExecutor(1);
 
 	public void doKeyDown(final int id, final int group, final int bit) {
 		CalcInterface.PressKey(group, bit);
@@ -108,14 +112,13 @@ public class CalcKeyManager {
 		final int group = mapping.getGroup();
 		final int bit = mapping.getBit();
 		if (hasCalcProcessedKey(group, bit)) {
-			final Timer repressTimer = new Timer();
 			final TimerTask task = new TimerTask() {
 				@Override
 				public void run() {
 					doKeyUp(id);
 				}
 			};
-			repressTimer.schedule(task, 40);
+			mRepressExecutor.schedule(task, 40, TimeUnit.MILLISECONDS);
 		} else {
 			CalcInterface.ReleaseKey(group, bit);
 			mKeysDown.remove(mapping);
@@ -123,24 +126,24 @@ public class CalcKeyManager {
 	}
 
 	private boolean hasCalcProcessedKey(final int group, final int bit) {
+		final long tstates = CalcInterface.Tstates();
+		final long timePressed = mKeyTimePressed[group][bit];
 		if (group == CalcInterface.ON_KEY_GROUP && bit == CalcInterface.ON_KEY_BIT) {
-			return ((mKeyTimePressed[group][bit] + MIN_TSTATE_ON_KEY) <= CalcInterface.Tstates())
-					&& ((mKeyTimePressed[group][bit] + MAX_TSTATE_ON_KEY) <= CalcInterface.Tstates());
+			return ((timePressed + MIN_TSTATE_ON_KEY) <= tstates) && ((timePressed + MAX_TSTATE_ON_KEY) <= tstates);
 		} else {
-			return ((mKeyTimePressed[group][bit] + MIN_TSTATE_KEY) <= CalcInterface.Tstates())
-					&& ((mKeyTimePressed[group][bit] + MAX_TSTATE_KEY) <= CalcInterface.Tstates());
+			return ((timePressed + MIN_TSTATE_KEY) <= tstates)
+					&& ((timePressed + MAX_TSTATE_KEY) <= tstates);
 		}
 	}
 
-	public static KeyMapping getKeyMapping(final int keyCode) {
-		KeyMapping foundMapping = null;
+	@Nullable
+	public static KeyMapping getKeyMapping(int keyCode) {
 		for (final KeyMapping mapping : KEY_MAPPINGS) {
 			if (mapping.getKey() == keyCode) {
-				foundMapping = mapping;
-				break;
+				return mapping;
 			}
 		}
 
-		return foundMapping;
+		return null;
 	}
 }

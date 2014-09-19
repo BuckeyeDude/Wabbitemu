@@ -56,14 +56,17 @@ public class MainThread extends Thread {
 	}
 
 	public Bitmap getScreen() {
-		if (!CalcInterface.IsLCDActive()) {
-			final int lcdColor = CalcInterface.GetModel() == CalcInterface.TI_84PCSE ?
-					Color.BLACK : Color.argb(0xFF, 0x9E, 0xAB, 0x88);
-			mScreenBitmap.eraseColor(lcdColor);
-		} else {
-			mScreenBuffer.rewind();
-			CalcInterface.GetLCD(mScreenBuffer);
-			mScreenBitmap.copyPixelsFromBuffer(mScreenBuffer);
+		synchronized (mScreenLock) {
+			if (!CalcInterface.IsLCDActive()) {
+				final int lcdColor = CalcInterface.GetModel() == CalcInterface.TI_84PCSE ?
+						Color.BLACK : Color.argb(0xFF, 0x9E, 0xAB, 0x88);
+				mScreenBitmap.eraseColor(lcdColor);
+			} else {
+				mScreenBuffer.rewind();
+				CalcInterface.GetLCD(mScreenBuffer);
+				mScreenBuffer.rewind();
+				mScreenBitmap.copyPixelsFromBuffer(mScreenBuffer);
+			}
 		}
 
 		return mScreenBitmap;

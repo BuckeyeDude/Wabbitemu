@@ -97,7 +97,15 @@ public class WabbitemuActivity extends Activity {
 		super.onCreate(savedInstanceState);
 		// ACRA.init(getApplication());
 		EasyTracker.getInstance(this).activityStart(this);
-		CalcInterface.SetCacheDir(getCacheDir().getAbsolutePath());
+		final File cacheDir = getCacheDir();
+		// if (cacheDir == null) {
+		// cacheDir = getExternalCacheDir();
+		// if (cacheDir == null) {
+		// cacheDir = get
+		// return;
+		// }
+		// }
+		CalcInterface.SetCacheDir(cacheDir.getAbsolutePath());
 		mFileUtils.startInitialSearch();
 
 		setFullscreenMode();
