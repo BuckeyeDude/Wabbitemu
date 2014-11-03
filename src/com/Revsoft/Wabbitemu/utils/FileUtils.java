@@ -4,13 +4,16 @@ import java.io.File;
 import java.io.FileFilter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.FileObserver;
 
 public class FileUtils {
@@ -21,22 +24,16 @@ public class FileUtils {
 		return INSTANCE;
 	}
 
-	private List<String> mFiles;
+	private Set<String> mFiles;
 	private CountDownLatch mSearchLatch;
 	private final List<FileObserver> mObservers;
 
 	protected FileUtils() {
-		final String regex = "\\.(rom|sav|([8|7][x|c|3|2|6|5][b|c|d|g|i|k|l|m|n|p|q|s|t|u|v|w|y|z]))$";
-
 		mObservers = new ArrayList<FileObserver>();
-		startFileSearch(regex);
+		startFileSearch();
 	}
 
-	public void startInitialSearch() {
-
-	}
-
-	private void startFileSearch(final String regex) {
+	private void startFileSearch() {
 		final AsyncTask<Void, Void, Void> asyncTask = new AsyncTask<Void, Void, Void>() {
 
 			@Override
@@ -49,23 +46,22 @@ public class FileUtils {
 				final String path;
 				if (StorageUtils.hasExternalStorage()) {
 					path = StorageUtils.getPrimaryStoragePath();
-					mFiles = findValidFiles(regex, path);
+					mFiles = findValidFiles(path);
 					RecursiveFileObserver observer = getObserverForDir(path);
 					mObservers.add(observer);
 					observer.startWatching();
 
-					final String extraStorage = System
-							.getenv("SECONDARY_STORAGE");
+					final String extraStorage = System.getenv("SECONDARY_STORAGE");
 					if (extraStorage != null && !"".equals(extraStorage)) {
 						for (final String dir : extraStorage.split(":")) {
-							mFiles.addAll(findValidFiles(regex, dir));
+							mFiles.addAll(findValidFiles(dir));
 							observer = getObserverForDir(dir);
 							mObservers.add(observer);
 							observer.startWatching();
 						}
 					}
 				} else {
-					mFiles = new ArrayList<String>();
+					mFiles = new HashSet<String>();
 				}
 
 				mSearchLatch.countDown();
@@ -77,16 +73,11 @@ public class FileUtils {
 			}
 		};
 
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-			asyncTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-		} else {
-			asyncTask.execute();
-		}
+		asyncTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
 	}
 
 	private RecursiveFileObserver getObserverForDir(final String observerPath) {
-		return new RecursiveFileObserver(observerPath, FileObserver.CREATE
-				| FileObserver.DELETE) {
+		return new RecursiveFileObserver(observerPath, FileObserver.CREATE | FileObserver.DELETE) {
 
 			@Override
 			public void onEvent(final int event, final String path) {
@@ -98,12 +89,7 @@ public class FileUtils {
 					}
 					break;
 				case FileObserver.DELETE:
-					for (int i = 0; i < mFiles.size(); i++) {
-						if (mFiles.get(i).equals(path)) {
-							mFiles.remove(i);
-							break;
-						}
-					}
+					mFiles.remove(path);
 					break;
 				}
 			}
@@ -119,8 +105,10 @@ public class FileUtils {
 		}
 
 		final List<String> validFiles = new ArrayList<String>();
+		final Pattern pattern = Pattern.compile(extensionsRegex, Pattern.CASE_INSENSITIVE);
 		for (final String file : mFiles) {
-			if (isValidFile(extensionsRegex, file)) {
+			final Matcher matcher = pattern.matcher(file);
+			if (matcher.find()) {
 				validFiles.add(file);
 			}
 		}
@@ -128,9 +116,9 @@ public class FileUtils {
 		return validFiles;
 	}
 
-	private List<String> findValidFiles(final String extensionsRegex, final String dir) {
-		final List<File> searchedFiles = new ArrayList<File>();
-		final List<String> validFiles = new ArrayList<String>();
+	private Set<String> findValidFiles(final String dir) {
+		final Set<File> searchedFiles = new HashSet<File>();
+		final Set<String> validFiles = new HashSet<String>();
 
 		final File rootDir = new File(dir);
 		final File[] rootDirArray = rootDir.listFiles();
@@ -138,36 +126,21 @@ public class FileUtils {
 			return validFiles;
 		}
 
-		final List<File> filesToSearch = new ArrayList<File>();
-		filesToSearch.addAll(Arrays.asList(rootDirArray));
+		final List<File> filesToSearch = new LinkedList<File>(Arrays.asList(rootDirArray));
 
 		while (!filesToSearch.isEmpty()) {
 			final File file = filesToSearch.remove(0);
 			searchedFiles.add(file);
 
 			if (file.isDirectory()) {
-				final File[] subDirArray = file.listFiles(new FileFilter() {
-
-					@Override
-					public boolean accept(final File pathname) {
-						if (pathname.isDirectory()) {
-							return true;
-						}
-
-						return isValidFile(extensionsRegex, pathname.getName());
-					}
-				});
-				if (subDirArray == null) {
+				final File[] subDirArray = file.listFiles(new WabbitFileFilter());
+				if (subDirArray == null || subDirArray.length == 0) {
 					continue;
 				}
 
-				for (final File subFile : subDirArray) {
-					if (!searchedFiles.contains(subFile)) {
-						filesToSearch.add(subFile);
-					}
-				}
+				Collections.addAll(filesToSearch, subDirArray);
 			} else if (file.isFile()) {
-				final boolean isValid = isValidFile(extensionsRegex, file.getName());
+				final boolean isValid = isValidFile(file.getPath());
 				if (isValid) {
 					validFiles.add(file.getAbsolutePath());
 				}
@@ -177,25 +150,84 @@ public class FileUtils {
 		return validFiles;
 	}
 
-	private boolean isValidFile(final String extensionsRegex, final String file) {
-		final String extension = getExtension(file);
-
-		final Pattern pattern = Pattern.compile(extensionsRegex,
-				Pattern.CASE_INSENSITIVE);
-		final Matcher matcher = pattern.matcher(extension);
-		return matcher.find();
-	}
-
-	private String getExtension(final String fileName) {
-		final String extension;
-
-		final int i = fileName.lastIndexOf('.');
-		if (i > 0) {
-			extension = fileName.substring(i);
-		} else {
-			extension = "";
+	private boolean isValidFile(final String file) {
+		int i = file.lastIndexOf('.');
+		if (i <= 0) {
+			return false;
 		}
 
-		return extension;
+		if (file.length() != (i + 4)) {
+			return false;
+		}
+		
+		final char ext1 = Character.toLowerCase(file.charAt(++i));
+		final char ext2 = Character.toLowerCase(file.charAt(++i));
+		final char ext3 = Character.toLowerCase(file.charAt(++i));
+		// Regex for reference
+		// ".+\\.(rom|sav|([87][xc3265][bcdgiklmnpqstuvwyz]))$";
+		if ((ext1 == 'r' && ext2 == 'o' && ext3 == 'm') ||
+			(ext1 == 's' && ext2 == 'a' && ext3 == 'v'))
+		{
+			return true;
+		}
+
+		if (ext1 != '8' && ext1 != '7') {
+			return false;
+		}
+
+		switch (ext2) {
+		case 'x':
+		case 'c':
+		case '2':
+		case '6':
+		case '5':
+			break;
+		default:
+			return false;
+		}
+
+		switch (ext3) {
+		case 'b':
+		case 'c':
+		case 'd':
+		case 'g':
+		case 'i':
+		case 'k':
+		case 'l':
+		case 'm':
+		case 'n':
+		case 'p':
+		case 'q':
+		case 's':
+		case 't':
+		case 'u':
+		case 'v':
+		case 'w':
+		case 'x':
+		case 'y':
+		case 'z':
+			break;
+		default:
+			return false;
+		}
+
+		return true;
 	}
+
+	private class WabbitFileFilter implements FileFilter {
+
+		private WabbitFileFilter() {
+			// no-op
+		}
+		
+		@Override
+		public boolean accept(final File pathname) {
+			if (pathname.isDirectory()) {
+				return true;
+			}
+
+			return isValidFile(pathname.getPath());
+		}
+	}
+
 }

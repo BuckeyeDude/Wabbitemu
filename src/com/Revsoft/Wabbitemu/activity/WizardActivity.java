@@ -382,6 +382,7 @@ public class WizardActivity extends Activity implements BrowseCallback {
 			mBootStream = resources.openRawResource(R.raw.bf73);
 			mCalcModel = CalcInterface.TI_73;
 			break;
+		default:
 		case R.id.ti83pRadio:
 			mCreatedFilePath += resources.getString(R.string.ti83p);
 			mBootStream = resources.openRawResource(R.raw.bf83pbe);
@@ -407,8 +408,6 @@ public class WizardActivity extends Activity implements BrowseCallback {
 			mBootStream = resources.openRawResource(R.raw.bf84pcse);
 			mCalcModel = CalcInterface.TI_84PCSE;
 			break;
-		default:
-			throw new IllegalStateException("Invalid calculator type");
 		}
 
 		mCreatedFilePath += ".rom";

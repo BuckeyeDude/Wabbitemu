@@ -9,6 +9,7 @@ extern "C" {
 #include "savestate.h"
 #include "83psehw.h"
 #include "fileutilities.h"
+#include <android/log.h>
 
 extern int def(FILE *source, FILE *dest, int level);
 extern int inf(FILE *source, FILE *dest);
@@ -606,6 +607,7 @@ void SaveLINK(SAVESTATE_t* save, link_t* link) {
 		return;
 	}
 
+	__android_log_print(ANDROID_LOG_VERBOSE, "LCDActive", "writing");
 	CHUNK_t* chunk = NewChunk(save, LINK_tag);
 	WriteChar(chunk, link->host);
 }
@@ -1095,7 +1097,9 @@ BOOL LoadColorLCD(SAVESTATE_t *save, ColorLCD_t *lcd) {
 }
 
 BOOL LoadLINK(SAVESTATE_t* save, link_t* link) {
+	__android_log_print(ANDROID_LOG_VERBOSE, "LCDActive", "Before");
 	CHUNK_t* chunk	= FindChunk(save,LINK_tag);
+	__android_log_print(ANDROID_LOG_VERBOSE, "LCDActive", "after");
 	if (chunk == NULL) {
 		// 81
 		return TRUE;
@@ -1282,12 +1286,12 @@ BOOL LoadSlot_Unsafe(SAVESTATE_t *save, LPCALC lpCalc) {
 }
 
 BOOL LoadSlot(SAVESTATE_t *save, LPCALC lpCalc) {
-	//try {
+	try {
 		return LoadSlot_Unsafe(save, lpCalc);
-	//}
-	//catch (std::exception& e) {
-	//	return FALSE;
-	//}
+	}
+	catch (std::exception& e) {
+		return FALSE;
+	}
 }
 
 char* GetRomOnly(SAVESTATE_t *save, int *size) {

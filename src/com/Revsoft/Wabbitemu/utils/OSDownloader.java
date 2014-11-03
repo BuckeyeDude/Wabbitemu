@@ -38,6 +38,12 @@ public class OSDownloader extends AsyncTask<Integer, Integer, Boolean> {
 	}
 
 	@Override
+	protected void onPreExecute() {
+		super.onPreExecute();
+		mProgressDialog.show();
+	}
+
+	@Override
 	protected Boolean doInBackground(final Integer... args) {
 		final int calcType = args[0];
 		final int version = args[1];
@@ -115,12 +121,6 @@ public class OSDownloader extends AsyncTask<Integer, Integer, Boolean> {
 		}
 
 		return true;
-	}
-
-	@Override
-	protected void onPreExecute() {
-		super.onPreExecute();
-		mProgressDialog.show();
 	}
 
 	@Override

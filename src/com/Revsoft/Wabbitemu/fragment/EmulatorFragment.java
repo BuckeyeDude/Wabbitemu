@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.preference.PreferenceManager;
+import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -138,12 +139,19 @@ public class EmulatorFragment extends Fragment {
 		}
 	}
 
+	@Nullable
 	public Bitmap getScreenshot() {
+		if (mCalcThread == null) {
+			return null;
+		}
+
 		return mCalcThread.getScreenshot();
 	}
 
 	public void resetCalc() {
-		mCalcThread.resetCalc();
+		if (mCalcThread != null) {
+			mCalcThread.resetCalc();
+		}
 	}
 
 	private boolean createTempSave() {

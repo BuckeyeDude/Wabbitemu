@@ -13,6 +13,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v4.widget.DrawerLayout;
@@ -20,8 +21,6 @@ import android.support.v4.widget.DrawerLayout.DrawerListener;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.Window;
-import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
@@ -33,7 +32,6 @@ import com.Revsoft.Wabbitemu.R;
 import com.Revsoft.Wabbitemu.fragment.EmulatorFragment;
 import com.Revsoft.Wabbitemu.utils.AnalyticsConstants;
 import com.Revsoft.Wabbitemu.utils.ErrorUtils;
-import com.Revsoft.Wabbitemu.utils.FileUtils;
 import com.Revsoft.Wabbitemu.utils.IntentConstants;
 import com.Revsoft.Wabbitemu.utils.PreferenceConstants;
 import com.Revsoft.Wabbitemu.utils.StorageUtils;
@@ -43,7 +41,6 @@ import com.google.analytics.tracking.android.Tracker;
 
 @ReportsCrashes(formKey = "", formUri = "http://www.yourselectedbackend.com/reportpath")
 public class WabbitemuActivity extends Activity {
-	private final FileUtils mFileUtils = FileUtils.getInstance();
 	private static final int LOAD_FILE_CODE = 1;
 	private static final int SETUP_WIZARD = 2;
 
@@ -87,28 +84,15 @@ public class WabbitemuActivity extends Activity {
 		mEmulatorFragment.handleFile(f, runnable);
 	}
 
-	private void setFullscreenMode() {
-		requestWindowFeature(Window.FEATURE_NO_TITLE);
-		getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-	}
-
 	@Override
 	public void onCreate(final Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		// ACRA.init(getApplication());
 		EasyTracker.getInstance(this).activityStart(this);
 		final File cacheDir = getCacheDir();
-		// if (cacheDir == null) {
-		// cacheDir = getExternalCacheDir();
-		// if (cacheDir == null) {
-		// cacheDir = get
-		// return;
-		// }
-		// }
 		CalcInterface.SetCacheDir(cacheDir.getAbsolutePath());
-		mFileUtils.startInitialSearch();
 
-		setFullscreenMode();
+		toggleHideyBar();
 		setContentView(R.layout.main);
 		mEmulatorFragment = (EmulatorFragment) getFragmentManager().findFragmentById(R.id.content_frame);
 		attachMenu();
@@ -314,6 +298,10 @@ public class WabbitemuActivity extends Activity {
 		tracker.send(event);
 
 		final Bitmap screenshot = mEmulatorFragment.getScreenshot();
+		if (screenshot == null) {
+			ErrorUtils.showErrorDialog(this, R.string.errorScreenshot);
+			return;
+		}
 		final Bitmap scaledScreenshot = Bitmap.createScaledBitmap(screenshot, screenshot.getWidth() * 2,
 				screenshot.getHeight() * 2, true);
 		final File outputDir;
@@ -406,5 +394,38 @@ public class WabbitemuActivity extends Activity {
 	private void launchSettings() {
 		final Intent intent = new Intent(this, SettingsActivity.class);
 		startActivity(intent);
+	}
+
+	public void toggleHideyBar() {
+
+		// The UI options currently enabled are represented by a bitfield.
+		// getSystemUiVisibility() gives us that bitfield.
+		final View decorView = getWindow().getDecorView();
+		int uiOptions = decorView.getSystemUiVisibility();
+		int newUiOptions = uiOptions;
+
+		// Status bar hiding: Backwards compatible to Jellybean
+		if (Build.VERSION.SDK_INT >= 16) {
+			newUiOptions |= View.SYSTEM_UI_FLAG_FULLSCREEN;
+		}
+
+		// Immersive mode: Backward compatible to KitKat.
+		// Note that this flag doesn't do anything by itself, it only augments
+		// the behavior
+		// of HIDE_NAVIGATION and FLAG_FULLSCREEN. For the purposes of this
+		// sample
+		// all three flags are being toggled together.
+		// Note that there are two immersive mode UI flags, one of which is
+		// referred to as "sticky".
+		// Sticky immersive mode differs in that it makes the navigation and
+		// status bars
+		// semi-transparent, and the UI flag does not get cleared when the user
+		// interacts with
+		// the screen.
+		if (Build.VERSION.SDK_INT >= 18) {
+			newUiOptions |= View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
+		}
+
+		decorView.setSystemUiVisibility(newUiOptions);
 	}
 }

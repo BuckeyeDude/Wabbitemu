@@ -10,7 +10,6 @@ public class StorageUtils {
 	}
 
 	public static String getPrimaryStoragePath() {
-		return Environment.getExternalStorageDirectory()
-				.getAbsolutePath();
+		return Environment.getExternalStorageDirectory().getAbsolutePath();
 	}
 }
