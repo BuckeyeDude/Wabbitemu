@@ -4,12 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import android.graphics.Bitmap;
 import android.os.SystemClock;
 import android.util.Log;
 
 import com.Revsoft.Wabbitemu.CalcInterface;
-import com.Revsoft.Wabbitemu.WabbitLCD;
+import com.Revsoft.Wabbitemu.calc.CalcScreenUpdateCallback;
 
 public class CalcThread extends Thread {
 
@@ -19,11 +18,11 @@ public class CalcThread extends Thread {
 
 	private final AtomicBoolean mIsPaused = new AtomicBoolean(false);
 	private final AtomicBoolean mReset = new AtomicBoolean(false);
-	private final WabbitLCD mSurfaceView;
 	private final List<String> mPauseList;
 
-	public CalcThread(final WabbitLCD surfaceView) {
-		mSurfaceView = surfaceView;
+	private CalcScreenUpdateCallback mScreenUpdateCallback;
+
+	public CalcThread() {
 		mPauseList = new ArrayList<String>();
 	}
 
@@ -53,40 +52,36 @@ public class CalcThread extends Thread {
 				CalcInterface.ResetCalc();
 			}
 
-			synchronized (mSurfaceView) {
-				startTime = SystemClock.elapsedRealtime();
-				framesSkipped = 0;
+			startTime = SystemClock.elapsedRealtime();
+			framesSkipped = 0;
 
-				CalcInterface.RunCalcs();
-				mSurfaceView.drawScreen();
+			CalcInterface.RunCalcs();
+			if (mScreenUpdateCallback != null) {
+				mScreenUpdateCallback.onUpdateScreen();
+			}
 
-				timeDiff = SystemClock.elapsedRealtime() - startTime;
-				sleepTime = (int) (TPS - timeDiff);
+			timeDiff = SystemClock.elapsedRealtime() - startTime;
+			sleepTime = (int) (TPS - timeDiff);
 
-				if (sleepTime > 0) {
-					try {
-						sleep(sleepTime);
-					} catch (final InterruptedException e) {
-						Thread.currentThread().interrupt();
-						break;
-					}
-				}
-
-				while (sleepTime < 0 && framesSkipped < MAX_FRAME_SKIP) {
-					CalcInterface.RunCalcs();
-					sleepTime += TPS;
-					framesSkipped++;
-				}
-
-				if (framesSkipped == MAX_FRAME_SKIP) {
-					Log.d("", "Frame skip: " + framesSkipped);
+			if (sleepTime > 0) {
+				try {
+					sleep(sleepTime);
+				} catch (final InterruptedException e) {
+					Thread.currentThread().interrupt();
+					break;
 				}
 			}
-		}
-	}
 
-	public Bitmap getScreenshot() {
-		return mSurfaceView.getScreen();
+			while (sleepTime < 0 && framesSkipped < MAX_FRAME_SKIP) {
+				CalcInterface.RunCalcs();
+				sleepTime += TPS;
+				framesSkipped++;
+			}
+
+			if (framesSkipped == MAX_FRAME_SKIP) {
+				Log.d("", "Frame skip: " + framesSkipped);
+			}
+		}
 	}
 
 	public void setPaused(final String key, final boolean paused) {
@@ -106,5 +101,9 @@ public class CalcThread extends Thread {
 
 	public void resetCalc() {
 		mReset.set(true);
+	}
+
+	public void setScreenUpdateCallback(CalcScreenUpdateCallback callback) {
+		mScreenUpdateCallback = callback;
 	}
 }

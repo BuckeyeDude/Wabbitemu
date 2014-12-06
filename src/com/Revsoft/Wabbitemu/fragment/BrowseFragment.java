@@ -51,7 +51,7 @@ public class BrowseFragment extends Fragment {
 			startSearch(view, extensionsRegex);
 
 			final AdView adView = (AdView) view.findViewById(R.id.adView4);
-			AdUtils.LoadAd(adView);
+			AdUtils.loadAd(getResources(), adView);
 		}
 
 		return view;

@@ -10,10 +10,11 @@ import android.view.SurfaceView;
 import android.widget.FrameLayout;
 import android.widget.FrameLayout.LayoutParams;
 
+import com.Revsoft.Wabbitemu.calc.CalcScreenUpdateCallback;
 import com.Revsoft.Wabbitemu.threads.MainThread;
 import com.Revsoft.Wabbitemu.utils.KeyMapping;
 
-public class WabbitLCD extends SurfaceView implements SurfaceHolder.Callback {
+public class WabbitLCD extends SurfaceView implements SurfaceHolder.Callback, CalcScreenUpdateCallback {
 
 	private final CalcKeyManager mCalcKeyManager;
 	private final MainThread mMainThread;
@@ -75,12 +76,13 @@ public class WabbitLCD extends SurfaceView implements SurfaceHolder.Callback {
 		return true;
 	}
 
-	public void drawScreen() {
+	@Override
+	public void onUpdateScreen() {
 		mMainThread.run();
 	}
 
 	public void updateSkin(final Rect lcdRect, final Rect lcdSkinRect) {
-		if (mMainThread == null) {
+		if (mMainThread == null || lcdRect == null || lcdSkinRect == null) {
 			return;
 		}
 
@@ -95,6 +97,10 @@ public class WabbitLCD extends SurfaceView implements SurfaceHolder.Callback {
 	}
 
 	public Bitmap getScreen() {
+		if (mMainThread == null) {
+			return null;
+		}
+
 		return mMainThread.getScreen();
 	}
 }

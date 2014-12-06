@@ -35,15 +35,14 @@ import com.Revsoft.Wabbitemu.CalcInterface;
 import com.Revsoft.Wabbitemu.R;
 import com.Revsoft.Wabbitemu.fragment.BrowseFragment;
 import com.Revsoft.Wabbitemu.utils.AdUtils;
-import com.Revsoft.Wabbitemu.utils.AnalyticsConstants;
+import com.Revsoft.Wabbitemu.utils.AnalyticsConstants.UserActionActivity;
+import com.Revsoft.Wabbitemu.utils.AnalyticsConstants.UserActionEvent;
 import com.Revsoft.Wabbitemu.utils.BrowseCallback;
 import com.Revsoft.Wabbitemu.utils.ErrorUtils;
 import com.Revsoft.Wabbitemu.utils.IntentConstants;
 import com.Revsoft.Wabbitemu.utils.OSDownloader;
 import com.Revsoft.Wabbitemu.utils.SpinnerDropDownAdapter;
-import com.google.analytics.tracking.android.EasyTracker;
-import com.google.analytics.tracking.android.MapBuilder;
-import com.google.analytics.tracking.android.Tracker;
+import com.Revsoft.Wabbitemu.utils.UserActivityTracker;
 import com.google.android.gms.ads.AdView;
 
 public class WizardActivity extends Activity implements BrowseCallback {
@@ -76,6 +75,7 @@ public class WizardActivity extends Activity implements BrowseCallback {
 	private static final int BROWSE_OS_CHILD = 4;
 
 	private final AtomicBoolean mIsTransitioningPages = new AtomicBoolean();
+	private final UserActivityTracker mUserActivityTracker = UserActivityTracker.getInstance();
 	private final AnimationListener mAnimationListener = new AnimationListener() {
 
 		@Override
@@ -115,7 +115,7 @@ public class WizardActivity extends Activity implements BrowseCallback {
 	@Override
 	public void onCreate(final Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		EasyTracker.getInstance(this).activityStart(this);
+		mUserActivityTracker.reportActivityStart(this);
 
 		setContentView(R.layout.wizard);
 		setTitle(R.string.gettingStartedTitle);
@@ -144,18 +144,19 @@ public class WizardActivity extends Activity implements BrowseCallback {
 		final RadioButton downloadOsRadio = (RadioButton) findViewById(R.id.downloadOsRadio);
 		downloadOsRadio.setOnClickListener(osTypeClickListener);
 
-		final AdView adView = (AdView) this.findViewById(R.id.adView1);
-		final AdView adView2 = (AdView) this.findViewById(R.id.adView2);
-		final AdView adView3 = (AdView) this.findViewById(R.id.adView3);
-		AdUtils.LoadAd(adView);
-		AdUtils.LoadAd(adView2);
-		AdUtils.LoadAd(adView3);
+		final AdView adView = (AdView) findViewById(R.id.adView1);
+		final AdView adView2 = (AdView) findViewById(R.id.adView2);
+		final AdView adView3 = (AdView) findViewById(R.id.adView3);
+		AdUtils.loadAd(getResources(), adView);
+		AdUtils.loadAd(getResources(), adView2);
+		AdUtils.loadAd(getResources(), adView3);
 	}
 
 	@Override
 	public void onStop() {
 		super.onStop();
-		EasyTracker.getInstance(this).activityStop(this);
+		mUserActivityTracker.reportActivityStart(this);
+
 		if (mOsDownloader != null) {
 			mOsDownloader.cancel(true);
 		}
@@ -172,9 +173,7 @@ public class WizardActivity extends Activity implements BrowseCallback {
 	public boolean onOptionsItemSelected(final MenuItem item) {
 		switch (item.getItemId()) {
 		case R.id.helpMenuItem:
-			final Tracker tracker = EasyTracker.getInstance(this);
-			tracker.send(MapBuilder
-					.createEvent(AnalyticsConstants.WIZARD_ACTIVITY, AnalyticsConstants.HELP, null, null).build());
+			mUserActivityTracker.reportUserAction(UserActionActivity.WIZARD_ACTIVITY, UserActionEvent.HELP);
 
 			final AlertDialog.Builder builder = new AlertDialog.Builder(WizardActivity.this);
 			builder.setMessage(R.string.aboutRomDescription).setTitle(R.string.aboutRomTitle)
@@ -351,14 +350,11 @@ public class WizardActivity extends Activity implements BrowseCallback {
 	private void createRomCopyOs() {
 		extractBootpage();
 
+		mUserActivityTracker.reportUserAction(UserActionActivity.WIZARD_ACTIVITY, UserActionEvent.BOOTFREE_ROM);
 		final int error = CalcInterface.CreateRom(mOsFilePath, mBootPagePath, mCreatedFilePath, mCalcModel);
 
-		final Tracker tracker = EasyTracker.getInstance(this);
-		tracker.send(MapBuilder.createEvent(AnalyticsConstants.WIZARD_ACTIVITY, AnalyticsConstants.BOOTFREE_ROM, null,
-				(long) error).build());
-
 		if (error == 0) {
-			finishSuccess();
+			finishSuccess(mCreatedFilePath);
 		} else {
 			finishRomError();
 		}
@@ -457,7 +453,7 @@ public class WizardActivity extends Activity implements BrowseCallback {
 				if (success) {
 					final int error = CalcInterface.CreateRom(mOsFilePath, mBootPagePath, mCreatedFilePath, mCalcModel);
 					if (error == 0) {
-						finishSuccess();
+						finishSuccess(mCreatedFilePath);
 					} else {
 						finishRomError();
 					}
@@ -477,9 +473,9 @@ public class WizardActivity extends Activity implements BrowseCallback {
 		showRomError();
 	}
 
-	private void finishSuccess() {
+	private void finishSuccess(String fileName) {
 		final Intent resultIntent = new Intent();
-		resultIntent.putExtra(IntentConstants.FILENAME_EXTRA_STRING, mCreatedFilePath);
+		resultIntent.putExtra(IntentConstants.FILENAME_EXTRA_STRING, fileName);
 		setResult(RESULT_OK, resultIntent);
 		finish();
 	}
@@ -548,15 +544,11 @@ public class WizardActivity extends Activity implements BrowseCallback {
 		case BROWSE_OS_CHILD:
 			mOsFilePath = fileName;
 			createRomCopyOs();
+			break;
 		case BROWSE_ROM_CHILD:
-			final Tracker tracker = EasyTracker.getInstance(this);
-			tracker.send(MapBuilder.createEvent(AnalyticsConstants.WIZARD_ACTIVITY, AnalyticsConstants.HAVE_OWN_ROM,
-					null, null).build());
+			mUserActivityTracker.reportUserAction(UserActionActivity.WIZARD_ACTIVITY, UserActionEvent.HAVE_OWN_ROM);
 
-			final Intent returnIntent = new Intent();
-			returnIntent.putExtra(IntentConstants.FILENAME_EXTRA_STRING, fileName);
-			setResult(Activity.RESULT_OK, returnIntent);
-			finish();
+			finishSuccess(fileName);
 			break;
 		}
 	}

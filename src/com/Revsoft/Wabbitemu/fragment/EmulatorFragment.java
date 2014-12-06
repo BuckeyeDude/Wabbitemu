@@ -1,6 +1,7 @@
 package com.Revsoft.Wabbitemu.fragment;
 
 import java.io.File;
+import java.util.concurrent.CountDownLatch;
 
 import android.app.Fragment;
 import android.content.Context;
@@ -12,17 +13,19 @@ import android.os.Handler;
 import android.os.Looper;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 
-import com.Revsoft.Wabbitemu.CalcInterface;
 import com.Revsoft.Wabbitemu.CalcSkin;
 import com.Revsoft.Wabbitemu.CalcSkin.CalcSkinChangedListener;
 import com.Revsoft.Wabbitemu.R;
+import com.Revsoft.Wabbitemu.SkinBitmapLoader;
 import com.Revsoft.Wabbitemu.WabbitLCD;
-import com.Revsoft.Wabbitemu.threads.CalcThread;
+import com.Revsoft.Wabbitemu.calc.CalculatorManager;
+import com.Revsoft.Wabbitemu.calc.FileLoadedCallback;
 import com.Revsoft.Wabbitemu.utils.PreferenceConstants;
 import com.Revsoft.Wabbitemu.utils.ProgressTask;
 
@@ -31,11 +34,13 @@ public class EmulatorFragment extends Fragment {
 	private static final String ACTIVITY_PAUSE_KEY = "EmulatorFragment";
 
 	private final Handler mHandler = new Handler(Looper.getMainLooper());
+	private final CalculatorManager mCalculatorManager = CalculatorManager.getInstance();
+	private final SkinBitmapLoader mSkinLoader = SkinBitmapLoader.getInstance();
+	private final SkinUpdateListener mSkinUpdateListener = new SkinUpdateListener();
+
 	private Context mContext;
-	private CalcThread mCalcThread;
-	private CalcSkin mCalcSkin;
-	private String mCurrentRomFile;
 	private SharedPreferences mSharedPrefs;
+	private CalcSkin mCalcSkin;
 	private ProgressTask mSendFileTask;
 
 	private WabbitLCD mSurfaceView;
@@ -44,16 +49,13 @@ public class EmulatorFragment extends Fragment {
 	private Runnable mRunnableToHandle;
 
 	public void handleFile(final File f, final Runnable runnable) {
-		if (mCalcThread != null) {
-			mCalcThread.setPaused(SEND_FILE_PAUSE_KEY, true);
-		}
-
 		if (!mIsInitialized) {
 			mFileToHandle = f;
 			mRunnableToHandle = runnable;
 			return;
 		}
 
+		mCalculatorManager.pauseCalc(SEND_FILE_PAUSE_KEY);
 		final String name = f.getName();
 		final boolean isRom = name.endsWith(".rom") || name.endsWith(".sav");
 		final int stringId = isRom ? R.string.sendingRom : R.string.sendingFile;
@@ -68,22 +70,19 @@ public class EmulatorFragment extends Fragment {
 		final View view = inflater.inflate(R.layout.emulator, container);
 		mSurfaceView = (WabbitLCD) view.findViewById(R.id.textureView);
 		mCalcSkin = (CalcSkin) view.findViewById(R.id.skinView);
-		mCalcSkin.registerSkinChangedListener(new CalcSkinChangedListener() {
+		mCalculatorManager.setScreenCallback(mSurfaceView);
+		mCalculatorManager.setCalcSkin(mCalcSkin);
 
-			@Override
-			public void onCalcSkinChanged(final Rect lcdRect, final Rect lcdSkinRect) {
-				mHandler.post(new Runnable() {
+		mSkinLoader.registerSkinChangedListener(mSkinUpdateListener);
 
-					@Override
-					public void run() {
-						mSurfaceView.updateSkin(lcdRect, lcdSkinRect);
-						mCalcSkin.invalidate();
-					}
-
-				});
-			}
-		});
 		return view;
+	}
+	
+	@Override
+	public void onDestroyView() {
+		super.onDestroyView();
+
+		mSkinLoader.unregisterSkinChangedListener(mSkinUpdateListener);
 	}
 
 	@Override
@@ -94,45 +93,35 @@ public class EmulatorFragment extends Fragment {
 	}
 
 	@Override
-	public void onPause() {
-		if (mCalcThread != null) {
-			mCalcThread.setPaused(ACTIVITY_PAUSE_KEY, true);
-		}
-
-		super.onPause();
-
-		if (createTempSave()) {
-			saveCurrentRom();
-		}
-
-		mIsInitialized = false;
-	}
-
-	@Override
 	public void onResume() {
+		mCalculatorManager.setCalcSkin(mCalcSkin);
+		mCalculatorManager.unPauseCalc(ACTIVITY_PAUSE_KEY);
+		mSurfaceView.updateSkin(mSkinLoader.getLcdRect(), mSkinLoader.getSkinRect());
+		mCalcSkin.invalidate();
+
 		mIsInitialized = true;
 		if (mFileToHandle != null) {
 			handleFile(mFileToHandle, mRunnableToHandle);
 			mFileToHandle = null;
 			mRunnableToHandle = null;
 		}
-
-		if (mCalcThread != null) {
-			mCalcThread.setPaused(ACTIVITY_PAUSE_KEY, false);
-		}
-
 		super.onResume();
 
 		updateSettings();
 	}
 
 	@Override
+	public void onPause() {
+		mCalculatorManager.pauseCalc(ACTIVITY_PAUSE_KEY);
+		super.onPause();
+
+		mCalculatorManager.saveCurrentRom();
+		mIsInitialized = false;
+	}
+
+	@Override
 	public void onDestroy() {
 		super.onDestroy();
-
-		if (mCalcThread != null) {
-			mCalcThread.interrupt();
-		}
 
 		if (mSendFileTask != null) {
 			mSendFileTask.cancel(false);
@@ -141,38 +130,32 @@ public class EmulatorFragment extends Fragment {
 
 	@Nullable
 	public Bitmap getScreenshot() {
-		if (mCalcThread == null) {
-			return null;
-		}
-
-		return mCalcThread.getScreenshot();
+		return mSurfaceView.getScreen();
 	}
 
 	public void resetCalc() {
-		if (mCalcThread != null) {
-			mCalcThread.resetCalc();
-		}
-	}
-
-	private boolean createTempSave() {
-		if (mCurrentRomFile == null || mCurrentRomFile.equals("")) {
-			return false;
-		}
-
-		final File tempDir = getActivity().getFilesDir();
-		mCurrentRomFile = tempDir.getAbsoluteFile() + "/Wabbitemu.sav";
-		return CalcInterface.SaveCalcState(mCurrentRomFile);
-	}
-
-	private void saveCurrentRom() {
-		final SharedPreferences.Editor editor = mSharedPrefs.edit();
-		editor.putString(PreferenceConstants.ROM_PATH, mCurrentRomFile);
-		editor.commit();
+		mCalculatorManager.resetCalc();
 	}
 
 	private void updateSettings() {
-		if (mSharedPrefs.getBoolean(PreferenceConstants.STAY_AWAKE, false)) {
+		if (mSharedPrefs.getBoolean(PreferenceConstants.STAY_AWAKE.toString(), false)) {
 			getActivity().getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+		}
+	}
+
+	private class SkinUpdateListener implements CalcSkinChangedListener {
+		@Override
+		public void onCalcSkinChanged(final Rect lcdRect, final Rect lcdSkinRect) {
+			mHandler.post(new Runnable() {
+
+				@Override
+				public void run() {
+					mSurfaceView.updateSkin(lcdRect, lcdSkinRect);
+					Log.d("View", "Request update");
+					mCalcSkin.invalidate();
+				}
+
+			});
 		}
 	}
 
@@ -202,63 +185,46 @@ public class EmulatorFragment extends Fragment {
 				mCalcSkin.destroySkin();
 				mCalcSkin.invalidate();
 			}
-			CalcInterface.SetAutoTurnOn(mSharedPrefs.getBoolean(PreferenceConstants.AUTO_TURN_ON, true));
 		}
+
+		private Boolean mSuccess;
 
 		@Override
 		protected Boolean doInBackground(final Void... params) {
-			final Boolean success;
-			if (mIsRom) {
-				success = loadRom();
-			} else {
-				success = loadFile();
-			}
+			final CountDownLatch latch = new CountDownLatch(1);
+			mSuccess = Boolean.FALSE;
+			final FileLoadedCallback callback = new FileLoadedCallback() {
 
-			return success;
-		}
-
-		private Boolean loadFile() {
-			final int linkResult = CalcInterface.LoadFile(mFile.getPath());
-			return linkResult == 0 ? Boolean.TRUE : Boolean.FALSE;
-		}
-
-		private Boolean loadRom() {
-			final Boolean success;
-			mCurrentRomFile = mFile.getPath();
-			if (mCalcThread != null) {
-				mCalcThread.interrupt();
-				try {
-					mCalcThread.join();
-				} catch (final InterruptedException e) {
-					return Boolean.FALSE;
+				@Override
+				public void onFileLoaded(boolean wasSuccessful) {
+					latch.countDown();
+					mSuccess = wasSuccessful;
+					mCalculatorManager.removeRomLoadListener(this);
 				}
+
+			};
+
+			if (mIsRom) {
+				mCalculatorManager.addRomLoadListener(callback);
+				mCalculatorManager.loadRomFile(mFile);
+			} else {
+				mCalculatorManager.loadFile(mFile, callback);
 			}
 
-			success = CalcInterface.CreateCalc(mCurrentRomFile);
-			if (!success) {
+			try {
+				latch.await();
+			} catch (InterruptedException e) {
 				return Boolean.FALSE;
 			}
 
-			mCalcSkin.loadSkinAndKeymap();
-			if (!isCancelled()) {
-				mCalcThread = new CalcThread(mSurfaceView);
-				mCalcThread.start();
-			}
-
-			return success;
+			return mSuccess;
 		}
 
 		@Override
 		protected void onPostExecute(final Boolean wasSuccessful) {
-			if (mCalcThread != null) {
-				mCalcThread.setPaused(SEND_FILE_PAUSE_KEY, false);
-			}
+			mCalculatorManager.unPauseCalc(SEND_FILE_PAUSE_KEY);
 
-			if (wasSuccessful) {
-				if (mIsRom) {
-					saveCurrentRom();
-				}
-			} else if (mRunnable != null) {
+			if (!wasSuccessful && mRunnable != null) {
 				mRunnable.run();
 			}
 

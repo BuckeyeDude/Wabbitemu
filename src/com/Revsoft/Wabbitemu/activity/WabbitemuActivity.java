@@ -4,9 +4,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Map;
-
-import org.acra.annotation.ReportsCrashes;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -18,6 +15,7 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v4.widget.DrawerLayout.DrawerListener;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -29,20 +27,22 @@ import android.widget.Toast;
 
 import com.Revsoft.Wabbitemu.CalcInterface;
 import com.Revsoft.Wabbitemu.R;
+import com.Revsoft.Wabbitemu.SkinBitmapLoader;
+import com.Revsoft.Wabbitemu.calc.CalculatorManager;
+import com.Revsoft.Wabbitemu.calc.FileLoadedCallback;
 import com.Revsoft.Wabbitemu.fragment.EmulatorFragment;
-import com.Revsoft.Wabbitemu.utils.AnalyticsConstants;
+import com.Revsoft.Wabbitemu.utils.AnalyticsConstants.UserActionActivity;
+import com.Revsoft.Wabbitemu.utils.AnalyticsConstants.UserActionEvent;
 import com.Revsoft.Wabbitemu.utils.ErrorUtils;
 import com.Revsoft.Wabbitemu.utils.IntentConstants;
 import com.Revsoft.Wabbitemu.utils.PreferenceConstants;
 import com.Revsoft.Wabbitemu.utils.StorageUtils;
-import com.google.analytics.tracking.android.EasyTracker;
-import com.google.analytics.tracking.android.MapBuilder;
-import com.google.analytics.tracking.android.Tracker;
+import com.Revsoft.Wabbitemu.utils.UserActivityTracker;
 
-@ReportsCrashes(formKey = "", formUri = "http://www.yourselectedbackend.com/reportpath")
 public class WabbitemuActivity extends Activity {
 	private static final int LOAD_FILE_CODE = 1;
 	private static final int SETUP_WIZARD = 2;
+	private static final String DEFAULT_FILE_REGEX = "\\.(rom|sav|[7|8][2|3|x|c|5|6][b|c|d|g|i|k|l|m|n|p|q|s|t|u|v|w|y|z])$";
 
 	private enum MainMenuItem {
 		LOAD_FILE_MENU_ITEM(0),
@@ -69,28 +69,51 @@ public class WabbitemuActivity extends Activity {
 		}
 	}
 
-	private static final String DEFAULT_FILE_REGEX = "\\.(rom|sav|[7|8][2|3|x|c|5|6][b|c|d|g|i|k|l|m|n|p|q|s|t|u|v|w|y|z])$";
+	private final UserActivityTracker mUserActivityTracker = UserActivityTracker.getInstance();
+	private final CalculatorManager mCalcManager = CalculatorManager.getInstance();
+	private final SkinBitmapLoader mSkinLoader = SkinBitmapLoader.getInstance();
 
 	private EmulatorFragment mEmulatorFragment;
 	private DrawerLayout mDrawerLayout;
 	private ListView mDrawerList;
 	private boolean mWasUserLaunched;
 
-	private void handleFile(final File f, final Runnable runnable) {
-		final Tracker tracker = EasyTracker.getInstance(WabbitemuActivity.this);
-		tracker.send(MapBuilder.createEvent(AnalyticsConstants.MAIN_ACTIVITY, AnalyticsConstants.SEND_FILE,
-				f.getAbsolutePath(), null).build());
+	private void handleFile(File f, Runnable runnable) {
+		mUserActivityTracker.reportUserAction(UserActionActivity.MAIN_ACTIVITY,
+				UserActionEvent.SEND_FILE,
+				f.getAbsolutePath());
 
 		mEmulatorFragment.handleFile(f, runnable);
 	}
 
 	@Override
 	public void onCreate(final Bundle savedInstanceState) {
+		Log.i("WabbitemuActivity", "Wabbit start");
 		super.onCreate(savedInstanceState);
-		// ACRA.init(getApplication());
-		EasyTracker.getInstance(this).activityStart(this);
+		mUserActivityTracker.initialize(this, getString(R.string.mintKey));
+		mCalcManager.initialize(this);
+		mSkinLoader.initialize(this);
+
+		mUserActivityTracker.reportActivityStart(this);
 		final File cacheDir = getCacheDir();
 		CalcInterface.SetCacheDir(cacheDir.getAbsolutePath());
+		final String fileName = getLastRomSetting();
+		final Runnable runnable = getLaunchRunnable();
+		if (fileName != null) {
+			final File file = new File(fileName);
+			mCalcManager.addRomLoadListener(new FileLoadedCallback() {
+
+				@Override
+				public void onFileLoaded(boolean wasSuccessful) {
+					if (!wasSuccessful) {
+						runnable.run();
+					}
+
+					mCalcManager.removeRomLoadListener(this);
+				}
+			});
+			mCalcManager.loadRomFile(file);
+		}
 
 		toggleHideyBar();
 		setContentView(R.layout.main);
@@ -104,13 +127,11 @@ public class WabbitemuActivity extends Activity {
 			return;
 		}
 
-		final Runnable runnable = getLaunchRunnable();
-
 		// we expect an absolute filename
-		final String fileName = getLastRomSetting();
-		if (fileName != null && !fileName.equals("")) {
-			handleFile(new File(fileName), runnable);
-		} else {
+		final int lastRomModel = getLastRomModel();
+		if (lastRomModel >= 0) {
+			mSkinLoader.loadSkinAndKeymap(lastRomModel);
+		} else if (fileName == null || fileName.equals("")) {
 			runnable.run();
 		}
 	}
@@ -118,7 +139,8 @@ public class WabbitemuActivity extends Activity {
 	@Override
 	public void onStop() {
 		super.onStop();
-		EasyTracker.getInstance(this).activityStop(this);
+
+		mUserActivityTracker.reportActivityStop(this);
 	}
 
 	private void attachMenu() {
@@ -150,10 +172,7 @@ public class WabbitemuActivity extends Activity {
 
 			@Override
 			public void onDrawerOpened(final View arg0) {
-				final Tracker tracker = EasyTracker.getInstance(WabbitemuActivity.this);
-				final Map<String, String> event = MapBuilder.createEvent(AnalyticsConstants.MAIN_ACTIVITY,
-						AnalyticsConstants.OPEN_MENU, null, null).build();
-				tracker.send(event);
+				mUserActivityTracker.reportUserAction(UserActionActivity.MAIN_ACTIVITY, UserActionEvent.OPEN_MENU);
 			}
 
 			@Override
@@ -176,12 +195,17 @@ public class WabbitemuActivity extends Activity {
 
 	private String getLastRomSetting() {
 		final SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
-		return sharedPrefs.getString(PreferenceConstants.ROM_PATH, "");
+		return sharedPrefs.getString(PreferenceConstants.ROM_PATH.toString(), null);
+	}
+
+	private int getLastRomModel() {
+		final SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+		return sharedPrefs.getInt(PreferenceConstants.ROM_MODEL.toString(), -1);
 	}
 
 	private boolean isFirstRun() {
 		final SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
-		return sharedPrefs.getBoolean(PreferenceConstants.FIRST_RUN, true);
+		return sharedPrefs.getBoolean(PreferenceConstants.FIRST_RUN.toString(), true);
 	}
 
 	@Override
@@ -195,9 +219,9 @@ public class WabbitemuActivity extends Activity {
 					@Override
 					public void run() {
 						ErrorUtils.showErrorDialog(WabbitemuActivity.this, R.string.errorLink);
-						final Tracker tracker = EasyTracker.getInstance(WabbitemuActivity.this);
-						tracker.send(MapBuilder.createEvent(AnalyticsConstants.MAIN_ACTIVITY,
-								AnalyticsConstants.SEND_FILE_ERROR, fileName, null).build());
+
+						mUserActivityTracker.reportUserAction(UserActionActivity.MAIN_ACTIVITY,
+								UserActionEvent.SEND_FILE_ERROR, fileName);
 					}
 				});
 			}
@@ -210,7 +234,7 @@ public class WabbitemuActivity extends Activity {
 				if (isFirstRun()) {
 					final SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
 					final SharedPreferences.Editor editor = sharedPrefs.edit();
-					editor.putBoolean(PreferenceConstants.FIRST_RUN, false);
+					editor.putBoolean(PreferenceConstants.FIRST_RUN.toString(), false);
 					editor.commit();
 
 					mDrawerLayout.openDrawer(mDrawerList);
@@ -262,10 +286,9 @@ public class WabbitemuActivity extends Activity {
 	private boolean handleMenuItem(final MainMenuItem position) {
 		mDrawerLayout.closeDrawer(mDrawerList);
 
-		final Tracker tracker = EasyTracker.getInstance(WabbitemuActivity.this);
-		final Map<String, String> event = MapBuilder.createEvent(AnalyticsConstants.MAIN_ACTIVITY,
-				AnalyticsConstants.MENU_ITEM_SELECTED, position.toString(), null).build();
-		tracker.send(event);
+		mUserActivityTracker.reportUserAction(UserActionActivity.MAIN_ACTIVITY,
+				UserActionEvent.MENU_ITEM_SELECTED,
+				position.toString());
 
 		switch (position) {
 		case SETTINGS_MENU_ITEM:
@@ -292,10 +315,7 @@ public class WabbitemuActivity extends Activity {
 	}
 
 	private void screenshotCalc() {
-		final Tracker tracker = EasyTracker.getInstance(WabbitemuActivity.this);
-		final Map<String, String> event = MapBuilder.createEvent(AnalyticsConstants.MAIN_ACTIVITY,
-				AnalyticsConstants.SCREENSHOT, null, null).build();
-		tracker.send(event);
+		mUserActivityTracker.reportUserAction(UserActionActivity.MAIN_ACTIVITY, UserActionEvent.SCREENSHOT);
 
 		final Bitmap screenshot = mEmulatorFragment.getScreenshot();
 		if (screenshot == null) {

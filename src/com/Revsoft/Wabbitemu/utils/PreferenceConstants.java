@@ -1,12 +1,24 @@
 package com.Revsoft.Wabbitemu.utils;
 
-public class PreferenceConstants {
-	public static final String STAY_AWAKE = "alwaysAwake";
-	public static final String AUTO_TURN_ON = "autoTurnOn";
-	public static final String ROM_PATH = "romPath";
-	public static final String FIRST_RUN = "firstRun";
-	public static final String FACEPLATE_COLOR = "faceplateColor";
-	public static final String USE_VIBRATION = "useVibration";
-	public static final String CORRECT_SCREEN_RATIO = "correctScreenRatio";
-	public static final String LARGE_SCREEN = "largeScreen";
+public enum PreferenceConstants {
+	STAY_AWAKE("alwaysAwake"),
+	AUTO_TURN_ON("autoTurnOn"),
+	ROM_PATH("romPath"),
+	ROM_MODEL("romModel"),
+	FIRST_RUN("firstRun"),
+	FACEPLATE_COLOR("faceplateColor"),
+	USE_VIBRATION("useVibration"),
+	CORRECT_SCREEN_RATIO("correctScreenRatio"),
+	LARGE_SCREEN("largeScreen");
+	
+	private String mKey;
+	
+	private PreferenceConstants(String key) {
+		mKey = key;
+	}
+	
+	@Override
+	public String toString() {
+		return mKey;
+	}
 }

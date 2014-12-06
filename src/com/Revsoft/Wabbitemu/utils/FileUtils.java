@@ -18,10 +18,12 @@ import android.os.FileObserver;
 
 public class FileUtils {
 
-	private static final FileUtils INSTANCE = new FileUtils();
+	private static class SingletonHolder {
+		private static final FileUtils INSTANCE = new FileUtils();
+	}
 
 	public static FileUtils getInstance() {
-		return INSTANCE;
+		return SingletonHolder.INSTANCE;
 	}
 
 	private Set<String> mFiles;
@@ -47,17 +49,11 @@ public class FileUtils {
 				if (StorageUtils.hasExternalStorage()) {
 					path = StorageUtils.getPrimaryStoragePath();
 					mFiles = findValidFiles(path);
-					RecursiveFileObserver observer = getObserverForDir(path);
-					mObservers.add(observer);
-					observer.startWatching();
 
 					final String extraStorage = System.getenv("SECONDARY_STORAGE");
 					if (extraStorage != null && !"".equals(extraStorage)) {
 						for (final String dir : extraStorage.split(":")) {
 							mFiles.addAll(findValidFiles(dir));
-							observer = getObserverForDir(dir);
-							mObservers.add(observer);
-							observer.startWatching();
 						}
 					}
 				} else {
@@ -74,26 +70,6 @@ public class FileUtils {
 		};
 
 		asyncTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-	}
-
-	private RecursiveFileObserver getObserverForDir(final String observerPath) {
-		return new RecursiveFileObserver(observerPath, FileObserver.CREATE | FileObserver.DELETE) {
-
-			@Override
-			public void onEvent(final int event, final String path) {
-				switch (event) {
-				case FileObserver.CREATE:
-					final File file = new File(path);
-					if (file.isFile()) {
-						mFiles.add(file.getAbsolutePath());
-					}
-					break;
-				case FileObserver.DELETE:
-					mFiles.remove(path);
-					break;
-				}
-			}
-		};
 	}
 
 	public List<String> getValidFiles(final String extensionsRegex) {
@@ -126,20 +102,25 @@ public class FileUtils {
 			return validFiles;
 		}
 
-		final List<File> filesToSearch = new LinkedList<File>(Arrays.asList(rootDirArray));
+		final LinkedList<File> filesToSearch = new LinkedList<File>(Arrays.asList(rootDirArray));
 
 		while (!filesToSearch.isEmpty()) {
-			final File file = filesToSearch.remove(0);
+			final File file = filesToSearch.removeFirst();
 			searchedFiles.add(file);
 
 			if (file.isDirectory()) {
+				final FileObserver observer = new SingleFileObserver(file.getPath(),
+						FileObserver.CREATE | FileObserver.DELETE);
+				mObservers.add(observer);
+				observer.startWatching();
+
 				final File[] subDirArray = file.listFiles(new WabbitFileFilter());
 				if (subDirArray == null || subDirArray.length == 0) {
 					continue;
 				}
 
 				Collections.addAll(filesToSearch, subDirArray);
-			} else if (file.isFile()) {
+			} else {
 				final boolean isValid = isValidFile(file.getPath());
 				if (isValid) {
 					validFiles.add(file.getAbsolutePath());
@@ -159,14 +140,14 @@ public class FileUtils {
 		if (file.length() != (i + 4)) {
 			return false;
 		}
-		
+
 		final char ext1 = Character.toLowerCase(file.charAt(++i));
 		final char ext2 = Character.toLowerCase(file.charAt(++i));
 		final char ext3 = Character.toLowerCase(file.charAt(++i));
 		// Regex for reference
 		// ".+\\.(rom|sav|([87][xc3265][bcdgiklmnpqstuvwyz]))$";
 		if ((ext1 == 'r' && ext2 == 'o' && ext3 == 'm') ||
-			(ext1 == 's' && ext2 == 'a' && ext3 == 'v'))
+				(ext1 == 's' && ext2 == 'a' && ext3 == 'v'))
 		{
 			return true;
 		}
@@ -214,12 +195,26 @@ public class FileUtils {
 		return true;
 	}
 
+	private void handleFileEvent(final int event, final String path) {
+		switch (event) {
+		case FileObserver.CREATE:
+			final File file = new File(path);
+			if (file.isFile()) {
+				mFiles.add(file.getAbsolutePath());
+			}
+			break;
+		case FileObserver.DELETE:
+			mFiles.remove(path);
+			break;
+		}
+	}
+
 	private class WabbitFileFilter implements FileFilter {
 
 		private WabbitFileFilter() {
 			// no-op
 		}
-		
+
 		@Override
 		public boolean accept(final File pathname) {
 			if (pathname.isDirectory()) {
@@ -230,4 +225,18 @@ public class FileUtils {
 		}
 	}
 
+	private class SingleFileObserver extends FileObserver {
+		private final String mPath;
+
+		public SingleFileObserver(final String path, final int mask) {
+			super(path, mask);
+			mPath = path;
+		}
+
+		@Override
+		public void onEvent(final int event, final String path) {
+			final String newPath = mPath + "/" + path;
+			handleFileEvent(event, newPath);
+		}
+	}
 }
