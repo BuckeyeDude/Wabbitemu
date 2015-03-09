@@ -2,7 +2,9 @@ package com.Revsoft.Wabbitemu;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -21,12 +23,16 @@ import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.preference.PreferenceManager;
+import android.support.annotation.Nullable;
 import android.util.Log;
 import android.view.Display;
 import android.view.WindowManager;
 
 import com.Revsoft.Wabbitemu.CalcSkin.CalcSkinChangedListener;
+import com.Revsoft.Wabbitemu.utils.AnalyticsConstants.UserActionActivity;
+import com.Revsoft.Wabbitemu.utils.AnalyticsConstants.UserActionEvent;
 import com.Revsoft.Wabbitemu.utils.PreferenceConstants;
+import com.Revsoft.Wabbitemu.utils.UserActivityTracker;
 
 public class SkinBitmapLoader {
 	private static final int SKIN_WIDTH = 700;
@@ -50,6 +56,8 @@ public class SkinBitmapLoader {
 
 	private final Set<CalcSkinChangedListener> mSkinListeners = new HashSet<CalcSkinChangedListener>();
 	private final AtomicBoolean mHasLoadedSkin = new AtomicBoolean(false);
+	private final Map<Integer, Rect> mButtonRects = new HashMap<Integer, Rect>();
+	private final UserActivityTracker mUserActivityTracker = UserActivityTracker.getInstance();
 
 	private Context mContext;
 	private Resources mResources;
@@ -217,7 +225,6 @@ public class SkinBitmapLoader {
 
 	private synchronized void setSurfaceSize(final String skinImageId, final String keymapImageId, int model) {
 		final Point displaySize = getDisplaySize();
-
 		mSkinX = 0;
 		mSkinY = 0;
 		mRatio = 1.0;
@@ -254,37 +261,14 @@ public class SkinBitmapLoader {
 			}
 		}
 
-		final int startingGuessX = 0;
-		final int startingGuessY = 0;
 		mKeymapPixels = new int[mKeymapWidth * mKeymapHeight];
 		keymapImage.getPixels(mKeymapPixels, 0, mKeymapWidth, 0, 0, mKeymapWidth, mKeymapHeight);
 		keymapImage.recycle();
-		int foundWidth = 0;
-		int foundHeight = 0;
-		int pixel = startingGuessY * mKeymapWidth + startingGuessX;
-
-		final Point point;
-		if (mKeymapPixels[pixel] == Color.RED) {
-			point = findPixelGuess(pixel);
-		} else {
-			point = findPixelNoGuess();
-		}
-
-		if (point.x == -1) {
+		final Rect lcdRect = parseKeymap();
+		if (lcdRect == null) {
+			mLcdRect = new Rect(0, 0, 1, 1);
 			return;
 		}
-
-		pixel = point.y * mKeymapWidth + point.x;
-		do {
-			foundWidth++;
-			pixel++;
-		} while (mKeymapPixels[pixel] == Color.RED && foundWidth < mKeymapWidth);
-
-		pixel--;
-		do {
-			foundHeight++;
-			pixel += mKeymapWidth;
-		} while (mKeymapPixels[pixel] == Color.RED);
 
 		final int lcdWidth, lcdHeight;
 		switch (model) {
@@ -304,10 +288,10 @@ public class SkinBitmapLoader {
 		}
 
 		mLcdRect = new Rect(0, 0, lcdWidth, lcdHeight);
-		mScreenRect = new Rect((int) (point.x * mKeymapWidthScale) + mSkinX,
-				(int) (point.y * mKeymapHeightScale),
-				(int) ((point.x + foundWidth) * mKeymapWidthScale) + mSkinX,
-				(int) ((point.y + foundHeight) * mKeymapHeightScale));
+		mScreenRect = new Rect((int) (lcdRect.left * mKeymapWidthScale) + mSkinX,
+				(int) (lcdRect.top * mKeymapHeightScale),
+				(int) (lcdRect.right * mKeymapWidthScale) + mSkinX,
+				(int) (lcdRect.bottom * mKeymapHeightScale));
 		if (mCorrectRatio) {
 			final int screenWidth, screenHeight;
 			final double screenRatio = (double) mLcdRect.width() / mLcdRect.height();
@@ -378,41 +362,60 @@ public class SkinBitmapLoader {
 		final WindowManager wm = (WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE);
 		final Display display = wm.getDefaultDisplay();
 		final Point displaySize = new Point();
-		display.getSize(displaySize);
+		display.getRealSize(displaySize);
 		return displaySize;
 	}
 
-	private Point findPixelGuess(int startingPixel) {
-		int pixel = startingPixel;
-		while (pixel >= 0 && mKeymapPixels[pixel] == Color.RED) {
-			pixel -= mKeymapWidth;
-		}
+	private Rect parseKeymap() {
+		mButtonRects.clear();
+		Rect lcdRect = null;
 
-		pixel += mKeymapWidth;
-
-		while (pixel >= 0 && mKeymapPixels[pixel] == Color.RED) {
-			pixel--;
-		}
-
-		pixel++;
-		return new Point(pixel % mKeymapWidth, pixel / mKeymapWidth);
-	}
-
-	private Point findPixelNoGuess() {
-		final Point point = new Point(-1, -1);
-		for (int pixel = 0; pixel < mKeymapWidth * mKeymapHeight; pixel++) {
-			if (mKeymapPixels[pixel] == Color.RED) {
-				point.x = pixel % mKeymapWidth;
-				point.y = pixel / mKeymapWidth;
-				break;
+		for (int pixelOffset = 0; pixelOffset < mKeymapWidth * mKeymapHeight; pixelOffset++) {
+			final int pixelData = mKeymapPixels[pixelOffset];
+			if (pixelData == Color.RED) {
+				if (lcdRect == null) {
+					final int x = pixelOffset % mKeymapWidth;
+					final int y = pixelOffset / mKeymapWidth;
+					lcdRect = new Rect(x, y, x, y);
+				} else {
+					updateRect(lcdRect, pixelOffset);
+				}
+			}
+			
+			if (pixelData != Color.WHITE) {
+				final Rect rect = mButtonRects.get(pixelData);
+				if (rect == null) {
+					final int x = pixelOffset % mKeymapWidth;
+					final int y = pixelOffset / mKeymapWidth;
+					mButtonRects.put(pixelData, new Rect(x, y, x, y));
+				} else {
+					updateRect(rect, pixelOffset);
+				}
 			}
 		}
-		if ((point.x == -1) || (point.y == -1)) {
+		
+		if (lcdRect == null) {
 			Log.d("Keymap", "Keymap fail");
-			mLcdRect = new Rect(0, 0, 1, 1);
+			return null;
 		}
 
-		return point;
+		return lcdRect;
+	}
+
+	private void updateRect(Rect rect, int offset) {
+		final int x = offset % mKeymapWidth;
+		final int y = offset / mKeymapWidth;
+		if (rect.left > x) {
+			rect.left = x;
+		} else if (rect.right < x) {
+			rect.right = x;
+		}
+
+		if (rect.top > y) {
+			rect.top = y;
+		} else if (rect.bottom < y) {
+			rect.bottom = y;
+		}
 	}
 
 	private void createRenderSkin(final int width, final int height, final Bitmap skinImage, int model) {
@@ -444,7 +447,17 @@ public class SkinBitmapLoader {
 	public int getKeymapPixel(int x, int y) {
 		x = (int) (x / mKeymapWidthScale);
 		y = (int) (y / mKeymapHeightScale);
-		return mKeymapPixels[y * mKeymapWidth + x];
+		final int index = y * mKeymapWidth + x;
+		if (index > mKeymapPixels.length) {
+			// LG seems to have issues being able to go beyond bounds. Not sure
+			// why, so gonna track this and see if it goes away with immersive
+			// mode
+			mUserActivityTracker.reportUserAction(UserActionActivity.MAIN_ACTIVITY,
+					UserActionEvent.INVALID_KEYMAP_PIXEL);
+			return mKeymapPixels[mKeymapPixels.length - 1];
+		}
+
+		return mKeymapPixels[index];
 	}
 
 	private void drawFaceplate(final Canvas canvas, int model) {
@@ -485,10 +498,25 @@ public class SkinBitmapLoader {
 	}
 
 	public boolean isOutsideKeymap(int x, int y) {
-		return (x >= (mKeymapWidth * mKeymapWidthScale))
-				|| (y >= (mKeymapHeight * mKeymapHeightScale))
-				|| (x < 0)
-				|| (y < 0)
-				|| mKeymapPixels == null;
+		return (x >= (mKeymapWidth * mKeymapWidthScale)) ||
+				(y >= (mKeymapHeight * mKeymapHeightScale)) ||
+				(x < 0) ||
+				(y < 0) ||
+				mKeymapPixels == null;
+	}
+
+	@Nullable
+	public Rect getKeymapRect(int x, int y) {
+		final int pixelData = getKeymapPixel(x, y);
+		final Rect buttonRect = mButtonRects.get(pixelData);
+		if (buttonRect == null) {
+			return null;
+		}
+
+		final Rect scaledRect = new Rect((int) (buttonRect.left * mKeymapWidthScale) + mSkinX,
+				(int) (buttonRect.top * mKeymapHeightScale) + mSkinY,
+				(int) (buttonRect.right * mKeymapWidthScale) + mSkinX,
+				(int) (buttonRect.bottom * mKeymapHeightScale) + mSkinY);
+		return scaledRect;
 	}
 }

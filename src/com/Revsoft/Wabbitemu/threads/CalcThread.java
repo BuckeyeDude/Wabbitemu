@@ -2,19 +2,19 @@ package com.Revsoft.Wabbitemu.threads;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import android.os.SystemClock;
-import android.util.Log;
 
 import com.Revsoft.Wabbitemu.CalcInterface;
 import com.Revsoft.Wabbitemu.calc.CalcScreenUpdateCallback;
 
 public class CalcThread extends Thread {
 
-	private static final int FPS = 50;
-	private static final int TPS = 1000 / FPS;
-	private static final int MAX_FRAME_SKIP = 5;
+	private static final long FPS = 50L;
+	private static final long TPS = TimeUnit.SECONDS.toMillis(1) / FPS;
+	private static final int MAX_FRAME_SKIP = (int) (FPS / 2);
 
 	private final AtomicBoolean mIsPaused = new AtomicBoolean(false);
 	private final AtomicBoolean mReset = new AtomicBoolean(false);
@@ -29,9 +29,7 @@ public class CalcThread extends Thread {
 	@Override
 	public void run() {
 		long startTime;
-		long timeDiff;
-		int sleepTime = 0;
-		int framesSkipped;
+		int framesSkipped = 0;
 
 		while (true) {
 			if (isInterrupted()) {
@@ -60,8 +58,7 @@ public class CalcThread extends Thread {
 				mScreenUpdateCallback.onUpdateScreen();
 			}
 
-			timeDiff = SystemClock.elapsedRealtime() - startTime;
-			sleepTime = (int) (TPS - timeDiff);
+			long sleepTime = TPS - SystemClock.elapsedRealtime() + startTime;
 
 			if (sleepTime > 0) {
 				try {
@@ -78,9 +75,9 @@ public class CalcThread extends Thread {
 				framesSkipped++;
 			}
 
-			if (framesSkipped == MAX_FRAME_SKIP) {
-				Log.d("", "Frame skip: " + framesSkipped);
-			}
+			// if (framesSkipped == MAX_FRAME_SKIP) {
+			// Log.d("", "Frame skip: " + framesSkipped);
+			// }
 		}
 	}
 

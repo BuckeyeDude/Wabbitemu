@@ -7,6 +7,7 @@ import java.util.concurrent.TimeUnit;
 import android.app.Activity;
 import android.content.Context;
 
+import com.Revsoft.Wabbitemu.R;
 import com.Revsoft.Wabbitemu.utils.AnalyticsConstants.UserActionActivity;
 import com.Revsoft.Wabbitemu.utils.AnalyticsConstants.UserActionEvent;
 import com.google.analytics.tracking.android.EasyTracker;
@@ -32,15 +33,9 @@ public class UserActivityTracker {
 		// Disallow instantiation
 	}
 
-	public void initialize(Context context, final String key) {
+	public void initialize(Context context) {
 		mContext = context;
-		EXECUTOR.schedule(new Runnable() {
-
-			@Override
-			public void run() {
-				Mint.initAndStartSession(mContext, key);
-			}
-		}, REPORT_DELAY, TimeUnit.MILLISECONDS);
+		Mint.initAndStartSession(mContext, mContext.getString(R.string.mintKey));
 	}
 
 	public void reportActivityStart(final Activity activity) {
@@ -48,6 +43,7 @@ public class UserActivityTracker {
 
 			@Override
 			public void run() {
+				Mint.leaveBreadcrumb("Start " + activity.getClass().getSimpleName());
 				EasyTracker.getInstance(mContext).activityStart(activity);
 			}
 		}, REPORT_DELAY, TimeUnit.MILLISECONDS);
@@ -58,7 +54,18 @@ public class UserActivityTracker {
 
 			@Override
 			public void run() {
+				Mint.leaveBreadcrumb("Stop " + activity.getClass().getSimpleName());
 				EasyTracker.getInstance(mContext).activityStop(activity);
+			}
+		}, REPORT_DELAY, TimeUnit.MILLISECONDS);
+	}
+
+	public void reportBreadCrumb(final String breadcrumb) {
+		EXECUTOR.schedule(new Runnable() {
+
+			@Override
+			public void run() {
+				Mint.leaveBreadcrumb(breadcrumb);
 			}
 		}, REPORT_DELAY, TimeUnit.MILLISECONDS);
 	}
@@ -72,6 +79,7 @@ public class UserActivityTracker {
 
 			@Override
 			public void run() {
+				Mint.logEvent(event.toString());
 				final Tracker tracker = EasyTracker.getInstance(mContext);
 				tracker.send(MapBuilder.createEvent(activity.toString(), event.toString(), extra, null).build());
 			}

@@ -1,5 +1,8 @@
 package com.Revsoft.Wabbitemu;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
@@ -11,7 +14,6 @@ import android.graphics.Rect;
 import android.os.Vibrator;
 import android.preference.PreferenceManager;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -24,10 +26,12 @@ public class CalcSkin extends View {
 	private final CalcKeyManager mCalcKeyManager;
 	private final Vibrator mVibrator;
 	private final Paint mPaint;
-
+	private final List<Rect> mKeymapDrawRect = new ArrayList<Rect>();
+	private final Paint mKeymapPaint = new Paint();
+	
 	private boolean mHasVibrationEnabled;
 
-	public CalcSkin(final Context context, final AttributeSet attrs) {
+	public CalcSkin(Context context, AttributeSet attrs) {
 		super(context, attrs);
 
 		mCalcKeyManager = CalcKeyManager.getInstance();
@@ -35,16 +39,20 @@ public class CalcSkin extends View {
 		mSharedPrefs.registerOnSharedPreferenceChangeListener(mPrefListener);
 		mVibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
 		mHasVibrationEnabled = mSharedPrefs.getBoolean(PreferenceConstants.USE_VIBRATION.toString(), true);
+
 		mPaint = new Paint();
 		mPaint.setAntiAlias(false);
 		mPaint.setARGB(0xFF, 0xFF, 0xFF, 0xFF);
+
+		mKeymapPaint.setAntiAlias(false);
+		mKeymapPaint.setARGB(0x80, 0x00, 0x00, 0x00);
 	}
 
 	private final OnSharedPreferenceChangeListener mPrefListener = new OnSharedPreferenceChangeListener() {
 
 		@Override
 		public void onSharedPreferenceChanged(final SharedPreferences sharedPreferences, final String key) {
-			if (key.equals(PreferenceConstants.USE_VIBRATION)) {
+			if (key.equals(PreferenceConstants.USE_VIBRATION.toString())) {
 				mHasVibrationEnabled = sharedPreferences.getBoolean(key, true);
 			}
 		}
@@ -65,9 +73,12 @@ public class CalcSkin extends View {
 		final Bitmap renderedSkin = mSkinLoader.getRenderedSkin();
 		if (renderedSkin != null) {
 			canvas.drawBitmap(renderedSkin, 0, 0, mPaint);
-			Log.i("Wabbitemu activity", "Wabbit finish");
 		} else {
 			canvas.drawColor(Color.DKGRAY);
+		}
+		
+		for (Rect rect : mKeymapDrawRect) {
+			canvas.drawRect(rect, mKeymapPaint);
 		}
 	}
 
@@ -89,32 +100,47 @@ public class CalcSkin extends View {
 		final int id = event.getPointerId(index);
 
 		if (mSkinLoader.isOutsideKeymap(x, y)) {
-			return true;
+			return false;
 		}
 
 		final int actionMasked = event.getActionMasked();
 		if (actionMasked == MotionEvent.ACTION_UP || actionMasked == MotionEvent.ACTION_POINTER_UP
 				|| actionMasked == MotionEvent.ACTION_CANCEL)
 		{
+			for (int i = 0; i < mKeymapDrawRect.size(); i++) {
+				final Rect rect = mKeymapDrawRect.get(i);
+				invalidate(rect);
+			}
+			mKeymapDrawRect.clear();
+
 			mCalcKeyManager.doKeyUp(id);
 			return true;
 		}
 
 		final int color = mSkinLoader.getKeymapPixel(x, y);
 		if (Color.red(color) == 0xFF) {
-			return true;
+			return false;
 		}
 
 		final int group = Color.green(color) >> 4;
 		final int bit = Color.blue(color) >> 4;
 		if ((group > 7) || (bit > 7)) {
-			return true;
+			return false;
 		}
 
 		if (actionMasked == MotionEvent.ACTION_DOWN || actionMasked == MotionEvent.ACTION_POINTER_DOWN) {
 			if (mHasVibrationEnabled) {
 				mVibrator.vibrate(50);
 			}
+
+			final Rect rect = mSkinLoader.getKeymapRect(x, y);
+			if (rect == null) {
+				return false;
+			}
+
+			mKeymapDrawRect.add(rect);
+
+			invalidate(rect);
 
 			mCalcKeyManager.doKeyDown(id, group, bit);
 		}

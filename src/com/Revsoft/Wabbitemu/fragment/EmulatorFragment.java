@@ -117,11 +117,6 @@ public class EmulatorFragment extends Fragment {
 
 		mCalculatorManager.saveCurrentRom();
 		mIsInitialized = false;
-	}
-
-	@Override
-	public void onDestroy() {
-		super.onDestroy();
 
 		if (mSendFileTask != null) {
 			mSendFileTask.cancel(false);

@@ -16,6 +16,7 @@ import com.Revsoft.Wabbitemu.CalcSkin;
 import com.Revsoft.Wabbitemu.SkinBitmapLoader;
 import com.Revsoft.Wabbitemu.threads.CalcThread;
 import com.Revsoft.Wabbitemu.utils.PreferenceConstants;
+import com.Revsoft.Wabbitemu.utils.UserActivityTracker;
 
 public class CalculatorManager {
 	private static final String PAUSE_KEY = "pauseKey";
@@ -28,6 +29,7 @@ public class CalculatorManager {
 		return SingletonHolder.SINGLETON;
 	}
 
+	private final UserActivityTracker mUserTracker = UserActivityTracker.getInstance();
 	private final SkinBitmapLoader mSkinLoader = SkinBitmapLoader.getInstance();
 	private final ExecutorService mExecutorService = Executors.newSingleThreadExecutor();
 	private final Map<FileLoadedCallback, String> mRomCallbacks = new ConcurrentHashMap<FileLoadedCallback, String>();
@@ -65,6 +67,7 @@ public class CalculatorManager {
 
 		mHasLoadedRom.set(false);
 		mCurrentRomFile = file.getPath();
+		mUserTracker.reportBreadCrumb("Loading rom " + file.getAbsolutePath());
 		mExecutorService.execute(new LoadRomRunnable());
 	}
 
@@ -179,10 +182,12 @@ public class CalculatorManager {
 			CalcInterface.SetAutoTurnOn(mSharedPrefs.getBoolean(PreferenceConstants.AUTO_TURN_ON.toString(), true));
 			success = CalcInterface.CreateCalc(mCurrentRomFile);
 			if (!success) {
+				mUserTracker.reportBreadCrumb("Failed to load ROM");
 				notifyRomCallbacks(false);
 				return;
 			}
 
+			mUserTracker.reportBreadCrumb("Loaded rom " + CalcInterface.GetModel());
 			unPauseCalc(PAUSE_KEY);
 			handleRomLoaded();
 		}

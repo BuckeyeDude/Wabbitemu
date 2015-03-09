@@ -26,7 +26,8 @@ public class AnalyticsConstants {
 		SEND_FILE_ERROR("SendFileError"),
 		HAVE_OWN_ROM("HaveOwnROM"),
 		BOOTFREE_ROM("BootFreeROM"),
-		MENU_ITEM_SELECTED("MenuItemSelected");
+		MENU_ITEM_SELECTED("MenuItemSelected"),
+		INVALID_KEYMAP_PIXEL("InvalidKeymapPixel");
 
 		private final String mAction;
 

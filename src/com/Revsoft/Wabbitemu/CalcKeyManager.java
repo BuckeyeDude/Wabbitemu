@@ -76,7 +76,7 @@ public class CalcKeyManager {
 	};
 
 	private static final int MIN_TSTATE_KEY = 600;
-	private static final int MIN_TSTATE_ON_KEY = 2500;
+	private static final int MIN_TSTATE_ON_KEY = 25000;
 
 	private static final int MAX_TSTATE_KEY = MIN_TSTATE_KEY * 1000000;
 	private static final int MAX_TSTATE_ON_KEY = MAX_TSTATE_KEY * 1000000;
