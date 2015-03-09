@@ -3,17 +3,18 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include "calc.h"
-#include "core.h"
-#include "link.h"
-#include "savestate.h"
-#include "83psehw.h"
-#include "fileutilities.h"
-#include <android/log.h>
+#include "core\core.h"
+#include "hardware\83psehw.h"
+#include "hardware\link.h"
+#include "interface\calc.h"
+#include "utilities\fileutilities.h"
+#include "utilities\savestate.h"
 
 extern int def(FILE *source, FILE *dest, int level);
 extern int inf(FILE *source, FILE *dest);
+#ifdef _ANDROID
 extern char cache_dir[MAX_PATH];
+#endif
 #ifdef __cplusplus
 }
 #endif
@@ -509,7 +510,7 @@ void SaveCPU(SAVESTATE_t* save, CPU_t* cpu) {
 	/* pio */
 	for(i = 0; i < 256; i++) {
 		interrupt_t *val = &cpu->pio.interrupt[i];
-		WriteInt(chunk, val->interrupt_val);
+		WriteInt(chunk, (uint32_t) (val->device - cpu->pio.devices));
 		WriteInt(chunk, val->skip_factor);
 		WriteInt(chunk, val->skip_count);
 	}
@@ -597,7 +598,7 @@ void SaveTIMER(SAVESTATE_t *save, timerc *time) {
 	CHUNK_t* chunk = NewChunk(save,TIMER_tag);
 	WriteLong(chunk, time->tstates);
 	WriteLong(chunk, time->freq);
-	WriteDouble(chunk, tc_elapsed(time));
+	WriteDouble(chunk, time->elapsed);
 	WriteDouble(chunk, time->lasttime);
 }
 
@@ -607,7 +608,6 @@ void SaveLINK(SAVESTATE_t* save, link_t* link) {
 		return;
 	}
 
-	__android_log_print(ANDROID_LOG_VERBOSE, "LCDActive", "writing");
 	CHUNK_t* chunk = NewChunk(save, LINK_tag);
 	WriteChar(chunk, link->host);
 }
@@ -843,7 +843,7 @@ BOOL LoadCPU(SAVESTATE_t* save, CPU_t* cpu) {
 	int i;
 	for(i = 0; i < 256; i++) {
 		interrupt_t *val = &cpu->pio.interrupt[i];
-		val->interrupt_val = (unsigned char)ReadInt(chunk);
+		val->device = &cpu->pio.devices[ReadInt(chunk)];
 		val->skip_factor = (unsigned char)ReadInt(chunk);
 		val->skip_count = (unsigned char)ReadInt(chunk);
 	}
@@ -1097,12 +1097,10 @@ BOOL LoadColorLCD(SAVESTATE_t *save, ColorLCD_t *lcd) {
 }
 
 BOOL LoadLINK(SAVESTATE_t* save, link_t* link) {
-	__android_log_print(ANDROID_LOG_VERBOSE, "LCDActive", "Before");
 	CHUNK_t* chunk	= FindChunk(save,LINK_tag);
-	__android_log_print(ANDROID_LOG_VERBOSE, "LCDActive", "after");
 	if (chunk == NULL) {
 		// 81
-		return TRUE;
+		return save->model == TI_81;
 	}
 
 	chunk->pnt = 0;
@@ -1471,11 +1469,6 @@ SAVESTATE_t* ReadSave(FILE *ifile) {
 
 	fseek(ifile, chunk_offset + 8 + 4, SEEK_SET);
 	
-	for(i = 0; i < MAX_CHUNKS; i++) {
-		save->chunks[i] = NULL;
-	}
-
-
 	for(i = 0; i < MAX_CHUNKS; i++) {
 		save->chunks[i] = NULL;
 	}

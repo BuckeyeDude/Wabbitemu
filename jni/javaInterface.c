@@ -103,6 +103,7 @@ JNIEXPORT jint JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_CreateRom
 	FILE *file = fopen(bootPath, "rb");
 	if (file == NULL) {
 		calc_slot_free(lpCalc);
+		lpCalc = NULL;
 		return -1;
 	}
 	writeboot(file, &lpCalc->mem_c, -1);
@@ -111,11 +112,13 @@ JNIEXPORT jint JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_CreateRom
 	TIFILE_t *tifile = importvar(osPath, FALSE);
 	if (tifile == NULL) {
 		calc_slot_free(lpCalc);
+		lpCalc = NULL;
 		return -2;
 	}
 	int link_error = forceload_os(&lpCalc->cpu, tifile);
 	if (link_error != LERR_SUCCESS) {
 		calc_slot_free(lpCalc);
+		lpCalc = NULL;
 		return -2;
 	}
 
@@ -126,10 +129,12 @@ JNIEXPORT jint JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_CreateRom
 	if (romfile != NULL) {
 		mclose(romfile);
 		calc_slot_free(lpCalc);
+		lpCalc = NULL;
 		return 0;
 	}
 
 	calc_slot_free(lpCalc);
+	lpCalc = NULL;
 	return -3;
 }
 
@@ -146,11 +151,13 @@ JNIEXPORT jint JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_LoadFile
 
 JNIEXPORT void JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_ResetCalc
 		(JNIEnv *env, jclass classObj) {
-	if (lpCalc) {
-		lpCalc->fake_running = TRUE;
-		calc_reset(lpCalc);
-		lpCalc->fake_running = FALSE;
+	if (!lpCalc) {
+		return;
 	}
+
+	lpCalc->fake_running = TRUE;
+	calc_reset(lpCalc);
+	lpCalc->fake_running = FALSE;
 }
 
 /*
@@ -170,6 +177,10 @@ JNIEXPORT void JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_RunCalcs
  */
 JNIEXPORT void JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_PauseCalc
   (JNIEnv *env, jclass classObj) {
+	if (!lpCalc) {
+		return;
+	}
+
 	lpCalc->running = FALSE;
 }
 
@@ -180,6 +191,10 @@ JNIEXPORT void JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_PauseCalc
  */
 JNIEXPORT void JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_UnpauseCalc
   (JNIEnv *env, jclass classObj) {
+	if (!lpCalc) {
+		return;
+	}
+
 	lpCalc->running = TRUE;
 }
 
@@ -188,11 +203,15 @@ JNIEXPORT jint JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_GetModel
 	if (!lpCalc) {
 		return -1;
 	}
+
 	return lpCalc->model;
 }
 
 JNIEXPORT jlong JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_Tstates
   (JNIEnv *env, jclass classObj) {
+	if (!lpCalc) {
+		return -1;
+	}
 	return lpCalc->timer_c.tstates;
 }
 
@@ -227,6 +246,10 @@ JNIEXPORT void JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_ClearKeys
  */
 JNIEXPORT void JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_PressKey
   (JNIEnv *env, jclass classObj, jint group, jint bit) {
+	if (!lpCalc) {
+		return;
+	}
+
 	keypad_press(&lpCalc->cpu, (int) group, (int) bit);
 }
 
@@ -248,6 +271,10 @@ JNIEXPORT void JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_SetAutoTurnOn
  */
 JNIEXPORT void JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_ReleaseKey
   (JNIEnv *env, jclass classObj, jint group, jint bit) {
+	if (!lpCalc) {
+		return;
+	}
+
 	keypad_release(&lpCalc->cpu, (int) group, (int) bit);
 }
 
@@ -283,12 +310,12 @@ void CopyColor(JNIEnv *env, int *screen, uint8_t *image) {
  */
 JNIEXPORT jboolean JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_IsLCDActive
   (JNIEnv *env, jclass classObj) {
-	if (lpCalc == NULL) {
+	if (!lpCalc) {
 		return JNI_FALSE;
 	}
 
 	LCDBase_t *lcd = lpCalc->cpu.pio.lcd;
-	if (lcd == NULL) {
+	if (!lcd) {
 		return JNI_FALSE;
 	}
 	return lcd->active;
@@ -301,8 +328,12 @@ JNIEXPORT jboolean JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_IsLCDActive
  */
 JNIEXPORT jint JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_GetLCD
   (JNIEnv *env, jclass classObj, jobject intBuffer) {
+	if (!lpCalc) {
+		return FALSE;
+	}
+
 	LCDBase_t *lcd = lpCalc->cpu.pio.lcd;
-	if (lcd == NULL) {
+	if (!lcd) {
 		return FALSE;
 	}
 

@@ -339,7 +339,7 @@ TIFILE_t* ImportROMFile(FILE *infile, TIFILE_t *tifile) {
 	fread(tifile->rom->data, sizeof(unsigned char), size, infile);
 	tifile->rom->size		= (int)size;
 	calc = FindRomVersion(tifile->rom->version, tifile->rom->data, (int)size);
-	if (calc == -1) {
+	if (calc == INVALID_MODEL) {
 		return FreeTiFile(tifile);
 	}
 	tifile->model			= calc;
@@ -498,7 +498,7 @@ void ReadTiFileHeader(FILE *infile, TIFILE_t *tifile) {
 	return;
 }
 
-static unsigned short length2 = 0;
+static int length2 = 0;
 
 TIFILE_t* ImportVarFile(FILE *infile, TIFILE_t *tifile, int varNumber) {
 	int i;
@@ -558,9 +558,6 @@ TIFILE_t* ImportVarFile(FILE *infile, TIFILE_t *tifile, int varNumber) {
 		//skip name length
 		tmpread(infile);
 		name_length = (char)tmp;
-		if (tifile->model == TI_86) {
-			name_length = 8;
-		}
 	}
 
 	tifile->var->name_length = name_length;
@@ -568,6 +565,11 @@ TIFILE_t* ImportVarFile(FILE *infile, TIFILE_t *tifile, int varNumber) {
 	tifile->var->length = length;
 	tifile->var->vartype = vartype;
 	ptr = tifile->var->name;
+
+	if (tifile->model == TI_86) {
+		name_length = 8;
+	}
+
 	for (i = 0; i < name_length && !feof(infile); i++) {
 		tmpread(infile);
 		ptr[i] = (unsigned char)tmp;
@@ -683,10 +685,10 @@ TIFILE_t* importvar(LPCTSTR filePath, BOOL only_check_header) {
 	}
 
 	ReadTiFileHeader(infile, tifile);
-	// the last part is to make sure we don't allow files that cant be imported but
+	// The last part is to make sure we don't allow files that cant be imported but
 	// assumed to be ROMs until we try to read data. Why? because we don't read the
 	// size of the data till we import. Since importing a ROM is fast and I don't
-	// care enough to fix and this was meant for speed checking files on drop its fine
+	// care enough to fix as this was meant for speed checking files on drop
 	if (only_check_header && tifile->type != ROM_TYPE && tifile->type != SAV_TYPE) {
 		fclose(infile);
 		return tifile;

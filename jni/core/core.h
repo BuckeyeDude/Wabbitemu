@@ -226,9 +226,9 @@ typedef struct device {
 } device_t;
 
 typedef struct interrupt {
-	unsigned char interrupt_val;
-	unsigned char skip_factor;
 	unsigned char skip_count;
+	unsigned char skip_factor;
+	device_t *device;
 } interrupt_t;
 
 typedef struct pio_context {
@@ -401,9 +401,6 @@ void displayreg(CPU_t *);
 		timer_z->elapsed -= ((double)(num))/((double)(timer_z)->freq);\
 	}
 
-
-#define tc_elapsed( timer_z ) \
-	((timer_z)->elapsed)
 #endif
 
 #define tc_tstates( timer_z ) \
