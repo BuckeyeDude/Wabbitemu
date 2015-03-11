@@ -74,6 +74,7 @@ public class WabbitemuActivity extends Activity {
 	private final SkinBitmapLoader mSkinLoader = SkinBitmapLoader.getInstance();
 	private final VisibilityChangeListener mVisiblityListener = new VisibilityChangeListener();
 
+	private SharedPreferences mSharedPrefs;
 	private EmulatorFragment mEmulatorFragment;
 	private DrawerLayout mDrawerLayout;
 	private ListView mDrawerList;
@@ -96,10 +97,21 @@ public class WabbitemuActivity extends Activity {
 		mUserActivityTracker.initialize(this);
 		mCalcManager.initialize(this);
 		mSkinLoader.initialize(this);
+		mSharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
 
 		mUserActivityTracker.reportActivityStart(this);
-		final File cacheDir = getCacheDir();
-		CalcInterface.SetCacheDir(cacheDir.getAbsolutePath());
+		final File cacheDir = getApplicationContext().getCacheDir();
+		if (cacheDir != null) {
+			CalcInterface.SetCacheDir(cacheDir.getAbsolutePath());
+		} else {
+			for (File file : getApplicationContext().getExternalCacheDirs()) {
+				if (file != null) {
+					CalcInterface.SetCacheDir(file.getAbsolutePath());
+					break;
+				}
+			}
+		}
+
 		final String fileName = getLastRomSetting();
 		final Runnable runnable = getLaunchRunnable();
 		if (fileName != null) {
@@ -150,16 +162,20 @@ public class WabbitemuActivity extends Activity {
 	public void onResume() {
 		super.onResume();
 
-		getWindow().getDecorView().setOnSystemUiVisibilityChangeListener(mVisiblityListener);
-		setImmersiveMode(true);
+		if (mSharedPrefs.getBoolean(PreferenceConstants.IMMERSIVE_MODE.toString(), true)) {
+			getWindow().getDecorView().setOnSystemUiVisibilityChangeListener(mVisiblityListener);
+			setImmersiveMode(true);
+		}
 	}
 
 	@Override
 	protected void onPause() {
 		super.onPause();
 
-		setImmersiveMode(false);
-		getWindow().getDecorView().setOnSystemUiVisibilityChangeListener(null);
+		if (mSharedPrefs.getBoolean(PreferenceConstants.IMMERSIVE_MODE.toString(), true)) {
+			setImmersiveMode(false);
+			getWindow().getDecorView().setOnSystemUiVisibilityChangeListener(null);
+		}
 	}
 
 	@Override
@@ -221,18 +237,15 @@ public class WabbitemuActivity extends Activity {
 	}
 
 	private String getLastRomSetting() {
-		final SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
-		return sharedPrefs.getString(PreferenceConstants.ROM_PATH.toString(), null);
+		return mSharedPrefs.getString(PreferenceConstants.ROM_PATH.toString(), null);
 	}
 
 	private int getLastRomModel() {
-		final SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
-		return sharedPrefs.getInt(PreferenceConstants.ROM_MODEL.toString(), -1);
+		return mSharedPrefs.getInt(PreferenceConstants.ROM_MODEL.toString(), -1);
 	}
 
 	private boolean isFirstRun() {
-		final SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
-		return sharedPrefs.getBoolean(PreferenceConstants.FIRST_RUN.toString(), true);
+		return mSharedPrefs.getBoolean(PreferenceConstants.FIRST_RUN.toString(), true);
 	}
 
 	@Override

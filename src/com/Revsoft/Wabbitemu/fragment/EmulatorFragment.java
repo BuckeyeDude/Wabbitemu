@@ -6,6 +6,7 @@ import java.util.concurrent.CountDownLatch;
 import android.app.Fragment;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.graphics.Bitmap;
 import android.graphics.Rect;
 import android.os.Bundle;
@@ -19,6 +20,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 
+import com.Revsoft.Wabbitemu.CalcInterface;
 import com.Revsoft.Wabbitemu.CalcSkin;
 import com.Revsoft.Wabbitemu.CalcSkin.CalcSkinChangedListener;
 import com.Revsoft.Wabbitemu.R;
@@ -37,6 +39,7 @@ public class EmulatorFragment extends Fragment {
 	private final CalculatorManager mCalculatorManager = CalculatorManager.getInstance();
 	private final SkinBitmapLoader mSkinLoader = SkinBitmapLoader.getInstance();
 	private final SkinUpdateListener mSkinUpdateListener = new SkinUpdateListener();
+	private final ImmersiveModeListener mImmersiveModeListener = new ImmersiveModeListener();
 
 	private Context mContext;
 	private SharedPreferences mSharedPrefs;
@@ -83,6 +86,7 @@ public class EmulatorFragment extends Fragment {
 		super.onDestroyView();
 
 		mSkinLoader.unregisterSkinChangedListener(mSkinUpdateListener);
+		mSharedPrefs.unregisterOnSharedPreferenceChangeListener(mImmersiveModeListener);
 	}
 
 	@Override
@@ -90,6 +94,7 @@ public class EmulatorFragment extends Fragment {
 		super.onActivityCreated(savedInstanceState);
 		mContext = getActivity();
 		mSharedPrefs = PreferenceManager.getDefaultSharedPreferences(mContext);
+		mSharedPrefs.registerOnSharedPreferenceChangeListener(mImmersiveModeListener);
 	}
 
 	@Override
@@ -135,6 +140,16 @@ public class EmulatorFragment extends Fragment {
 	private void updateSettings() {
 		if (mSharedPrefs.getBoolean(PreferenceConstants.STAY_AWAKE.toString(), false)) {
 			getActivity().getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+		}
+	}
+
+	private class ImmersiveModeListener implements OnSharedPreferenceChangeListener {
+		@Override
+		public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+			if (PreferenceConstants.IMMERSIVE_MODE.toString().equals(key)) {
+				mSkinLoader.destroySkin();
+				mSkinLoader.loadSkinAndKeymap(CalcInterface.GetModel());
+			}
 		}
 	}
 

@@ -5,9 +5,9 @@ import android.util.Log;
 import android.view.View;
 
 import com.Revsoft.Wabbitemu.R;
+import com.crashlytics.android.Crashlytics;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
-import com.splunk.mint.Mint;
 
 public class AdUtils {
 
@@ -25,7 +25,7 @@ public class AdUtils {
 			adView.loadAd(adRequest);
 		} catch (Exception e) {
 			Log.d("AdUtils", "Ad threw exception, avoiding crash %s", e);
-			Mint.logException(e);
+			Crashlytics.logException(e);
 		}
 	}
 }

@@ -1,30 +1,24 @@
 package com.Revsoft.Wabbitemu.utils;
 
-import java.util.Map;
-
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
+import android.util.Log;
 
 import com.Revsoft.Wabbitemu.R;
-import com.google.analytics.tracking.android.EasyTracker;
-import com.google.analytics.tracking.android.MapBuilder;
-import com.google.analytics.tracking.android.Tracker;
+import com.crashlytics.android.Crashlytics;
 
 public class ErrorUtils {
 
 	public static void showErrorDialog(final Context context, final int errorMessage) {
-		final Tracker tracker = EasyTracker.getInstance(context);
-		final Map<String, String> event = MapBuilder.createEvent(
-				context.getClass().getName(),
-				context.getResources().getString(errorMessage), null, null)
-				.build();
-		tracker.send(event);
+		final String error = context.getResources().getString(errorMessage);
+		Crashlytics.log(Log.ERROR, context.getClass().getName(), error);
+		Crashlytics.logException(new Exception());
 
 		final AlertDialog.Builder builder = new AlertDialog.Builder(context);
 		final AlertDialog dialog = builder.setTitle(R.string.errorTitle)
-				.setMessage(errorMessage)
+				.setMessage(error)
 				.setPositiveButton(android.R.string.ok, new OnClickListener() {
 
 					@Override

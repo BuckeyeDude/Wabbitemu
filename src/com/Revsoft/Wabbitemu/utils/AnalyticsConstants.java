@@ -1,14 +1,19 @@
 package com.Revsoft.Wabbitemu.utils;
 
+import android.app.Activity;
+
+import com.Revsoft.Wabbitemu.activity.WabbitemuActivity;
+import com.Revsoft.Wabbitemu.activity.WizardActivity;
+
 public class AnalyticsConstants {
 	public enum UserActionActivity {
-		MAIN_ACTIVITY("WabbitemuActivity"),
-		WIZARD_ACTIVITY("WizardActivity");
+		MAIN_ACTIVITY(WabbitemuActivity.class),
+		WIZARD_ACTIVITY(WizardActivity.class);
 
 		private final String mActivity;
 
-		private UserActionActivity(String activity) {
-			mActivity = activity;
+		private UserActionActivity(Class<? extends Activity> activity) {
+			mActivity = activity.getSimpleName();
 		}
 
 		@Override

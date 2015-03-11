@@ -1,23 +1,15 @@
 package com.Revsoft.Wabbitemu.utils;
 
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-
+import io.fabric.sdk.android.Fabric;
 import android.app.Activity;
 import android.content.Context;
+import android.provider.Settings.Secure;
 
-import com.Revsoft.Wabbitemu.R;
 import com.Revsoft.Wabbitemu.utils.AnalyticsConstants.UserActionActivity;
 import com.Revsoft.Wabbitemu.utils.AnalyticsConstants.UserActionEvent;
-import com.google.analytics.tracking.android.EasyTracker;
-import com.google.analytics.tracking.android.MapBuilder;
-import com.google.analytics.tracking.android.Tracker;
-import com.splunk.mint.Mint;
+import com.crashlytics.android.Crashlytics;
 
 public class UserActivityTracker {
-	private static final int REPORT_DELAY = 2000;
-	private static final ScheduledExecutorService EXECUTOR = Executors.newScheduledThreadPool(1);
 
 	private static class SingletonHolder {
 		private static final UserActivityTracker SINGLETON = new UserActivityTracker();
@@ -27,47 +19,39 @@ public class UserActivityTracker {
 		return SingletonHolder.SINGLETON;
 	}
 
-	private Context mContext;
-
 	private UserActivityTracker() {
 		// Disallow instantiation
 	}
 
 	public void initialize(Context context) {
-		mContext = context;
-		Mint.initAndStartSession(mContext, mContext.getString(R.string.mintKey));
+		Fabric.with(context, new Crashlytics());
+		final String androidId = Secure.getString(context.getApplicationContext().getContentResolver(),
+				Secure.ANDROID_ID);
+		if (androidId == null) {
+			Crashlytics.setUserIdentifier("emptyAndroidId");
+		} else {
+			Crashlytics.setUserIdentifier(androidId);
+		}
 	}
 
 	public void reportActivityStart(final Activity activity) {
-		EXECUTOR.schedule(new Runnable() {
-
-			@Override
-			public void run() {
-				Mint.leaveBreadcrumb("Start " + activity.getClass().getSimpleName());
-				EasyTracker.getInstance(mContext).activityStart(activity);
-			}
-		}, REPORT_DELAY, TimeUnit.MILLISECONDS);
+		Crashlytics.log("Starting " + activity.getClass().getSimpleName());
 	}
 
 	public void reportActivityStop(final Activity activity) {
-		EXECUTOR.schedule(new Runnable() {
-
-			@Override
-			public void run() {
-				Mint.leaveBreadcrumb("Stop " + activity.getClass().getSimpleName());
-				EasyTracker.getInstance(mContext).activityStop(activity);
-			}
-		}, REPORT_DELAY, TimeUnit.MILLISECONDS);
+		Crashlytics.log("Stop " + activity.getClass().getSimpleName());
 	}
 
-	public void reportBreadCrumb(final String breadcrumb) {
-		EXECUTOR.schedule(new Runnable() {
+	public void reportBreadCrumb(String breadcrumb) {
+		Crashlytics.log(breadcrumb);
+	}
 
-			@Override
-			public void run() {
-				Mint.leaveBreadcrumb(breadcrumb);
-			}
-		}, REPORT_DELAY, TimeUnit.MILLISECONDS);
+	public void reportBreadCrumb(String format, Object... args) {
+		Crashlytics.log(String.format(format, args));
+	}
+
+	public void setKey(String key, int value) {
+		Crashlytics.setInt(key, value);
 	}
 
 	public void reportUserAction(final UserActionActivity activity, final UserActionEvent event) {
@@ -75,14 +59,6 @@ public class UserActivityTracker {
 	}
 
 	public void reportUserAction(final UserActionActivity activity, final UserActionEvent event, final String extra) {
-		EXECUTOR.schedule(new Runnable() {
-
-			@Override
-			public void run() {
-				Mint.logEvent(event.toString());
-				final Tracker tracker = EasyTracker.getInstance(mContext);
-				tracker.send(MapBuilder.createEvent(activity.toString(), event.toString(), extra, null).build());
-			}
-		}, REPORT_DELAY, TimeUnit.MILLISECONDS);
+		Crashlytics.log(String.format("Activity: [%s] Event: [%s] Extra: [%s]", activity, event, extra));
 	}
 }

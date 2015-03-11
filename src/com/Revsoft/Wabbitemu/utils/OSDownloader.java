@@ -18,6 +18,7 @@ import com.Revsoft.Wabbitemu.R;
 
 public class OSDownloader extends AsyncTask<Integer, Integer, Boolean> {
 
+	private final UserActivityTracker mUserActivityTracker = UserActivityTracker.getInstance();
 	private final ProgressDialog mProgressDialog;
 	private final String mOsFilePath;
 
@@ -40,13 +41,15 @@ public class OSDownloader extends AsyncTask<Integer, Integer, Boolean> {
 	@Override
 	protected void onPreExecute() {
 		super.onPreExecute();
+
 		mProgressDialog.show();
+		mUserActivityTracker.reportBreadCrumb("Showing OS Download dialog");
 	}
 
 	@Override
 	protected Boolean doInBackground(final Integer... args) {
-		final int calcType = args[0];
-		final int version = args[1];
+		final int calcType = args[0].intValue();
+		final int version = args[1].intValue();
 		final String urlString;
 		switch (calcType) {
 		case CalcInterface.TI_73:
@@ -84,11 +87,14 @@ public class OSDownloader extends AsyncTask<Integer, Integer, Boolean> {
 
 		OutputStream outputStream = null;
 		try {
+			mUserActivityTracker.reportBreadCrumb("Downloading OS: %s from: %s", calcType, url);
 			final HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 			final InputStream inputStream = connection.getInputStream();
 			outputStream = new FileOutputStream(mOsFilePath);
 
-			if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
+			final int responseCode = connection.getResponseCode();
+			mUserActivityTracker.reportBreadCrumb("OS Response code: %s", responseCode);
+			if (responseCode != HttpURLConnection.HTTP_OK) {
 				return false;
 			}
 
@@ -99,6 +105,7 @@ public class OSDownloader extends AsyncTask<Integer, Integer, Boolean> {
 			int count;
 			while ((count = inputStream.read(data)) != -1) {
 				if (isCancelled()) {
+					mUserActivityTracker.reportBreadCrumb("OS download cancelled");
 					return null;
 				}
 
@@ -109,6 +116,7 @@ public class OSDownloader extends AsyncTask<Integer, Integer, Boolean> {
 				outputStream.write(data, 0, count);
 			}
 		} catch (final IOException e) {
+			mUserActivityTracker.reportBreadCrumb("OS download exception %s", e);
 			return false;
 		} finally {
 			if (outputStream != null) {
@@ -126,14 +134,25 @@ public class OSDownloader extends AsyncTask<Integer, Integer, Boolean> {
 	@Override
 	protected void onProgressUpdate(final Integer... progress) {
 		super.onProgressUpdate(progress);
+
 		mProgressDialog.setIndeterminate(false);
 		mProgressDialog.setMax(100);
 		mProgressDialog.setProgress(progress[0]);
 	}
 
 	@Override
+	protected void onCancelled() {
+		super.onCancelled();
+
+		mProgressDialog.dismiss();
+		mUserActivityTracker.reportBreadCrumb("OS Download cancelled. Hiding dialog");
+	}
+
+	@Override
 	protected void onPostExecute(final Boolean result) {
 		super.onPostExecute(result);
+
 		mProgressDialog.dismiss();
+		mUserActivityTracker.reportBreadCrumb("Hiding OS Download dialog. Result [%s]", result);
 	}
 }

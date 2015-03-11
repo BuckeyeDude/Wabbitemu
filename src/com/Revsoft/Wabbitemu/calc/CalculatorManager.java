@@ -130,8 +130,10 @@ public class CalculatorManager {
 
 	private void handleRomLoaded() {
 		mCalcThread.setScreenUpdateCallback(mScreenCallback);
+		final int model = CalcInterface.GetModel();
+		mUserTracker.setKey("RomType", model);
 		if (mCalcSkin != null) {
-			mSkinLoader.loadSkinAndKeymap(CalcInterface.GetModel());
+			mSkinLoader.loadSkinAndKeymap(model);
 		}
 		notifyRomCallbacks(true);
 	}
@@ -157,6 +159,7 @@ public class CalculatorManager {
 		@Override
 		public void run() {
 			final int linkResult = CalcInterface.LoadFile(file.getPath());
+			mUserTracker.reportBreadCrumb("Loading file error %s", linkResult);
 			callback.onFileLoaded(linkResult == 0);
 		}
 	}

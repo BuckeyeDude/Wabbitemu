@@ -41,5 +41,10 @@
 	            android:title="@string/largeScreen"
 	            android:summary="@string/largeScreenSummary"
 	            android:defaultValue="false" />
+	    <CheckBoxPreference
+	            android:key="useImmersiveMode"
+	            android:title="@string/useImmersiveMode"
+	            android:summary="@string/useImmersiveModeSummary"
+	            android:defaultValue="true" />
 	</PreferenceCategory>
 </PreferenceScreen>

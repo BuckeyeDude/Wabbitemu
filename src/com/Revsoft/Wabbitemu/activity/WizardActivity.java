@@ -11,13 +11,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.FragmentTransaction;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Resources;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.os.AsyncTask.Status;
 import android.os.Bundle;
 import android.text.method.LinkMovementMethod;
 import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -90,13 +93,7 @@ public class WizardActivity extends Activity implements BrowseCallback {
 
 		@Override
 		public void onAnimationEnd(final Animation animation) {
-			mViewFlipper.postDelayed(new Runnable() {
-
-				@Override
-				public void run() {
-					mIsTransitioningPages.set(false);
-				}
-			}, 250);
+			mIsTransitioningPages.set(false);
 		}
 	};
 
@@ -153,19 +150,24 @@ public class WizardActivity extends Activity implements BrowseCallback {
 	}
 
 	@Override
-	public void onStop() {
-		super.onStop();
-		mUserActivityTracker.reportActivityStart(this);
+	protected void onPause() {
+		super.onPause();
 
 		if (mOsDownloader != null) {
 			mOsDownloader.cancel(true);
+			mOsDownloader = null;
 		}
 	}
 
 	@Override
+	public void onStop() {
+		super.onStop();
+		mUserActivityTracker.reportActivityStop(this);
+	}
+
+	@Override
 	public boolean onCreateOptionsMenu(final Menu menu) {
-		final MenuInflater inflater = getMenuInflater();
-		inflater.inflate(R.menu.wizard, menu);
+		getMenuInflater().inflate(R.menu.wizard, menu);
 		return true;
 	}
 
@@ -175,15 +177,16 @@ public class WizardActivity extends Activity implements BrowseCallback {
 		case R.id.helpMenuItem:
 			mUserActivityTracker.reportUserAction(UserActionActivity.WIZARD_ACTIVITY, UserActionEvent.HELP);
 
-			final AlertDialog.Builder builder = new AlertDialog.Builder(WizardActivity.this);
-			builder.setMessage(R.string.aboutRomDescription).setTitle(R.string.aboutRomTitle)
-			.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-				@Override
-				public void onClick(final DialogInterface dialog, final int id) {
-					dialog.dismiss();
-				}
-			});
-			final AlertDialog dialog = builder.create();
+			final AlertDialog.Builder builder = new AlertDialog.Builder(this);
+			final AlertDialog dialog = builder.setMessage(R.string.aboutRomDescription)
+					.setTitle(R.string.aboutRomTitle)
+					.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+						@Override
+						public void onClick(final DialogInterface dialog, final int id) {
+							dialog.dismiss();
+						}
+					})
+					.create();
 			dialog.show();
 			return true;
 		default:
@@ -336,15 +339,40 @@ public class WizardActivity extends Activity implements BrowseCallback {
 
 				setNextAnimation();
 
+				mUserActivityTracker.reportBreadCrumb("User finished wizard model: %s", mCalcModel);
 				if (mBrowseOsRadio.isChecked()) {
 					setTitle(R.string.browseOSTitle);
 					mViewFlipper.setDisplayedChild(BROWSE_OS_CHILD);
 					launchBrowseOs();
 				} else {
+					mIsTransitioningPages.set(false);
+					if (mOsDownloader != null && mOsDownloader.getStatus() == Status.RUNNING) {
+						return;
+					}
+
+					if (!isOnline()) {
+						final AlertDialog dialog = new AlertDialog.Builder(WizardActivity.this)
+								.setMessage(getResources().getString(R.string.noNetwork))
+								.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+									@Override
+									public void onClick(final DialogInterface dialog, final int id) {
+										dialog.dismiss();
+									}
+								})
+								.create();
+						dialog.show();
+						return;
+					}
 					createRomDownloadOs();
 				}
 			}
 		};
+	}
+
+	public boolean isOnline() {
+		final ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+		final NetworkInfo netInfo = cm.getActiveNetworkInfo();
+		return netInfo != null && netInfo.isConnectedOrConnecting();
 	}
 
 	private void createRomCopyOs() {
@@ -353,6 +381,8 @@ public class WizardActivity extends Activity implements BrowseCallback {
 		mUserActivityTracker.reportUserAction(UserActionActivity.WIZARD_ACTIVITY, UserActionEvent.BOOTFREE_ROM);
 		final int error = CalcInterface.CreateRom(mOsFilePath, mBootPagePath, mCreatedFilePath, mCalcModel);
 
+		mUserActivityTracker.reportBreadCrumb("Creating ROM given OS: %s model: %s error: %s",
+				mOsFilePath, mCalcModel, error);
 		if (error == 0) {
 			finishSuccess(mCreatedFilePath);
 		} else {
@@ -369,6 +399,7 @@ public class WizardActivity extends Activity implements BrowseCallback {
 		try {
 			bootPagePath = File.createTempFile("boot", ".hex", cache);
 		} catch (final IOException e) {
+			mUserActivityTracker.reportBreadCrumb("Error extracting bootpage %s", e);
 			return;
 		}
 
@@ -416,6 +447,7 @@ public class WizardActivity extends Activity implements BrowseCallback {
 				outputStream.write(buffer, 0, 4096);
 			}
 		} catch (final IOException e) {
+			mUserActivityTracker.reportBreadCrumb("Error writing bootpage %s", e);
 			finishRomError();
 		} finally {
 			try {
@@ -440,6 +472,7 @@ public class WizardActivity extends Activity implements BrowseCallback {
 		try {
 			osDownloadPath = File.createTempFile("tios", ".8xu", cache);
 		} catch (final IOException e) {
+			mUserActivityTracker.reportBreadCrumb("Error creating OS temp file: %s", e);
 			return;
 		}
 
@@ -452,6 +485,7 @@ public class WizardActivity extends Activity implements BrowseCallback {
 
 				if (success) {
 					final int error = CalcInterface.CreateRom(mOsFilePath, mBootPagePath, mCreatedFilePath, mCalcModel);
+					mUserActivityTracker.reportBreadCrumb("Creating ROM type: %s error: %s", mCalcModel, error);
 					if (error == 0) {
 						finishSuccess(mCreatedFilePath);
 					} else {

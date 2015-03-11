@@ -9,7 +9,8 @@ public enum PreferenceConstants {
 	FACEPLATE_COLOR("faceplateColor"),
 	USE_VIBRATION("useVibration"),
 	CORRECT_SCREEN_RATIO("correctScreenRatio"),
-	LARGE_SCREEN("largeScreen");
+	LARGE_SCREEN("largeScreen"),
+	IMMERSIVE_MODE("useImmersiveMode");
 	
 	private String mKey;
 	

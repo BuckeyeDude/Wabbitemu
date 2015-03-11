@@ -36,6 +36,8 @@ import com.Revsoft.Wabbitemu.utils.UserActivityTracker;
 
 public class SkinBitmapLoader {
 	private static final int SKIN_WIDTH = 700;
+	private static final int SKIN_HEIGHT = 1450;
+
 	private static final Point[] RECT_POINTS = {
 			new Point(150, 1350),
 			new Point(190, 1366),
@@ -234,11 +236,9 @@ public class SkinBitmapLoader {
 
 		final int smallestScreenWidthDp = mResources.getConfiguration().smallestScreenWidthDp;
 		if (smallestScreenWidthDp >= 600) {
-			final int skinResourceWidth = 350 * 2;
-			final int skinResourceHeight = 725 * 2;
-			mRatio = Math.min((double) displaySize.x / skinResourceWidth, (double) displaySize.y / skinResourceHeight);
-			skinWidth = (int) (skinResourceWidth * mRatio);
-			skinHeight = (int) (skinResourceHeight * mRatio);
+			mRatio = Math.min((double) displaySize.x / SKIN_WIDTH, (double) displaySize.y / SKIN_HEIGHT);
+			skinWidth = (int) (SKIN_WIDTH * mRatio);
+			skinHeight = (int) (SKIN_HEIGHT * mRatio);
 			mSkinX = (displaySize.x - skinWidth) / 2;
 			mSkinY = (displaySize.y - skinHeight) / 2;
 		} else {
@@ -362,7 +362,12 @@ public class SkinBitmapLoader {
 		final WindowManager wm = (WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE);
 		final Display display = wm.getDefaultDisplay();
 		final Point displaySize = new Point();
-		display.getRealSize(displaySize);
+		if (mSharedPrefs.getBoolean(PreferenceConstants.IMMERSIVE_MODE.toString(), true)) {
+			display.getRealSize(displaySize);
+		} else {
+			display.getSize(displaySize);
+		}
+
 		return displaySize;
 	}
 

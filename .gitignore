@@ -219,3 +219,7 @@ pip-log.txt
 /out
 /lint.xml
 /Wabbitemu.iml
+/crashlytics.properties
+/assets/crashlytics-build.properties
+/res/values/com_crashlytics_export_strings.xml
+kit-libs/

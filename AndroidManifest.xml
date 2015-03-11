@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.Revsoft.Wabbitemu"
-    android:versionCode="24"
+    android:versionCode="26"
     android:versionName="1.05.6" >
 
     <uses-sdk
@@ -48,6 +48,9 @@
          <activity
              android:name="com.google.android.gms.ads.AdActivity"
              android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|uiMode|screenSize|smallestScreenSize" />
+        <meta-data
+            android:name="io.fabric.ApiKey"
+            android:value="b3f7a3e9aaaeae9c117b7965a51f6841108983c3" />
     </application>
 
 </manifest>

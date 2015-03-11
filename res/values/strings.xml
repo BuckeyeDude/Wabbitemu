@@ -37,6 +37,7 @@
     <string name="downloadOsRadio">I\'d like to download one</string>
     <string name="downloadingTitle">Downloading</string>
     <string name="downloadingOsDescription">Downloading OS&#8230;</string>
+    <string name="noNetwork">Unable to find active network connection. Please check that you have a connection to the internet.</string>
     <string name="noFilesFound">No files found</string>
     <string name="selectFile">Select a file</string>
     
@@ -92,8 +93,10 @@
     <string name="correctScreenRatio">Fix screen aspect ratio</string>
     <string name="correctScreenRatioSummary">On smaller devices, make sure the screen is the correct 
         proportions compared to the real screen</string>
-        <string name="largeScreen">Largest screen size</string>
+    <string name="largeScreen">Largest screen size</string>
     <string name="largeScreenSummary">On smaller devices, make the screen as large as possible on the skin</string>
+    <string name="useImmersiveMode">Enable \'Immserive Mode\'</string>
+    <string name="useImmersiveModeSummary">On the calc window, hide the status and soft key bars to take up the entire screen. Swipe from the top or bottom edges to gain access to the bars.</string>
     
     <string name="errorTitle">Error</string>
     <string name="errorOsDownloadDescription">Error downloading the OS</string>
@@ -101,5 +104,4 @@
     <string name="errorLink">There was an error sending the file to the calculator</string>
     <string name="errorScreenshot">Error taking screenshot.</string>
     <string name="errorMissingSdCard">No external storage was detected. Please add a storage device to save a screenshot.</string>
-    <string name="mintKey">00e46dbe</string>
 </resources>
