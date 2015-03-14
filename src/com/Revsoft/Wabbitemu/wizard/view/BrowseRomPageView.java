@@ -7,6 +7,7 @@ import android.widget.Button;
 import android.widget.RelativeLayout;
 
 import com.Revsoft.Wabbitemu.R;
+import com.Revsoft.Wabbitemu.utils.ViewUtils;
 
 public class BrowseRomPageView extends RelativeLayout {
 
@@ -17,7 +18,7 @@ public class BrowseRomPageView extends RelativeLayout {
 
 		LayoutInflater.from(context).inflate(R.layout.browse_rom_page, this, true);
 
-		mBackButton = (Button) findViewById(R.id.backButton);
+		mBackButton = ViewUtils.findViewById(this, R.id.backButton, Button.class);
 	}
 
 	public Button getBackButton() {

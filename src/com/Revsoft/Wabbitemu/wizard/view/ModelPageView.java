@@ -9,6 +9,7 @@ import android.widget.RelativeLayout;
 
 import com.Revsoft.Wabbitemu.R;
 import com.Revsoft.Wabbitemu.utils.AdUtils;
+import com.Revsoft.Wabbitemu.utils.ViewUtils;
 import com.google.android.gms.ads.AdView;
 
 public class ModelPageView extends RelativeLayout {
@@ -21,11 +22,11 @@ public class ModelPageView extends RelativeLayout {
 		super(context, attributeSet);
 
 		LayoutInflater.from(context).inflate(R.layout.model_page, this, true);
-		mNextButton = (Button) findViewById(R.id.nextButton);
-		mBackButton = (Button) findViewById(R.id.backButton);
-		mRadioGroup = (RadioGroup) findViewById(R.id.setupModelRadioGroup);
+		mNextButton = ViewUtils.findViewById(this, R.id.nextButton, Button.class);
+		mBackButton = ViewUtils.findViewById(this, R.id.backButton, Button.class);
+		mRadioGroup = ViewUtils.findViewById(this, R.id.setupModelRadioGroup, RadioGroup.class);
 
-		final AdView adView = (AdView) findViewById(R.id.adView);
+		final AdView adView = ViewUtils.findViewById(this, R.id.adView, AdView.class);
 		AdUtils.loadAd(getResources(), adView);
 	}
 

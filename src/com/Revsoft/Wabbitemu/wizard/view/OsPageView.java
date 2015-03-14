@@ -14,6 +14,7 @@ import android.widget.TextView;
 
 import com.Revsoft.Wabbitemu.R;
 import com.Revsoft.Wabbitemu.utils.AdUtils;
+import com.Revsoft.Wabbitemu.utils.ViewUtils;
 import com.google.android.gms.ads.AdView;
 
 public class OsPageView extends RelativeLayout {
@@ -29,20 +30,20 @@ public class OsPageView extends RelativeLayout {
 
 		LayoutInflater.from(context).inflate(R.layout.os_page, this, true);
 
-		final TextView osTerms = (TextView) findViewById(R.id.osTerms);
+		final TextView osTerms = ViewUtils.findViewById(this, R.id.osTerms, TextView.class);
 		osTerms.setMovementMethod(LinkMovementMethod.getInstance());
 
-		mNextButton = (Button) findViewById(R.id.nextButton);
-		mBackButton = (Button) findViewById(R.id.backButton);
-		mSpinner = (Spinner) findViewById(R.id.osVersionSpinner);
-		mRadioGroup = (RadioGroup) findViewById(R.id.setupOsAcquisistion);
+		mNextButton = ViewUtils.findViewById(this, R.id.nextButton, Button.class);
+		mBackButton = ViewUtils.findViewById(this, R.id.backButton, Button.class);
+		mSpinner = ViewUtils.findViewById(this, R.id.osVersionSpinner, Spinner.class);
+		mRadioGroup = ViewUtils.findViewById(this, R.id.setupOsAcquisistion, RadioGroup.class);
 
-		final RadioButton browseOsRadio = (RadioButton) findViewById(R.id.browseOsRadio);
+		final RadioButton browseOsRadio = ViewUtils.findViewById(this, R.id.browseOsRadio, RadioButton.class);
+		final RadioButton downloadOsRadio = ViewUtils.findViewById(this, R.id.downloadOsRadio, RadioButton.class);
 		browseOsRadio.setOnClickListener(mRadioClickListener);
-		final RadioButton downloadOsRadio = (RadioButton) findViewById(R.id.downloadOsRadio);
 		downloadOsRadio.setOnClickListener(mRadioClickListener);
 
-		final AdView adView = (AdView) findViewById(R.id.adView);
+		final AdView adView = ViewUtils.findViewById(this, R.id.adView, AdView.class);
 		AdUtils.loadAd(getResources(), adView);
 	}
 

@@ -30,6 +30,7 @@ import com.Revsoft.Wabbitemu.calc.CalculatorManager;
 import com.Revsoft.Wabbitemu.calc.FileLoadedCallback;
 import com.Revsoft.Wabbitemu.utils.PreferenceConstants;
 import com.Revsoft.Wabbitemu.utils.ProgressTask;
+import com.Revsoft.Wabbitemu.utils.ViewUtils;
 
 public class EmulatorFragment extends Fragment {
 	private static final String SEND_FILE_PAUSE_KEY = "SendFile";
@@ -71,8 +72,8 @@ public class EmulatorFragment extends Fragment {
 	@Override
 	public View onCreateView(final LayoutInflater inflater, final ViewGroup container, final Bundle savedInstanceState) {
 		final View view = inflater.inflate(R.layout.emulator, container);
-		mSurfaceView = (WabbitLCD) view.findViewById(R.id.textureView);
-		mCalcSkin = (CalcSkin) view.findViewById(R.id.skinView);
+		mSurfaceView = ViewUtils.findViewById(view, R.id.textureView, WabbitLCD.class);
+		mCalcSkin = ViewUtils.findViewById(view, R.id.skinView, CalcSkin.class);
 		mCalculatorManager.setScreenCallback(mSurfaceView);
 		mCalculatorManager.setCalcSkin(mCalcSkin);
 

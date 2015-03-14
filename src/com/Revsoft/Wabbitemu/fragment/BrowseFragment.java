@@ -20,6 +20,7 @@ import com.Revsoft.Wabbitemu.utils.AdUtils;
 import com.Revsoft.Wabbitemu.utils.FileUtils;
 import com.Revsoft.Wabbitemu.utils.IntentConstants;
 import com.Revsoft.Wabbitemu.utils.OnBrowseItemSelected;
+import com.Revsoft.Wabbitemu.utils.ViewUtils;
 import com.google.android.gms.ads.AdView;
 
 public class BrowseFragment extends Fragment {
@@ -43,7 +44,7 @@ public class BrowseFragment extends Fragment {
 			final Bundle arguments = getArguments();
 			final String extensionsRegex = arguments.getString(IntentConstants.EXTENSION_EXTRA_REGEX);
 
-			mListView = (ListView) view.findViewById(R.id.browseView);
+			mListView = ViewUtils.findViewById(view, R.id.browseView, ListView.class);
 			mListView.setOnItemClickListener(new OnItemClickListener() {
 
 				@Override
@@ -55,7 +56,7 @@ public class BrowseFragment extends Fragment {
 
 			startSearch(view, extensionsRegex);
 
-			mAdView = (AdView) view.findViewById(R.id.adView);
+			mAdView = ViewUtils.findViewById(view, R.id.adView, AdView.class);
 			AdUtils.loadAd(getResources(), mAdView);
 		}
 
@@ -70,7 +71,7 @@ public class BrowseFragment extends Fragment {
 			@Override
 			protected void onPreExecute() {
 				mContext = getActivity();
-				mLoadingSpinner = view.findViewById(R.id.browseLoadingSpinner);
+				mLoadingSpinner = ViewUtils.findViewById(view, R.id.browseLoadingSpinner, View.class);
 				mLoadingSpinner.setVisibility(View.VISIBLE);
 			}
 

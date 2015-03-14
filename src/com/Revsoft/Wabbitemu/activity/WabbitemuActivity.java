@@ -39,6 +39,7 @@ import com.Revsoft.Wabbitemu.utils.IntentConstants;
 import com.Revsoft.Wabbitemu.utils.PreferenceConstants;
 import com.Revsoft.Wabbitemu.utils.StorageUtils;
 import com.Revsoft.Wabbitemu.utils.UserActivityTracker;
+import com.Revsoft.Wabbitemu.utils.ViewUtils;
 
 public class WabbitemuActivity extends Activity {
 	private static final int LOAD_FILE_CODE = 1;
@@ -189,8 +190,8 @@ public class WabbitemuActivity extends Activity {
 	}
 
 	private void attachMenu() {
-		mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
-		mDrawerList = (ListView) findViewById(R.id.left_drawer);
+		mDrawerLayout = ViewUtils.findViewById(this, R.id.drawer_layout, DrawerLayout.class);
+		mDrawerList = ViewUtils.findViewById(this, R.id.left_drawer, ListView.class);
 		final String[] menuItems = getResources().getStringArray(R.array.menu_array);
 
 		mDrawerList.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, menuItems));

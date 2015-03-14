@@ -5,6 +5,7 @@ import android.os.Bundle;
 
 import com.Revsoft.Wabbitemu.R;
 import com.Revsoft.Wabbitemu.utils.AdUtils;
+import com.Revsoft.Wabbitemu.utils.ViewUtils;
 import com.google.android.gms.ads.AdView;
 
 public class SettingsActivity extends Activity {
@@ -14,6 +15,6 @@ public class SettingsActivity extends Activity {
 
 		setTitle(R.string.settings);
 		setContentView(R.layout.settings);
-		AdUtils.loadAd(getResources(), (AdView) findViewById(R.id.adView));
+		AdUtils.loadAd(getResources(), ViewUtils.findViewById(this, R.id.adView, AdView.class));
 	}
 }

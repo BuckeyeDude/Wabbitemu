@@ -28,6 +28,7 @@ import com.Revsoft.Wabbitemu.utils.ErrorUtils;
 import com.Revsoft.Wabbitemu.utils.IntentConstants;
 import com.Revsoft.Wabbitemu.utils.OSDownloader;
 import com.Revsoft.Wabbitemu.utils.UserActivityTracker;
+import com.Revsoft.Wabbitemu.utils.ViewUtils;
 import com.Revsoft.Wabbitemu.wizard.OnWizardFinishedListener;
 import com.Revsoft.Wabbitemu.wizard.SetupWizardController;
 import com.Revsoft.Wabbitemu.wizard.controller.BrowseOsPageController;
@@ -83,64 +84,44 @@ public class WizardActivity extends Activity {
 			}
 		});
 
-		final LandingPageView landingPageView = (LandingPageView) findViewById(R.id.landing_page);
-		mWizardController.registerView(landingPageView.getId(), new LandingPageController(landingPageView));
+		final LandingPageView landingPageView = ViewUtils.findViewById(this, R.id.landing_page, LandingPageView.class);
+		mWizardController.registerView(R.id.landing_page, new LandingPageController(landingPageView));
 
-		final ModelPageView modelPageView = (ModelPageView) findViewById(R.id.model_page);
-		mWizardController.registerView(modelPageView.getId(), new CalcModelPageController(modelPageView));
+		final ModelPageView modelPageView = ViewUtils.findViewById(this, R.id.model_page, ModelPageView.class);
+		mWizardController.registerView(R.id.model_page, new CalcModelPageController(modelPageView));
 
-		final OsPageView osPageView = (OsPageView) findViewById(R.id.os_page);
-		mWizardController.registerView(osPageView.getId(), new OsPageController(osPageView));
+		final OsPageView osPageView = ViewUtils.findViewById(this, R.id.os_page, OsPageView.class);
+		mWizardController.registerView(R.id.os_page, new OsPageController(osPageView));
 
-		final BrowseOsPageView browseOsPageView = (BrowseOsPageView) findViewById(R.id.browse_os_page);
-		mWizardController.registerView(browseOsPageView.getId(), new BrowseOsPageController(browseOsPageView,
+		final BrowseOsPageView browseOsPageView = ViewUtils.findViewById(this, R.id.browse_os_page,
+				BrowseOsPageView.class);
+		mWizardController.registerView(R.id.browse_os_page, new BrowseOsPageController(browseOsPageView,
 				getFragmentManager()));
 
-		final BrowseRomPageView browseRomPageView = (BrowseRomPageView) findViewById(R.id.browse_rom_page);
-		mWizardController.registerView(browseRomPageView.getId(), new BrowseRomPageController(browseRomPageView,
+		final BrowseRomPageView browseRomPageView = ViewUtils.findViewById(this, R.id.browse_rom_page,
+				BrowseRomPageView.class);
+		mWizardController.registerView(R.id.browse_rom_page, new BrowseRomPageController(browseRomPageView,
 				getFragmentManager()));
-
-		// step1NextButton.setOnClickListener(getNextButtonStep1OnClick());
-		// final Button step2NextButton = (Button)
-		// findViewById(R.id.nextStep2Button);
-		// step2NextButton.setOnClickListener(getNextButtonStep2OnClick());
-		// mFinishButton = (Button) findViewById(R.id.finishStep3Button);
-		// mFinishButton.setOnClickListener(getFinishOnClick());
-		// final Button step2BackButton = (Button)
-		// findViewById(R.id.backStep2Button);
-		// step2BackButton.setOnClickListener(getBackButtonOnClick());
-		// final Button step3BackButton = (Button)
-		// findViewById(R.id.backStep3Button);
-		// step3BackButton.setOnClickListener(getBackButtonOnClick());
-		// final Button step4BackButton = (Button)
-		// findViewById(R.id.backStep4Button);
-		// step4BackButton.setOnClickListener(getBackButtonOnClick());
-		// final Button step5BackButton = (Button)
-		// findViewById(R.id.backStep5Button);
-		// step5BackButton.setOnClickListener(getBackButtonOnClick());
-		// final OnClickListener osTypeClickListener = new
-		// OsTypeButtonClickListener();
-		// mBrowseOsRadio = (RadioButton) findViewById(R.id.browseOsRadio);
-		// mBrowseOsRadio.setOnClickListener(osTypeClickListener);
-		// final RadioButton downloadOsRadio = (RadioButton)
-		// findViewById(R.id.downloadOsRadio);
-		// downloadOsRadio.setOnClickListener(osTypeClickListener);
 	}
 
 	@Override
 	protected void onPause() {
 		super.onPause();
 
-		if (mOsDownloader != null) {
-			mOsDownloader.cancel(true);
-			mOsDownloader = null;
-		}
+		cancelDownloadTask();
 	}
 
 	@Override
 	public void onStop() {
 		super.onStop();
 		mUserActivityTracker.reportActivityStop(this);
+	}
+
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+
+		cancelDownloadTask();
 	}
 
 	@Override
@@ -355,5 +336,12 @@ public class WizardActivity extends Activity {
 
 	private void showRomError() {
 		ErrorUtils.showErrorDialog(this, R.string.errorRomCreateDescription);
+	}
+
+	private void cancelDownloadTask() {
+		if (mOsDownloader != null) {
+			mOsDownloader.cancel(true);
+			mOsDownloader = null;
+		}
 	}
 }
