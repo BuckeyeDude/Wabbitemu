@@ -2,10 +2,16 @@ package com.Revsoft.Wabbitemu;
 
 import java.nio.IntBuffer;
 
+import com.Revsoft.Wabbitemu.utils.UserActivityTracker;
+
 public class CalcInterface {
+
 	static
 	{
+		final UserActivityTracker userActivityTracker = UserActivityTracker.getInstance();
+		userActivityTracker.reportBreadCrumb("Starting loading libarary");
 		System.loadLibrary("Wabbitemu");
+		userActivityTracker.reportBreadCrumb("Loaded library");
 	}
 
 	public static final int NO_CALC = -1;

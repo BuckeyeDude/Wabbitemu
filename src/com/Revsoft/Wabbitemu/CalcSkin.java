@@ -71,10 +71,9 @@ public class CalcSkin extends View {
 	@Override
 	public void onDraw(final Canvas canvas) {
 		final Bitmap renderedSkin = mSkinLoader.getRenderedSkin();
+		canvas.drawColor(Color.DKGRAY);
 		if (renderedSkin != null) {
 			canvas.drawBitmap(renderedSkin, 0, 0, mPaint);
-		} else {
-			canvas.drawColor(Color.DKGRAY);
 		}
 		
 		for (Rect rect : mKeymapDrawRect) {

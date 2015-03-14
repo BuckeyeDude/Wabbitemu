@@ -4,6 +4,7 @@ import io.fabric.sdk.android.Fabric;
 import android.app.Activity;
 import android.content.Context;
 import android.provider.Settings.Secure;
+import android.util.Log;
 
 import com.Revsoft.Wabbitemu.utils.AnalyticsConstants.UserActionActivity;
 import com.Revsoft.Wabbitemu.utils.AnalyticsConstants.UserActionEvent;
@@ -25,7 +26,6 @@ public class UserActivityTracker {
 
 	public void initialize(Context context) {
 		Fabric.with(context, new Crashlytics.Builder()
-				.disabled(true)
 				.build());
 		final String androidId = Secure.getString(context.getApplicationContext().getContentResolver(),
 				Secure.ANDROID_ID);
@@ -45,11 +45,11 @@ public class UserActivityTracker {
 	}
 
 	public void reportBreadCrumb(String breadcrumb) {
-		Crashlytics.log(breadcrumb);
+		Crashlytics.log(Log.INFO, "UserActivityTracker", breadcrumb);
 	}
 
 	public void reportBreadCrumb(String format, Object... args) {
-		Crashlytics.log(String.format(format, args));
+		reportBreadCrumb(String.format(format, args));
 	}
 
 	public void setKey(String key, int value) {

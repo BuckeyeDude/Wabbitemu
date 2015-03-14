@@ -353,7 +353,7 @@ public class WabbitemuActivity extends Activity {
 			launchAbout();
 			return true;
 		default:
-			return false;
+			throw new IllegalStateException("Invalid menu item");
 		}
 	}
 

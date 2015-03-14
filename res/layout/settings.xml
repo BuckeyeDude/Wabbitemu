@@ -8,6 +8,7 @@
         android:name="com.Revsoft.Wabbitemu.fragment.SettingsFragment"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
         android:layout_above="@+id/adContainer" />
 
     <LinearLayout
