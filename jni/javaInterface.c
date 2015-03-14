@@ -92,6 +92,11 @@ JNIEXPORT jint JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_CreateRom
 	const char *bootPath = (*env)->GetStringUTFChars(env, jBootPath, JNI_FALSE);
 	const char *romPath = (*env)->GetStringUTFChars(env, jRomPath, JNI_FALSE);
 
+	//Do not allow more than one calc currently
+	if (lpCalc) {
+		calc_slot_free(lpCalc);
+	}
+
 	lpCalc = calc_slot_new();
 	calc_init_model(lpCalc, model, NULL);
 
@@ -145,6 +150,7 @@ JNIEXPORT jint JNICALL Java_com_Revsoft_Wabbitemu_CalcInterface_LoadFile
 	if (!tifile || !lpCalc) {
 		return (jint) LERR_FILE;
 	}
+
 	int result = SendFile(lpCalc, path, SEND_CUR);
 	return result;
 }

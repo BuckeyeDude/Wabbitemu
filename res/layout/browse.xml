@@ -1,19 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:ads="http://schemas.android.com/apk/res-auto"
     android:id="@+id/browseLayout"
-    android:orientation="vertical"
     android:layout_width="match_parent"
-    android:layout_height="match_parent" >
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
 
     <LinearLayout
         android:id="@+id/browseLoadingSpinner"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:layout_centerInParent="true"
-        android:visibility="gone"
-        android:orientation="vertical" >
+        android:orientation="vertical"
+        android:visibility="gone" >
 
         <ProgressBar
             style="?android:attr/progressBarStyle"
@@ -27,19 +25,22 @@
             android:layout_gravity="center_vertical|center_horizontal"
             android:text="@string/loading" />
     </LinearLayout>
-    
+
     <ListView
         android:id="@+id/browseView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_above="@+id/adView4"
+        android:layout_above="@+id/adContainer"
         android:isScrollContainer="true" />
-    
-    <com.google.android.gms.ads.AdView android:id="@+id/adView4"
+
+    <LinearLayout
+        android:id="@+id/adContainer"
         android:layout_width="match_parent"
-		android:layout_height="wrap_content"
-		android:layout_alignParentBottom="true"
-		ads:adUnitId="ca-app-pub-9020637264295870/8898887345"
-		ads:adSize="BANNER" />
-    
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/step1Layout"
+        android:layout_alignParentBottom="true" >
+
+        <include layout="@layout/ad" />
+    </LinearLayout>
+
 </RelativeLayout>

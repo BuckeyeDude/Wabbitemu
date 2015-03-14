@@ -31,6 +31,7 @@ import com.Revsoft.Wabbitemu.SkinBitmapLoader;
 import com.Revsoft.Wabbitemu.calc.CalculatorManager;
 import com.Revsoft.Wabbitemu.calc.FileLoadedCallback;
 import com.Revsoft.Wabbitemu.fragment.EmulatorFragment;
+import com.Revsoft.Wabbitemu.utils.AdUtils;
 import com.Revsoft.Wabbitemu.utils.AnalyticsConstants.UserActionActivity;
 import com.Revsoft.Wabbitemu.utils.AnalyticsConstants.UserActionEvent;
 import com.Revsoft.Wabbitemu.utils.ErrorUtils;
@@ -94,6 +95,7 @@ public class WabbitemuActivity extends Activity {
 
 		workaroundAsyncTaskIssue();
 
+		AdUtils.initialize(getApplication());
 		mUserActivityTracker.initialize(this);
 		mCalcManager.initialize(this);
 		mSkinLoader.initialize(this);

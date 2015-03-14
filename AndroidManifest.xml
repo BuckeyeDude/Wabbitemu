@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.Revsoft.Wabbitemu"
-    android:versionCode="26"
+    android:versionCode="27"
     android:versionName="1.05.6" >
 
     <uses-sdk
@@ -38,8 +38,9 @@
         </activity>
         <activity android:name="com.Revsoft.Wabbitemu.activity.BrowseActivity"
             android:configChanges="orientation|screenSize" />
+        <!-- Cannot use hardware acceleration here, if we do the color picker cannot compose the layers -->
         <activity android:name="com.Revsoft.Wabbitemu.activity.SettingsActivity" 
-            android:configChanges="orientation|screenSize" />
+            android:configChanges="orientation|screenSize" android:hardwareAccelerated="false" />
         <activity android:name="com.Revsoft.Wabbitemu.activity.AboutActivity" 
             android:configChanges="orientation|screenSize"/>
         <activity

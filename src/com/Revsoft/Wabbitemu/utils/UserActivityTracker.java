@@ -24,7 +24,9 @@ public class UserActivityTracker {
 	}
 
 	public void initialize(Context context) {
-		Fabric.with(context, new Crashlytics());
+		Fabric.with(context, new Crashlytics.Builder()
+				.disabled(true)
+				.build());
 		final String androidId = Secure.getString(context.getApplicationContext().getContentResolver(),
 				Secure.ANDROID_ID);
 		if (androidId == null) {

@@ -6,10 +6,10 @@ import android.os.Bundle;
 
 import com.Revsoft.Wabbitemu.R;
 import com.Revsoft.Wabbitemu.fragment.BrowseFragment;
-import com.Revsoft.Wabbitemu.utils.BrowseCallback;
 import com.Revsoft.Wabbitemu.utils.IntentConstants;
+import com.Revsoft.Wabbitemu.utils.OnBrowseItemSelected;
 
-public class BrowseActivity extends Activity implements BrowseCallback {
+public class BrowseActivity extends Activity implements OnBrowseItemSelected {
 
 	@Override
 	public void onCreate(final Bundle savedInstanceState) {
@@ -23,7 +23,7 @@ public class BrowseActivity extends Activity implements BrowseCallback {
 		bundle.putString(IntentConstants.EXTENSION_EXTRA_REGEX, regex);
 		bundle.putString(IntentConstants.BROWSE_DESCRIPTION_EXTRA_STRING, description);
 
-		final BrowseFragment fragment = new BrowseFragment();
+		final BrowseFragment fragment = new BrowseFragment(this);
 		fragment.setArguments(bundle);
 
 		setTitle(R.string.selectFile);
@@ -31,7 +31,7 @@ public class BrowseActivity extends Activity implements BrowseCallback {
 	}
 
 	@Override
-	public void callback(final int currentId, final String fileName) {
+	public void onBrowseItemSelected(String fileName) {
 		final Intent returnIntent = new Intent();
 		returnIntent.putExtra(IntentConstants.FILENAME_EXTRA_STRING, fileName);
 		setResult(Activity.RESULT_OK, returnIntent);

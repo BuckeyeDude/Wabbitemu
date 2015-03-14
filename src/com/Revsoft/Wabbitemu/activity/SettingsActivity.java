@@ -4,7 +4,8 @@ import android.app.Activity;
 import android.os.Bundle;
 
 import com.Revsoft.Wabbitemu.R;
-import com.Revsoft.Wabbitemu.fragment.SettingsFragment;
+import com.Revsoft.Wabbitemu.utils.AdUtils;
+import com.google.android.gms.ads.AdView;
 
 public class SettingsActivity extends Activity {
 	@Override
@@ -12,7 +13,7 @@ public class SettingsActivity extends Activity {
 		super.onCreate(savedInstanceState);
 
 		setTitle(R.string.settings);
-		// Display the fragment as the main content.
-		getFragmentManager().beginTransaction().replace(android.R.id.content, new SettingsFragment()).commit();
+		setContentView(R.layout.settings);
+		AdUtils.loadAd(getResources(), (AdView) findViewById(R.id.adView));
 	}
 }

@@ -8,6 +8,8 @@ import android.util.Log;
 import android.widget.TextView;
 
 import com.Revsoft.Wabbitemu.R;
+import com.Revsoft.Wabbitemu.utils.AdUtils;
+import com.google.android.gms.ads.AdView;
 
 public class AboutActivity extends Activity {
 
@@ -30,5 +32,7 @@ public class AboutActivity extends Activity {
 		} catch (final NameNotFoundException e) {
 			Log.e("About", "Version exception", e);
 		}
+
+		AdUtils.loadAd(getResources(), (AdView) findViewById(R.id.adView));
 	}
 }

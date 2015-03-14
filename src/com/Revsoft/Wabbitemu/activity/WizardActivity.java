@@ -4,13 +4,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.FragmentTransaction;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -19,93 +15,39 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask.Status;
 import android.os.Bundle;
-import android.text.method.LinkMovementMethod;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.view.View.OnClickListener;
-import android.view.animation.Animation;
-import android.view.animation.Animation.AnimationListener;
-import android.widget.Button;
-import android.widget.RadioButton;
-import android.widget.RadioGroup;
 import android.widget.Spinner;
-import android.widget.SpinnerAdapter;
-import android.widget.TextView;
-import android.widget.ViewFlipper;
+import android.widget.ViewAnimator;
 
 import com.Revsoft.Wabbitemu.CalcInterface;
 import com.Revsoft.Wabbitemu.R;
-import com.Revsoft.Wabbitemu.fragment.BrowseFragment;
-import com.Revsoft.Wabbitemu.utils.AdUtils;
 import com.Revsoft.Wabbitemu.utils.AnalyticsConstants.UserActionActivity;
 import com.Revsoft.Wabbitemu.utils.AnalyticsConstants.UserActionEvent;
-import com.Revsoft.Wabbitemu.utils.BrowseCallback;
 import com.Revsoft.Wabbitemu.utils.ErrorUtils;
 import com.Revsoft.Wabbitemu.utils.IntentConstants;
 import com.Revsoft.Wabbitemu.utils.OSDownloader;
-import com.Revsoft.Wabbitemu.utils.SpinnerDropDownAdapter;
 import com.Revsoft.Wabbitemu.utils.UserActivityTracker;
-import com.google.android.gms.ads.AdView;
+import com.Revsoft.Wabbitemu.wizard.OnWizardFinishedListener;
+import com.Revsoft.Wabbitemu.wizard.SetupWizardController;
+import com.Revsoft.Wabbitemu.wizard.controller.BrowseOsPageController;
+import com.Revsoft.Wabbitemu.wizard.controller.BrowseRomPageController;
+import com.Revsoft.Wabbitemu.wizard.controller.CalcModelPageController;
+import com.Revsoft.Wabbitemu.wizard.controller.LandingPageController;
+import com.Revsoft.Wabbitemu.wizard.controller.OsPageController;
+import com.Revsoft.Wabbitemu.wizard.data.FinishWizardData;
+import com.Revsoft.Wabbitemu.wizard.view.BrowseOsPageView;
+import com.Revsoft.Wabbitemu.wizard.view.BrowseRomPageView;
+import com.Revsoft.Wabbitemu.wizard.view.LandingPageView;
+import com.Revsoft.Wabbitemu.wizard.view.ModelPageView;
+import com.Revsoft.Wabbitemu.wizard.view.OsPageView;
 
-public class WizardActivity extends Activity implements BrowseCallback {
+public class WizardActivity extends Activity {
 
-	private class OsTypeButtonClickListener implements OnClickListener {
-		@Override
-		public void onClick(final View v) {
-			final RadioButton button = (RadioButton) v;
-			if (!button.isChecked()) {
-				return;
-			}
-
-			switch (button.getId()) {
-			case R.id.browseOsRadio:
-				mFinishButton.setText(R.string.next);
-				break;
-			case R.id.downloadOsRadio:
-				mFinishButton.setText(R.string.finish);
-				break;
-			}
-		}
-	}
-
-	private static final int BROWSE_CODE = 0;
-
-	private static final int GETTING_STARTED_CHILD = 0;
-	private static final int CALC_TYPE_CHILD = 1;
-	private static final int OS_SELECTION_CHILD = 2;
-	private static final int BROWSE_ROM_CHILD = 3;
-	private static final int BROWSE_OS_CHILD = 4;
-
-	private final AtomicBoolean mIsTransitioningPages = new AtomicBoolean();
 	private final UserActivityTracker mUserActivityTracker = UserActivityTracker.getInstance();
-	private final AnimationListener mAnimationListener = new AnimationListener() {
 
-		@Override
-		public void onAnimationStart(final Animation animation) {
-			// no-op
-		}
-
-		@Override
-		public void onAnimationRepeat(final Animation animation) {
-			// no-op
-		}
-
-		@Override
-		public void onAnimationEnd(final Animation animation) {
-			mIsTransitioningPages.set(false);
-		}
-	};
-
-	private int mCalcType;
-	private int mCalcModel;
-	private InputStream mBootStream;
+	private SetupWizardController mWizardController;
 	private String mCreatedFilePath;
-	private String mOsFilePath;
-	private String mBootPagePath;
-	private Button mFinishButton;
-	private RadioButton mBrowseOsRadio;
-	private ViewFlipper mViewFlipper;
 
 	private OSDownloader mOsDownloader;
 
@@ -115,38 +57,74 @@ public class WizardActivity extends Activity implements BrowseCallback {
 		mUserActivityTracker.reportActivityStart(this);
 
 		setContentView(R.layout.wizard);
-		setTitle(R.string.gettingStartedTitle);
 
-		final TextView osTerms = (TextView) findViewById(R.id.osTerms);
-		osTerms.setMovementMethod(LinkMovementMethod.getInstance());
+		final ViewAnimator viewAnimator = (ViewAnimator) findViewById(R.id.viewFlipper);
+		mWizardController = new SetupWizardController(this, viewAnimator, new OnWizardFinishedListener() {
 
-		mViewFlipper = (ViewFlipper) findViewById(R.id.viewFlipper);
-		final Button step1NextButton = (Button) findViewById(R.id.nextStep1Button);
-		step1NextButton.setOnClickListener(getNextButtonStep1OnClick());
-		final Button step2NextButton = (Button) findViewById(R.id.nextStep2Button);
-		step2NextButton.setOnClickListener(getNextButtonStep2OnClick());
-		mFinishButton = (Button) findViewById(R.id.finishStep3Button);
-		mFinishButton.setOnClickListener(getFinishOnClick());
-		final Button step2BackButton = (Button) findViewById(R.id.backStep2Button);
-		step2BackButton.setOnClickListener(getBackButtonOnClick());
-		final Button step3BackButton = (Button) findViewById(R.id.backStep3Button);
-		step3BackButton.setOnClickListener(getBackButtonOnClick());
-		final Button step4BackButton = (Button) findViewById(R.id.backStep4Button);
-		step4BackButton.setOnClickListener(getBackButtonOnClick());
-		final Button step5BackButton = (Button) findViewById(R.id.backStep5Button);
-		step5BackButton.setOnClickListener(getBackButtonOnClick());
-		final OnClickListener osTypeClickListener = new OsTypeButtonClickListener();
-		mBrowseOsRadio = (RadioButton) findViewById(R.id.browseOsRadio);
-		mBrowseOsRadio.setOnClickListener(osTypeClickListener);
-		final RadioButton downloadOsRadio = (RadioButton) findViewById(R.id.downloadOsRadio);
-		downloadOsRadio.setOnClickListener(osTypeClickListener);
+			@Override
+			public void onWizardFinishedListener(Object finalData) {
+				final FinishWizardData finishInfo = (FinishWizardData) finalData;
+				final int calcModel = finishInfo.getCalcModel();
+				mUserActivityTracker.reportBreadCrumb("User finished wizard. Model: %s", calcModel);
 
-		final AdView adView = (AdView) findViewById(R.id.adView1);
-		final AdView adView2 = (AdView) findViewById(R.id.adView2);
-		final AdView adView3 = (AdView) findViewById(R.id.adView3);
-		AdUtils.loadAd(getResources(), adView);
-		AdUtils.loadAd(getResources(), adView2);
-		AdUtils.loadAd(getResources(), adView3);
+				if (finishInfo.getFilePath() == null) {
+					mUserActivityTracker.reportUserAction(UserActionActivity.WIZARD_ACTIVITY,
+							UserActionEvent.BOOTFREE_ROM);
+					tryDownloadAndCreateRom(calcModel);
+				} else if (calcModel == CalcInterface.NO_CALC) {
+					mUserActivityTracker.reportUserAction(UserActionActivity.WIZARD_ACTIVITY,
+							UserActionEvent.HAVE_OWN_ROM);
+					finishSuccess(finishInfo.getFilePath());
+				} else {
+					mUserActivityTracker.reportUserAction(UserActionActivity.WIZARD_ACTIVITY,
+							UserActionEvent.BOOTFREE_ROM);
+					createRomCopyOs(calcModel, finishInfo.getFilePath());
+				}
+			}
+		});
+
+		final LandingPageView landingPageView = (LandingPageView) findViewById(R.id.landing_page);
+		mWizardController.registerView(landingPageView.getId(), new LandingPageController(landingPageView));
+
+		final ModelPageView modelPageView = (ModelPageView) findViewById(R.id.model_page);
+		mWizardController.registerView(modelPageView.getId(), new CalcModelPageController(modelPageView));
+
+		final OsPageView osPageView = (OsPageView) findViewById(R.id.os_page);
+		mWizardController.registerView(osPageView.getId(), new OsPageController(osPageView));
+
+		final BrowseOsPageView browseOsPageView = (BrowseOsPageView) findViewById(R.id.browse_os_page);
+		mWizardController.registerView(browseOsPageView.getId(), new BrowseOsPageController(browseOsPageView,
+				getFragmentManager()));
+
+		final BrowseRomPageView browseRomPageView = (BrowseRomPageView) findViewById(R.id.browse_rom_page);
+		mWizardController.registerView(browseRomPageView.getId(), new BrowseRomPageController(browseRomPageView,
+				getFragmentManager()));
+
+		// step1NextButton.setOnClickListener(getNextButtonStep1OnClick());
+		// final Button step2NextButton = (Button)
+		// findViewById(R.id.nextStep2Button);
+		// step2NextButton.setOnClickListener(getNextButtonStep2OnClick());
+		// mFinishButton = (Button) findViewById(R.id.finishStep3Button);
+		// mFinishButton.setOnClickListener(getFinishOnClick());
+		// final Button step2BackButton = (Button)
+		// findViewById(R.id.backStep2Button);
+		// step2BackButton.setOnClickListener(getBackButtonOnClick());
+		// final Button step3BackButton = (Button)
+		// findViewById(R.id.backStep3Button);
+		// step3BackButton.setOnClickListener(getBackButtonOnClick());
+		// final Button step4BackButton = (Button)
+		// findViewById(R.id.backStep4Button);
+		// step4BackButton.setOnClickListener(getBackButtonOnClick());
+		// final Button step5BackButton = (Button)
+		// findViewById(R.id.backStep5Button);
+		// step5BackButton.setOnClickListener(getBackButtonOnClick());
+		// final OnClickListener osTypeClickListener = new
+		// OsTypeButtonClickListener();
+		// mBrowseOsRadio = (RadioButton) findViewById(R.id.browseOsRadio);
+		// mBrowseOsRadio.setOnClickListener(osTypeClickListener);
+		// final RadioButton downloadOsRadio = (RadioButton)
+		// findViewById(R.id.downloadOsRadio);
+		// downloadOsRadio.setOnClickListener(osTypeClickListener);
 	}
 
 	@Override
@@ -195,194 +173,51 @@ public class WizardActivity extends Activity implements BrowseCallback {
 	}
 
 	@Override
-	protected void onActivityResult(final int requestCode, final int resultCode, final Intent data) {
-		switch (requestCode) {
-		case BROWSE_CODE:
-			if (resultCode == RESULT_OK) {
-				WizardActivity.this.setResult(RESULT_OK, data);
-				WizardActivity.this.finish();
-			}
-			break;
-		}
-	}
-
-	@Override
 	public void onBackPressed() {
-		if (mViewFlipper.getDisplayedChild() == 0) {
+		if (!mWizardController.movePreviousPage()) {
 			super.onBackPressed();
-		} else {
-			getBackButtonOnClick().onClick(mViewFlipper.getCurrentView());
 		}
 	}
 
-	private void launchBrowseRom() {
-		final String extensions = "\\.(rom|sav)";
-		final String description = getResources().getString(R.string.browseRomDescription);
-
-		launchBrowse(extensions, description, R.id.browseRomFragment);
-	}
-
-	private void launchBrowseOs() {
-		final RadioGroup group = (RadioGroup) findViewById(R.id.setupStep2RadioGroup);
-		final String extensions;
-		mCalcType = group.getCheckedRadioButtonId();
-		switch (mCalcType) {
-		case R.id.ti73Radio:
-			extensions = "\\.73u";
-			break;
-		case R.id.ti84pcseRadio:
-			extensions = "\\.8cu";
-			break;
-		default:
-			extensions = "\\.8xu";
-			break;
+	private void tryDownloadAndCreateRom(int calcModel) {
+		if (mOsDownloader != null && mOsDownloader.getStatus() == Status.RUNNING) {
+			throw new IllegalStateException("Invalid state, download running");
 		}
 
-		final String description = getResources().getString(R.string.browseOSDescription);
-		launchBrowse(extensions, description, R.id.browseOsFragment);
+		if (!isOnline()) {
+			final AlertDialog dialog = new AlertDialog.Builder(WizardActivity.this)
+					.setMessage(getResources().getString(R.string.noNetwork))
+					.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+						@Override
+						public void onClick(final DialogInterface dialog, final int id) {
+							dialog.dismiss();
+						}
+					})
+					.create();
+			dialog.show();
+			return;
+		}
+
+		createRomDownloadOs(calcModel);
 	}
 
-	private void launchBrowse(final String extensions, final String description, final int fragId) {
-		final Bundle setupBundle = new Bundle();
-		setupBundle.putString(IntentConstants.EXTENSION_EXTRA_REGEX, extensions);
-		setupBundle.putString(IntentConstants.BROWSE_DESCRIPTION_EXTRA_STRING, description);
-		setupBundle.putInt(IntentConstants.RETURN_ID, mViewFlipper.getDisplayedChild());
-
-		final BrowseFragment fragInfo = new BrowseFragment();
-		fragInfo.setArguments(setupBundle);
-
-		final FragmentTransaction transaction = getFragmentManager().beginTransaction();
-		transaction.replace(fragId, fragInfo);
-		transaction.commit();
-	}
-
-	private OnClickListener getNextButtonStep1OnClick() {
-		final RadioGroup group = (RadioGroup) findViewById(R.id.setupStep1RadioGroup);
-		return new OnClickListener() {
-
-			@Override
-			public void onClick(final View v) {
-				if (mIsTransitioningPages.getAndSet(true)) {
-					return;
-				}
-
-				setTitle(R.string.calculatorTypeTitle);
-				setNextAnimation();
-				final int radioId = group.getCheckedRadioButtonId();
-				switch (radioId) {
-				case R.id.browseRomRadio:
-					setTitle(R.string.browseRomTitle);
-					mViewFlipper.setDisplayedChild(BROWSE_ROM_CHILD);
-					launchBrowseRom();
-					break;
-				case R.id.createWizardRadio:
-					setTitle(R.string.calculatorTypeTitle);
-					mViewFlipper.showNext();
-					break;
-				}
-			}
-		};
-	}
-
-	private OnClickListener getNextButtonStep2OnClick() {
-		final RadioGroup group = (RadioGroup) findViewById(R.id.setupStep2RadioGroup);
-		return new OnClickListener() {
-
-			@Override
-			public void onClick(final View v) {
-				if (mIsTransitioningPages.getAndSet(true)) {
-					return;
-				}
-
-				setTitle(R.string.osSelectionTitle);
-				setNextAnimation();
-
-				final Spinner spinner = (Spinner) findViewById(R.id.osVersionSpinner);
-				final List<String> items = new ArrayList<String>();
-
-				mCalcType = group.getCheckedRadioButtonId();
-				switch (mCalcType) {
-				case R.id.ti73Radio:
-					items.add("1.91");
-					break;
-				case R.id.ti83pRadio:
-				case R.id.ti83pseRadio:
-					items.add("1.19");
-					break;
-				case R.id.ti84pRadio:
-				case R.id.ti84pseRadio:
-					items.add("2.55 MP");
-					items.add("2.43");
-					break;
-				case R.id.ti84pcseRadio:
-					items.add("4.2");
-					items.add("4.0");
-					break;
-				}
-
-				final SpinnerAdapter adapter = new SpinnerDropDownAdapter(WizardActivity.this, items);
-				spinner.setAdapter(adapter);
-				spinner.setSelection(0);
-				mViewFlipper.showNext();
-			}
-		};
-	}
-
-	private OnClickListener getFinishOnClick() {
-		return new OnClickListener() {
-
-			@Override
-			public void onClick(final View v) {
-				if (mIsTransitioningPages.getAndSet(true)) {
-					return;
-				}
-
-				setNextAnimation();
-
-				mUserActivityTracker.reportBreadCrumb("User finished wizard model: %s", mCalcModel);
-				if (mBrowseOsRadio.isChecked()) {
-					setTitle(R.string.browseOSTitle);
-					mViewFlipper.setDisplayedChild(BROWSE_OS_CHILD);
-					launchBrowseOs();
-				} else {
-					mIsTransitioningPages.set(false);
-					if (mOsDownloader != null && mOsDownloader.getStatus() == Status.RUNNING) {
-						return;
-					}
-
-					if (!isOnline()) {
-						final AlertDialog dialog = new AlertDialog.Builder(WizardActivity.this)
-								.setMessage(getResources().getString(R.string.noNetwork))
-								.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-									@Override
-									public void onClick(final DialogInterface dialog, final int id) {
-										dialog.dismiss();
-									}
-								})
-								.create();
-						dialog.show();
-						return;
-					}
-					createRomDownloadOs();
-				}
-			}
-		};
-	}
-
-	public boolean isOnline() {
+	private boolean isOnline() {
 		final ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
 		final NetworkInfo netInfo = cm.getActiveNetworkInfo();
 		return netInfo != null && netInfo.isConnectedOrConnecting();
 	}
 
-	private void createRomCopyOs() {
-		extractBootpage();
+	private void createRomCopyOs(int calcModel, String osFilePath) {
+		final String bootPagePath = extractBootpage(calcModel);
+		if (bootPagePath == null) {
+			finishRomError();
+			return;
+		}
 
-		mUserActivityTracker.reportUserAction(UserActionActivity.WIZARD_ACTIVITY, UserActionEvent.BOOTFREE_ROM);
-		final int error = CalcInterface.CreateRom(mOsFilePath, mBootPagePath, mCreatedFilePath, mCalcModel);
+		final int error = CalcInterface.CreateRom(osFilePath, bootPagePath, mCreatedFilePath, calcModel);
 
 		mUserActivityTracker.reportBreadCrumb("Creating ROM given OS: %s model: %s error: %s",
-				mOsFilePath, mCalcModel, error);
+				osFilePath, calcModel, error);
 		if (error == 0) {
 			finishSuccess(mCreatedFilePath);
 		} else {
@@ -390,7 +225,7 @@ public class WizardActivity extends Activity implements BrowseCallback {
 		}
 	}
 
-	private void extractBootpage() {
+	private String extractBootpage(int calcModel) {
 		final Resources resources = getResources();
 		final File cache = getCacheDir();
 		mCreatedFilePath = cache.getAbsolutePath() + "/";
@@ -400,40 +235,35 @@ public class WizardActivity extends Activity implements BrowseCallback {
 			bootPagePath = File.createTempFile("boot", ".hex", cache);
 		} catch (final IOException e) {
 			mUserActivityTracker.reportBreadCrumb("Error extracting bootpage %s", e);
-			return;
+			return null;
 		}
 
-		switch (mCalcType) {
-		case R.id.ti73Radio:
+		final InputStream bootStream;
+		switch (calcModel) {
+		case CalcInterface.TI_73:
 			mCreatedFilePath += resources.getString(R.string.ti73);
-			mBootStream = resources.openRawResource(R.raw.bf73);
-			mCalcModel = CalcInterface.TI_73;
+			bootStream = resources.openRawResource(R.raw.bf73);
 			break;
 		default:
-		case R.id.ti83pRadio:
+		case CalcInterface.TI_83P:
 			mCreatedFilePath += resources.getString(R.string.ti83p);
-			mBootStream = resources.openRawResource(R.raw.bf83pbe);
-			mCalcModel = CalcInterface.TI_83P;
+			bootStream = resources.openRawResource(R.raw.bf83pbe);
 			break;
-		case R.id.ti83pseRadio:
+		case CalcInterface.TI_83PSE:
 			mCreatedFilePath += resources.getString(R.string.ti83pse);
-			mBootStream = resources.openRawResource(R.raw.bf83pse);
-			mCalcModel = CalcInterface.TI_83PSE;
+			bootStream = resources.openRawResource(R.raw.bf83pse);
 			break;
-		case R.id.ti84pRadio:
+		case CalcInterface.TI_84P:
 			mCreatedFilePath += resources.getString(R.string.ti84p);
-			mBootStream = resources.openRawResource(R.raw.bf84pbe);
-			mCalcModel = CalcInterface.TI_84P;
+			bootStream = resources.openRawResource(R.raw.bf84pbe);
 			break;
-		case R.id.ti84pseRadio:
+		case CalcInterface.TI_84PSE:
 			mCreatedFilePath += resources.getString(R.string.ti84pse);
-			mBootStream = resources.openRawResource(R.raw.bf84pse);
-			mCalcModel = CalcInterface.TI_84PSE;
+			bootStream = resources.openRawResource(R.raw.bf84pse);
 			break;
-		case R.id.ti84pcseRadio:
+		case CalcInterface.TI_84PCSE:
 			mCreatedFilePath += resources.getString(R.string.ti84pcse);
-			mBootStream = resources.openRawResource(R.raw.bf84pcse);
-			mCalcModel = CalcInterface.TI_84PCSE;
+			bootStream = resources.openRawResource(R.raw.bf84pcse);
 			break;
 		}
 
@@ -443,7 +273,7 @@ public class WizardActivity extends Activity implements BrowseCallback {
 		try {
 			final byte[] buffer = new byte[4096];
 			outputStream = new FileOutputStream(bootPagePath);
-			while (mBootStream.read(buffer) != -1) {
+			while (bootStream.read(buffer) != -1) {
 				outputStream.write(buffer, 0, 4096);
 			}
 		} catch (final IOException e) {
@@ -459,11 +289,15 @@ public class WizardActivity extends Activity implements BrowseCallback {
 			}
 		}
 
-		mBootPagePath = bootPagePath.getAbsolutePath();
+		return bootPagePath.getAbsolutePath();
 	}
 
-	private void createRomDownloadOs() {
-		extractBootpage();
+	private void createRomDownloadOs(final int calcModel) {
+		final String bootPagePath = extractBootpage(calcModel);
+		if (bootPagePath == null) {
+			finishRomError();
+			return;
+		}
 
 		final Spinner spinner = (Spinner) findViewById(R.id.osVersionSpinner);
 		final int osVersion = spinner.getSelectedItemPosition();
@@ -476,16 +310,16 @@ public class WizardActivity extends Activity implements BrowseCallback {
 			return;
 		}
 
-		mOsFilePath = osDownloadPath.getAbsolutePath();
-		mOsDownloader = new OSDownloader(this, mOsFilePath) {
+		final String osFilePath = osDownloadPath.getAbsolutePath();
+		mOsDownloader = new OSDownloader(this, osFilePath) {
 
 			@Override
 			protected void onPostExecute(final Boolean success) {
 				super.onPostExecute(success);
 
 				if (success) {
-					final int error = CalcInterface.CreateRom(mOsFilePath, mBootPagePath, mCreatedFilePath, mCalcModel);
-					mUserActivityTracker.reportBreadCrumb("Creating ROM type: %s error: %s", mCalcModel, error);
+					final int error = CalcInterface.CreateRom(osFilePath, bootPagePath, mCreatedFilePath, calcModel);
+					mUserActivityTracker.reportBreadCrumb("Creating ROM type: %s error: %s", calcModel, error);
 					if (error == 0) {
 						finishSuccess(mCreatedFilePath);
 					} else {
@@ -496,7 +330,8 @@ public class WizardActivity extends Activity implements BrowseCallback {
 				}
 			}
 		};
-		mOsDownloader.execute(mCalcModel, osVersion);
+
+		mOsDownloader.execute(calcModel, osVersion);
 	}
 
 	private void finishOsError() {
@@ -520,70 +355,5 @@ public class WizardActivity extends Activity implements BrowseCallback {
 
 	private void showRomError() {
 		ErrorUtils.showErrorDialog(this, R.string.errorRomCreateDescription);
-	}
-
-	private OnClickListener getBackButtonOnClick() {
-		return new OnClickListener() {
-
-			@Override
-			public void onClick(final View v) {
-				if (mIsTransitioningPages.getAndSet(true)) {
-					return;
-				}
-
-				setBackAnimation(mViewFlipper);
-
-				switch (mViewFlipper.getDisplayedChild()) {
-				case CALC_TYPE_CHILD:
-					setTitle(R.string.gettingStartedTitle);
-					break;
-				case OS_SELECTION_CHILD:
-					setTitle(R.string.calculatorTypeTitle);
-					break;
-				case BROWSE_ROM_CHILD:
-					setTitle(R.string.gettingStartedTitle);
-					mViewFlipper.setDisplayedChild(GETTING_STARTED_CHILD);
-					return;
-				case BROWSE_OS_CHILD:
-					setTitle(R.string.osSelectionTitle);
-					mViewFlipper.setDisplayedChild(OS_SELECTION_CHILD);
-					return;
-				}
-
-				mViewFlipper.showPrevious();
-			}
-		};
-	}
-
-	private void setNextAnimation() {
-		mViewFlipper.setOutAnimation(this, R.anim.out_to_left);
-		mViewFlipper.setInAnimation(this, R.anim.in_from_right);
-		setAnimationListeners();
-	}
-
-	private void setBackAnimation(final ViewFlipper flipper) {
-		mViewFlipper.setOutAnimation(this, R.anim.out_to_right);
-		mViewFlipper.setInAnimation(this, R.anim.in_from_left);
-		setAnimationListeners();
-	}
-
-	private void setAnimationListeners() {
-		mViewFlipper.getInAnimation().setAnimationListener(mAnimationListener);
-		mViewFlipper.getOutAnimation().setAnimationListener(mAnimationListener);
-	}
-
-	@Override
-	public void callback(final int returnId, final String fileName) {
-		switch (returnId) {
-		case BROWSE_OS_CHILD:
-			mOsFilePath = fileName;
-			createRomCopyOs();
-			break;
-		case BROWSE_ROM_CHILD:
-			mUserActivityTracker.reportUserAction(UserActionActivity.WIZARD_ACTIVITY, UserActionEvent.HAVE_OWN_ROM);
-
-			finishSuccess(fileName);
-			break;
-		}
 	}
 }

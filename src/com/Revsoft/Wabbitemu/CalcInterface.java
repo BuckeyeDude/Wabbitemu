@@ -8,6 +8,7 @@ public class CalcInterface {
 		System.loadLibrary("Wabbitemu");
 	}
 
+	public static final int NO_CALC = -1;
 	public static final int TI_81 = 0;
 	public static final int TI_82 = 1;
 	public static final int TI_83 = 2;

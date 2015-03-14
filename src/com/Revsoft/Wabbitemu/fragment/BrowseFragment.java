@@ -6,6 +6,7 @@ import android.app.Fragment;
 import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,17 +17,23 @@ import android.widget.ListView;
 
 import com.Revsoft.Wabbitemu.R;
 import com.Revsoft.Wabbitemu.utils.AdUtils;
-import com.Revsoft.Wabbitemu.utils.BrowseCallback;
 import com.Revsoft.Wabbitemu.utils.FileUtils;
 import com.Revsoft.Wabbitemu.utils.IntentConstants;
+import com.Revsoft.Wabbitemu.utils.OnBrowseItemSelected;
 import com.google.android.gms.ads.AdView;
 
 public class BrowseFragment extends Fragment {
 
 	private final FileUtils mFileUtils = FileUtils.getInstance();
+	private final OnBrowseItemSelected mBrowseCallback;
 
 	private AsyncTask<Void, Void, ArrayAdapter<String>> mSearchTask;
 	private ListView mListView;
+	private AdView mAdView;
+
+	public BrowseFragment(@NonNull OnBrowseItemSelected browseCallback) {
+		mBrowseCallback = browseCallback;
+	}
 
 	@Override
 	public View onCreateView(final LayoutInflater inflater, final ViewGroup container, final Bundle savedInstanceState) {
@@ -35,7 +42,6 @@ public class BrowseFragment extends Fragment {
 		if (getArguments() != null) {
 			final Bundle arguments = getArguments();
 			final String extensionsRegex = arguments.getString(IntentConstants.EXTENSION_EXTRA_REGEX);
-			final int returnId = arguments.getInt(IntentConstants.RETURN_ID);
 
 			mListView = (ListView) view.findViewById(R.id.browseView);
 			mListView.setOnItemClickListener(new OnItemClickListener() {
@@ -43,15 +49,14 @@ public class BrowseFragment extends Fragment {
 				@Override
 				public void onItemClick(final AdapterView<?> parent, final View view, final int position, final long id) {
 					final String filePath = (String) mListView.getItemAtPosition(position);
-					final BrowseCallback callback = (BrowseCallback) getActivity();
-					callback.callback(returnId, filePath);
+					mBrowseCallback.onBrowseItemSelected(filePath);
 				}
 			});
 
 			startSearch(view, extensionsRegex);
 
-			final AdView adView = (AdView) view.findViewById(R.id.adView4);
-			AdUtils.loadAd(getResources(), adView);
+			mAdView = (AdView) view.findViewById(R.id.adView);
+			AdUtils.loadAd(getResources(), mAdView);
 		}
 
 		return view;
@@ -94,6 +99,10 @@ public class BrowseFragment extends Fragment {
 
 		if (mSearchTask != null) {
 			mSearchTask.cancel(true);
+		}
+
+		if (mAdView != null) {
+			AdUtils.destroyView(mAdView);
 		}
 	}
 }

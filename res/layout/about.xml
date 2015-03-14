@@ -70,4 +70,13 @@
         android:text="@string/bootFreeLink"
         android:textSize="16sp" />
 
+    <LinearLayout
+        android:id="@+id/adContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true" >
+
+        <include layout="@layout/ad" />
+    </LinearLayout>
+
 </RelativeLayout>
