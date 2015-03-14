@@ -81,7 +81,7 @@ public class BrowseRomPageController implements WizardPageController {
 
 	@Override
 	public void onHiding() {
-
+		// no-op
 	}
 
 	@Override

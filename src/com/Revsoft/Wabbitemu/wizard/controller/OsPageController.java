@@ -76,7 +76,7 @@ public class OsPageController implements WizardPageController {
 
 	@Override
 	public void onHiding() {
-
+		// no-op
 	}
 
 	@Override

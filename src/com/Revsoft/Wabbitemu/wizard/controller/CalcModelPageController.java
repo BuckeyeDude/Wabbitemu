@@ -64,12 +64,12 @@ public class CalcModelPageController implements WizardPageController {
 
 	@Override
 	public void onHiding() {
-
+		// no-op
 	}
 
 	@Override
 	public void onShowing(Object previousData) {
-
+		// no-op
 	}
 
 	@Override

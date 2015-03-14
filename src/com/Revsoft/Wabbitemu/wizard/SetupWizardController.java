@@ -11,6 +11,7 @@ import android.view.animation.Animation.AnimationListener;
 import android.widget.ViewAnimator;
 
 import com.Revsoft.Wabbitemu.R;
+import com.Revsoft.Wabbitemu.utils.UserActivityTracker;
 
 public class SetupWizardController {
 
@@ -19,6 +20,7 @@ public class SetupWizardController {
 	private final OnWizardFinishedListener mFinishedListener;
 	private final Map<Integer, WizardPageController> mPageControllers = new HashMap<Integer, WizardPageController>();
 	private final Map<Integer, Integer> mIdToPositionMap = new HashMap<Integer, Integer>();
+	private final UserActivityTracker mUserActivityTracker = UserActivityTracker.getInstance();
 
 	private WizardPageController mCurrentController;
 	private Object mPreviousData;
@@ -61,6 +63,7 @@ public class SetupWizardController {
 
 	public boolean moveNextPage() {
 		if (mCurrentController.isFinalPage()) {
+			mUserActivityTracker.reportBreadCrumb("Finishing final page");
 			mFinishedListener.onWizardFinishedListener(mCurrentController.getControllerData());
 			return true;
 		}
@@ -100,6 +103,7 @@ public class SetupWizardController {
 			throw new IllegalStateException("Id is not registered " + nextPageId);
 		}
 
+		mUserActivityTracker.reportBreadCrumb("Moving to page %s from %s", mCurrentController, lastController);
 		mPreviousData = lastController.getControllerData();
 		mViewFlipper.setDisplayedChild(mIdToPositionMap.get(nextPageId));
 		mCurrentController.onShowing(mPreviousData);
