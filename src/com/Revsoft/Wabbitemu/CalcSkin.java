@@ -51,7 +51,7 @@ public class CalcSkin extends View {
 	private final OnSharedPreferenceChangeListener mPrefListener = new OnSharedPreferenceChangeListener() {
 
 		@Override
-		public void onSharedPreferenceChanged(final SharedPreferences sharedPreferences, final String key) {
+		public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
 			if (key.equals(PreferenceConstants.USE_VIBRATION.toString())) {
 				mHasVibrationEnabled = sharedPreferences.getBoolean(key, true);
 			}
@@ -73,7 +73,10 @@ public class CalcSkin extends View {
 		final Bitmap renderedSkin = mSkinLoader.getRenderedSkin();
 		canvas.drawColor(Color.DKGRAY);
 		if (renderedSkin != null) {
-			canvas.drawBitmap(renderedSkin, 0, 0, mPaint);
+			final Rect src = mSkinLoader.getSkinRect();
+			final Rect dest = new Rect(0, 0, canvas.getWidth(), canvas.getHeight());
+			canvas.drawBitmap(renderedSkin, src, dest, mPaint);
+
 		}
 		
 		for (Rect rect : mKeymapDrawRect) {
@@ -90,7 +93,7 @@ public class CalcSkin extends View {
 	}
 
 	public Rect getLCDSkinRect() {
-		return mSkinLoader.getSkinRect();
+		return mSkinLoader.getLcdSkinRect();
 	}
 
 	private boolean handleTouchEvent(final MotionEvent event, final int index) {

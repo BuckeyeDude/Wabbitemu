@@ -95,6 +95,8 @@
         proportions compared to the real screen</string>
     <string name="largeScreen">Largest screen size</string>
     <string name="largeScreenSummary">On smaller devices, make the screen as large as possible on the skin</string>
+    <string name="maximizeSkin">Largest skin size</string>
+    <string name="maximizeSkinSummary">On smaller devices, cut of as much extra padding as possible</string>
     <string name="useImmersiveMode">Enable \'Immserive Mode\'</string>
     <string name="useImmersiveModeSummary">On the calc window, hide the status and soft key bars to take up the entire screen. Swipe from the top or bottom edges to gain access to the bars.</string>
     

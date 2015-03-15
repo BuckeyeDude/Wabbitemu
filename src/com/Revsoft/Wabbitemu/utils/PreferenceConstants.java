@@ -10,7 +10,8 @@ public enum PreferenceConstants {
 	USE_VIBRATION("useVibration"),
 	CORRECT_SCREEN_RATIO("correctScreenRatio"),
 	LARGE_SCREEN("largeScreen"),
-	IMMERSIVE_MODE("useImmersiveMode");
+	IMMERSIVE_MODE("useImmersiveMode"),
+	FULL_SKIN_SIZE("maximizeSkin");
 	
 	private String mKey;
 	

@@ -102,7 +102,7 @@ public class EmulatorFragment extends Fragment {
 	public void onResume() {
 		mCalculatorManager.setCalcSkin(mCalcSkin);
 		mCalculatorManager.unPauseCalc(ACTIVITY_PAUSE_KEY);
-		mSurfaceView.updateSkin(mSkinLoader.getLcdRect(), mSkinLoader.getSkinRect());
+		mSurfaceView.updateSkin(mSkinLoader.getLcdRect(), mSkinLoader.getLcdSkinRect());
 		mCalcSkin.invalidate();
 
 		mIsInitialized = true;

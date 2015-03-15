@@ -2,4 +2,5 @@
 <resources>
     <dimen name="shadow_width">15dp</dimen>
     <dimen name="slidingmenu_offset">30dp</dimen>
+    <dimen name="maxSkinPadding">5dp</dimen>
 </resources>

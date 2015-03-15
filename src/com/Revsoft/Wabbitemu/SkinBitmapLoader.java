@@ -68,15 +68,19 @@ public class SkinBitmapLoader {
 	private Path mFaceplatePath;
 	private boolean mCorrectRatio;
 	private boolean mLargeScreen;
+	private boolean mMaximizeSkin;
 	private SharedPreferences mSharedPrefs;
 	private volatile Bitmap mRenderedSkinImage;
 	private Rect mLcdRect;
 	private Rect mScreenRect;
+	private Rect mSkinRect;
 	private int mSkinX, mSkinY;
 	private int mKeymapWidth;
 	private int mKeymapHeight;
 	private double mKeymapWidthScale;
 	private double mKeymapHeightScale;
+	private double mWidthMaxScale;
+	private double mHeightMaxScale;
 	private int[] mKeymapPixels;
 
 	private static class SingletonHolder {
@@ -93,6 +97,7 @@ public class SkinBitmapLoader {
 		mCorrectRatio = mSharedPrefs.getBoolean(PreferenceConstants.CORRECT_SCREEN_RATIO.toString(), false);
 		mLargeScreen = mSharedPrefs.getBoolean(PreferenceConstants.LARGE_SCREEN.toString(), false);
 		mFaceplateColor = mSharedPrefs.getInt(PreferenceConstants.FACEPLATE_COLOR.toString(), Color.GRAY);
+		mMaximizeSkin = mSharedPrefs.getBoolean(PreferenceConstants.FULL_SKIN_SIZE.toString(), false);
 		mResources = context.getResources();
 	}
 
@@ -111,6 +116,9 @@ public class SkinBitmapLoader {
 				loadSkinThread();
 			} else if (key.equals(PreferenceConstants.CORRECT_SCREEN_RATIO.toString())) {
 				mCorrectRatio = sharedPreferences.getBoolean(key, false);
+				loadSkinThread();
+			} else if (key.equals(PreferenceConstants.FULL_SKIN_SIZE.toString())) {
+				mMaximizeSkin = mSharedPrefs.getBoolean(PreferenceConstants.FULL_SKIN_SIZE.toString(), false);
 				loadSkinThread();
 			}
 		}
@@ -139,6 +147,7 @@ public class SkinBitmapLoader {
 	public void destroySkin() {
 		mRenderedSkinImage = null;
 		mScreenRect = null;
+		mSkinRect = null;
 		mLcdRect = null;
 		mKeymapPixels = null;
 		mHasLoadedSkin.set(false);
@@ -235,7 +244,8 @@ public class SkinBitmapLoader {
 		final int skinHeight;
 
 		final int smallestScreenWidthDp = mResources.getConfiguration().smallestScreenWidthDp;
-		if (smallestScreenWidthDp >= 600) {
+		final boolean isTablet = smallestScreenWidthDp >= 600;
+		if (isTablet) {
 			mRatio = Math.min((double) displaySize.x / SKIN_WIDTH, (double) displaySize.y / SKIN_HEIGHT);
 			skinWidth = (int) (SKIN_WIDTH * mRatio);
 			skinHeight = (int) (SKIN_HEIGHT * mRatio);
@@ -270,6 +280,24 @@ public class SkinBitmapLoader {
 			return;
 		}
 
+		final double extraPadding = mContext.getResources().getDimension(R.dimen.maxSkinPadding);
+		if (mMaximizeSkin && !isTablet) {
+			mSkinRect = new Rect((int) (mSkinRect.left * mKeymapWidthScale - extraPadding),
+					(int) (mSkinRect.top * mKeymapHeightScale - extraPadding),
+					(int) (mSkinRect.right * mKeymapWidthScale + extraPadding),
+					(int) (mSkinRect.bottom * mKeymapHeightScale + extraPadding));
+			mWidthMaxScale = (double) skinWidth / (mSkinRect.right - mSkinRect.left);
+			mHeightMaxScale = (double) skinHeight / (mSkinRect.bottom - mSkinRect.top);
+		} else {
+			if (isTablet) {
+				mSkinRect = new Rect(0, 0, displaySize.x, displaySize.y);
+			} else {
+				mSkinRect = new Rect(0, 0, skinImage.getWidth(), skinImage.getHeight());
+			}
+			mWidthMaxScale = 1.0;
+			mHeightMaxScale = 1.0;
+		}
+
 		final int lcdWidth, lcdHeight;
 		switch (model) {
 		case CalcInterface.TI_85:
@@ -288,10 +316,11 @@ public class SkinBitmapLoader {
 		}
 
 		mLcdRect = new Rect(0, 0, lcdWidth, lcdHeight);
-		mScreenRect = new Rect((int) (lcdRect.left * mKeymapWidthScale) + mSkinX,
-				(int) (lcdRect.top * mKeymapHeightScale),
-				(int) (lcdRect.right * mKeymapWidthScale) + mSkinX,
-				(int) (lcdRect.bottom * mKeymapHeightScale));
+		mScreenRect = new Rect((int) (lcdRect.left * mKeymapWidthScale * mWidthMaxScale) + mSkinX - mSkinRect.left,
+				(int) (lcdRect.top * mKeymapHeightScale * mHeightMaxScale) - mSkinRect.top,
+				(int) (lcdRect.right * mKeymapWidthScale * mWidthMaxScale) + mSkinX - mSkinRect.left,
+				(int) (lcdRect.bottom * mKeymapHeightScale * mHeightMaxScale) - mSkinRect.top);
+
 		if (mCorrectRatio) {
 			final int screenWidth, screenHeight;
 			final double screenRatio = (double) mLcdRect.width() / mLcdRect.height();
@@ -374,6 +403,7 @@ public class SkinBitmapLoader {
 	private Rect parseKeymap() {
 		mButtonRects.clear();
 		Rect lcdRect = null;
+		mSkinRect = null;
 
 		for (int pixelOffset = 0; pixelOffset < mKeymapWidth * mKeymapHeight; pixelOffset++) {
 			final int pixelData = mKeymapPixels[pixelOffset];
@@ -382,8 +412,12 @@ public class SkinBitmapLoader {
 					final int x = pixelOffset % mKeymapWidth;
 					final int y = pixelOffset / mKeymapWidth;
 					lcdRect = new Rect(x, y, x, y);
+					// This assumes screen is always above the first button
+					// Fix if custom skins are added
+					mSkinRect = new Rect(lcdRect);
 				} else {
 					updateRect(lcdRect, pixelOffset);
+					updateRect(mSkinRect, pixelOffset);
 				}
 			}
 			
@@ -395,6 +429,7 @@ public class SkinBitmapLoader {
 					mButtonRects.put(pixelData, new Rect(x, y, x, y));
 				} else {
 					updateRect(rect, pixelOffset);
+					updateRect(mSkinRect, pixelOffset);
 				}
 			}
 		}
@@ -450,8 +485,8 @@ public class SkinBitmapLoader {
 	}
 
 	public int getKeymapPixel(int x, int y) {
-		x = (int) (x / mKeymapWidthScale);
-		y = (int) (y / mKeymapHeightScale);
+		x = (int) ((x + mSkinRect.left) / (mKeymapWidthScale * mWidthMaxScale));
+		y = (int) ((y + mSkinRect.top) / (mKeymapHeightScale * mHeightMaxScale));
 		final int index = y * mKeymapWidth + x;
 		if (index > mKeymapPixels.length) {
 			// LG seems to have issues being able to go beyond bounds. Not sure
@@ -490,8 +525,12 @@ public class SkinBitmapLoader {
 		return mLcdRect;
 	}
 
-	public Rect getSkinRect() {
+	public Rect getLcdSkinRect() {
 		return mScreenRect;
+	}
+
+	public Rect getSkinRect() {
+		return mSkinRect;
 	}
 
 	public int getSkinX() {
@@ -518,10 +557,11 @@ public class SkinBitmapLoader {
 			return null;
 		}
 
-		final Rect scaledRect = new Rect((int) (buttonRect.left * mKeymapWidthScale) + mSkinX,
-				(int) (buttonRect.top * mKeymapHeightScale) + mSkinY,
-				(int) (buttonRect.right * mKeymapWidthScale) + mSkinX,
-				(int) (buttonRect.bottom * mKeymapHeightScale) + mSkinY);
+		final Rect scaledRect = new Rect(
+				(int) (buttonRect.left * mKeymapWidthScale * mWidthMaxScale) + mSkinX - mSkinRect.left,
+				(int) (buttonRect.top * mKeymapHeightScale * mHeightMaxScale) + mSkinY - mSkinRect.top,
+				(int) (buttonRect.right * mKeymapWidthScale * mWidthMaxScale) + mSkinX - mSkinRect.left,
+				(int) (buttonRect.bottom * mKeymapHeightScale * mHeightMaxScale) + mSkinY - mSkinRect.top);
 		return scaledRect;
 	}
 }
