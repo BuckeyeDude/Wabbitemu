@@ -47,34 +47,9 @@
         android:id="@+id/adContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_above="@+id/step1Layout" >
+        android:layout_alignParentBottom="true" >
 
         <include layout="@layout/ad" />
     </LinearLayout>
-
-    <RelativeLayout
-        android:id="@+id/step1Layout"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_alignParentBottom="true" >
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dip"
-            android:layout_alignParentTop="true"
-            android:layout_marginLeft="4dip"
-            android:layout_marginRight="4dip"
-            android:background="?android:attr/dividerVertical" />
-
-        <Button
-            android:id="@+id/nextButton"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_alignParentBottom="true"
-            android:layout_alignParentRight="true"
-            android:layout_alignParentTop="true"
-            android:background="?android:attr/selectableItemBackground"
-            android:text="@string/next" />
-    </RelativeLayout>
 
 </merge>

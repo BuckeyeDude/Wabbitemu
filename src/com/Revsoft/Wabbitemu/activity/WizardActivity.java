@@ -17,6 +17,7 @@ import android.os.AsyncTask.Status;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.ViewGroup;
 import android.widget.Spinner;
 import android.widget.ViewAnimator;
 
@@ -30,7 +31,7 @@ import com.Revsoft.Wabbitemu.utils.OSDownloader;
 import com.Revsoft.Wabbitemu.utils.UserActivityTracker;
 import com.Revsoft.Wabbitemu.utils.ViewUtils;
 import com.Revsoft.Wabbitemu.wizard.OnWizardFinishedListener;
-import com.Revsoft.Wabbitemu.wizard.SetupWizardController;
+import com.Revsoft.Wabbitemu.wizard.WizardController;
 import com.Revsoft.Wabbitemu.wizard.controller.BrowseOsPageController;
 import com.Revsoft.Wabbitemu.wizard.controller.BrowseRomPageController;
 import com.Revsoft.Wabbitemu.wizard.controller.CalcModelPageController;
@@ -47,8 +48,9 @@ public class WizardActivity extends Activity {
 
 	private final UserActivityTracker mUserActivityTracker = UserActivityTracker.getInstance();
 
-	private SetupWizardController mWizardController;
+	private WizardController mWizardController;
 	private String mCreatedFilePath;
+	private boolean mIsWizardFinishing;
 
 	private OSDownloader mOsDownloader;
 
@@ -59,11 +61,17 @@ public class WizardActivity extends Activity {
 
 		setContentView(R.layout.wizard);
 
-		final ViewAnimator viewAnimator = (ViewAnimator) findViewById(R.id.viewFlipper);
-		mWizardController = new SetupWizardController(this, viewAnimator, new OnWizardFinishedListener() {
+		final ViewAnimator viewAnimator = ViewUtils.findViewById(this, R.id.viewFlipper, ViewAnimator.class);
+		final ViewGroup navContainer = ViewUtils.findViewById(this, R.id.navContainer, ViewGroup.class);
+		mWizardController = new WizardController(this, viewAnimator, navContainer, new OnWizardFinishedListener() {
 
 			@Override
 			public void onWizardFinishedListener(Object finalData) {
+				if (mIsWizardFinishing) {
+					return;
+				}
+				mIsWizardFinishing = true;
+
 				final FinishWizardData finishInfo = (FinishWizardData) finalData;
 				final int calcModel = finishInfo.getCalcModel();
 				mUserActivityTracker.reportBreadCrumb("User finished wizard. Model: %s", calcModel);
@@ -171,6 +179,7 @@ public class WizardActivity extends Activity {
 					.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
 						@Override
 						public void onClick(final DialogInterface dialog, final int id) {
+							mIsWizardFinishing = false;
 							dialog.dismiss();
 						}
 					})
@@ -310,6 +319,13 @@ public class WizardActivity extends Activity {
 					finishOsError();
 				}
 			}
+
+			@Override
+			protected void onCancelled() {
+				super.onCancelled();
+
+				mIsWizardFinishing = false;
+			}
 		};
 
 		mOsDownloader.execute(calcModel, osVersion);
@@ -331,10 +347,12 @@ public class WizardActivity extends Activity {
 	}
 
 	private void showOsError() {
+		mIsWizardFinishing = false;
 		ErrorUtils.showErrorDialog(this, R.string.errorOsDownloadDescription);
 	}
 
 	private void showRomError() {
+		mIsWizardFinishing = false;
 		ErrorUtils.showErrorDialog(this, R.string.errorRomCreateDescription);
 	}
 

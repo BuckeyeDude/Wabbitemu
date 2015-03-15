@@ -1,10 +1,11 @@
 package com.Revsoft.Wabbitemu.wizard;
 
+import android.support.annotation.NonNull;
+
 
 public interface WizardPageController {
 
-	// TODO: kill in favor of a navigation controller
-	void initialize(SetupWizardController wizardController);
+	void configureButtons(@NonNull WizardNavigationController navController);
 
 	boolean hasPreviousPage();
 

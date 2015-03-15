@@ -11,7 +11,7 @@ import com.Revsoft.Wabbitemu.R;
 import com.Revsoft.Wabbitemu.fragment.BrowseFragment;
 import com.Revsoft.Wabbitemu.utils.IntentConstants;
 import com.Revsoft.Wabbitemu.utils.OnBrowseItemSelected;
-import com.Revsoft.Wabbitemu.wizard.SetupWizardController;
+import com.Revsoft.Wabbitemu.wizard.WizardNavigationController;
 import com.Revsoft.Wabbitemu.wizard.WizardPageController;
 import com.Revsoft.Wabbitemu.wizard.data.FinishWizardData;
 import com.Revsoft.Wabbitemu.wizard.view.BrowseOsPageView;
@@ -20,10 +20,22 @@ public class BrowseOsPageController implements WizardPageController {
 
 	private final Context mContext;
 	private final FragmentManager mFragmentManager;
+	private final OnBrowseItemSelected mBrowseCallback = new OnBrowseItemSelected() {
+
+		@Override
+		public void onBrowseItemSelected(String fileName) {
+			if (mNavController == null) {
+				return;
+			}
+
+			mOsPath = fileName;
+			mNavController.finishWizard();
+		}
+	};
 
 	private int mCalcModel;
 	private String mOsPath;
-	private OnBrowseItemSelected mBrowseCallback;
+	private WizardNavigationController mNavController;
 
 	public BrowseOsPageController(@NonNull BrowseOsPageView view,
 			@NonNull FragmentManager fragmentManager)
@@ -33,20 +45,14 @@ public class BrowseOsPageController implements WizardPageController {
 	}
 
 	@Override
-	public void initialize(final SetupWizardController wizardController) {
-		mBrowseCallback = new OnBrowseItemSelected() {
-
-			@Override
-			public void onBrowseItemSelected(String fileName) {
-				mOsPath = fileName;
-				wizardController.moveNextPage();
-			}
-		};
+	public void configureButtons(@NonNull final WizardNavigationController navController) {
+		mNavController = navController;
+		navController.hideNextButton();
 	}
 
 	@Override
 	public boolean hasPreviousPage() {
-		return false;
+		return true;
 	}
 
 	@Override

@@ -5,14 +5,12 @@ import android.app.FragmentTransaction;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.view.View;
-import android.view.View.OnClickListener;
 
 import com.Revsoft.Wabbitemu.R;
 import com.Revsoft.Wabbitemu.fragment.BrowseFragment;
 import com.Revsoft.Wabbitemu.utils.IntentConstants;
 import com.Revsoft.Wabbitemu.utils.OnBrowseItemSelected;
-import com.Revsoft.Wabbitemu.wizard.SetupWizardController;
+import com.Revsoft.Wabbitemu.wizard.WizardNavigationController;
 import com.Revsoft.Wabbitemu.wizard.WizardPageController;
 import com.Revsoft.Wabbitemu.wizard.data.FinishWizardData;
 import com.Revsoft.Wabbitemu.wizard.view.BrowseRomPageView;
@@ -20,38 +18,34 @@ import com.Revsoft.Wabbitemu.wizard.view.BrowseRomPageView;
 public class BrowseRomPageController implements WizardPageController {
 
 	private final Context mContext;
-	private final BrowseRomPageView mView;
 	private final FragmentManager mFragmentManager;
+	private final OnBrowseItemSelected mBrowseCallback = new OnBrowseItemSelected() {
 
-	private OnBrowseItemSelected mBrowseCallback;
+		@Override
+		public void onBrowseItemSelected(String fileName) {
+			if (mNavController == null) {
+				return;
+			}
+
+			mSelectedFileName = fileName;
+			mNavController.finishWizard();
+		}
+	};
+
+	private WizardNavigationController mNavController;
 	private String mSelectedFileName;
 
 	public BrowseRomPageController(@NonNull BrowseRomPageView view,
 			@NonNull FragmentManager fragmentManager)
 	{
-		mView = view;
 		mContext = view.getContext();
 		mFragmentManager = fragmentManager;
 	}
 
 	@Override
-	public void initialize(final SetupWizardController wizardController) {
-		mBrowseCallback = new OnBrowseItemSelected() {
-
-			@Override
-			public void onBrowseItemSelected(String fileName) {
-				mSelectedFileName = fileName;
-				wizardController.moveNextPage();
-			}
-		};
-		
-		mView.getBackButton().setOnClickListener(new OnClickListener() {
-
-			@Override
-			public void onClick(View v) {
-				wizardController.movePreviousPage();
-			}
-		});
+	public void configureButtons(@NonNull WizardNavigationController navController) {
+		mNavController = navController;
+		navController.hideNextButton();
 	}
 
 	@Override

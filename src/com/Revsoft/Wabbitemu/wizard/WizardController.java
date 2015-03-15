@@ -2,10 +2,12 @@ package com.Revsoft.Wabbitemu.wizard;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Stack;
 
 import android.app.Activity;
 import android.support.annotation.NonNull;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.Animation.AnimationListener;
 import android.widget.ViewAnimator;
@@ -13,7 +15,7 @@ import android.widget.ViewAnimator;
 import com.Revsoft.Wabbitemu.R;
 import com.Revsoft.Wabbitemu.utils.UserActivityTracker;
 
-public class SetupWizardController {
+public class WizardController {
 
 	private final Activity mActivity;
 	private final ViewAnimator mViewFlipper;
@@ -21,17 +23,20 @@ public class SetupWizardController {
 	private final Map<Integer, WizardPageController> mPageControllers = new HashMap<Integer, WizardPageController>();
 	private final Map<Integer, Integer> mIdToPositionMap = new HashMap<Integer, Integer>();
 	private final UserActivityTracker mUserActivityTracker = UserActivityTracker.getInstance();
+	private final WizardNavigationController mWizardNavController;
 
 	private WizardPageController mCurrentController;
-	private Object mPreviousData;
+	private Stack<Object> mPreviousData = new Stack<Object>();
 
-	public SetupWizardController(@NonNull Activity activity,
+	public WizardController(@NonNull Activity activity,
 			@NonNull ViewAnimator viewFlipper,
+			@NonNull ViewGroup navContainer,
 			@NonNull OnWizardFinishedListener onFinishListener)
 	{
 		mActivity = activity;
 		mViewFlipper = viewFlipper;
 		mFinishedListener = onFinishListener;
+		mWizardNavController = new WizardNavigationController(this, navContainer);
 
 		for (int i = 0; i < viewFlipper.getChildCount(); i++) {
 			final int pageId= viewFlipper.getChildAt(i).getId();
@@ -56,9 +61,9 @@ public class SetupWizardController {
 
 		if (mCurrentController == null) {
 			mCurrentController = pageController;
+			showPage(pageId, null);
+			mWizardNavController.onPageLaunched(mCurrentController);
 		}
-
-		pageController.initialize(this);
 	}
 
 	public boolean moveNextPage() {
@@ -74,7 +79,10 @@ public class SetupWizardController {
 
 		setNextAnimation();
 		final int nextPageId = mCurrentController.getNextPage();
-		moveToPage(nextPageId);
+		final Object previousData = mCurrentController.getControllerData();
+		mPreviousData.push(previousData);
+
+		moveToPage(nextPageId, previousData);
 		return true;
 	}
 
@@ -85,11 +93,12 @@ public class SetupWizardController {
 
 		setBackAnimation();
 		final int previousPageId = mCurrentController.getPreviousPage();
-		moveToPage(previousPageId);
+		final Object previousData = mPreviousData.pop();
+		moveToPage(previousPageId, previousData);
 		return true;
 	}
 
-	private void moveToPage(final int nextPageId) {
+	private void moveToPage(int nextPageId, Object data) {
 		final WizardPageController lastController = mCurrentController;
 		mCurrentController = mPageControllers.get(nextPageId);
 		if (mCurrentController == null) {
@@ -103,10 +112,16 @@ public class SetupWizardController {
 			throw new IllegalStateException("Id is not registered " + nextPageId);
 		}
 
-		mUserActivityTracker.reportBreadCrumb("Moving to page %s from %s", mCurrentController, lastController);
-		mPreviousData = lastController.getControllerData();
+		mUserActivityTracker.reportBreadCrumb("Moving to page %s from %s",
+				mCurrentController.getClass().getSimpleName(),
+				lastController.getClass().getSimpleName());
+
+		showPage(nextPageId, data);
+	}
+
+	private void showPage(int nextPageId, Object data) {
 		mViewFlipper.setDisplayedChild(mIdToPositionMap.get(nextPageId));
-		mCurrentController.onShowing(mPreviousData);
+		mCurrentController.onShowing(data);
 	}
 
 	private void setNextAnimation() {
@@ -134,6 +149,7 @@ public class SetupWizardController {
 		@Override
 		public void onAnimationEnd(final Animation animation) {
 			mActivity.setTitle(mCurrentController.getTitleId());
+			mWizardNavController.onPageLaunched(mCurrentController);
 		}
 	};
 }

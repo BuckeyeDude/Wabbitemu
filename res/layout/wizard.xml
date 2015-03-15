@@ -1,33 +1,85 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ViewAnimator xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:ads="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/viewFlipper"
     android:layout_width="match_parent"
     android:layout_height="match_parent" >
 
-    <com.Revsoft.Wabbitemu.wizard.view.LandingPageView
-        android:id="@+id/landing_page"
+    <ViewAnimator
+        android:id="@+id/viewFlipper"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/navContainer" >
 
-    <com.Revsoft.Wabbitemu.wizard.view.ModelPageView
-        android:id="@+id/model_page"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
-    
-    <com.Revsoft.Wabbitemu.wizard.view.OsPageView
-        android:id="@+id/os_page"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
-    
-    <com.Revsoft.Wabbitemu.wizard.view.BrowseOsPageView
-        android:id="@+id/browse_os_page"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
-    
-    <com.Revsoft.Wabbitemu.wizard.view.BrowseRomPageView
-        android:id="@+id/browse_rom_page"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        <com.Revsoft.Wabbitemu.wizard.view.LandingPageView
+            android:id="@+id/landing_page"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
 
-</ViewAnimator>
+        <com.Revsoft.Wabbitemu.wizard.view.ModelPageView
+            android:id="@+id/model_page"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <com.Revsoft.Wabbitemu.wizard.view.OsPageView
+            android:id="@+id/os_page"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <com.Revsoft.Wabbitemu.wizard.view.BrowseOsPageView
+            android:id="@+id/browse_os_page"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <com.Revsoft.Wabbitemu.wizard.view.BrowseRomPageView
+            android:id="@+id/browse_rom_page"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+    </ViewAnimator>
+
+    <RelativeLayout
+        android:id="@+id/navContainer"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_alignParentBottom="true" >
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dip"
+            android:layout_alignParentTop="true"
+            android:layout_marginLeft="4dip"
+            android:layout_marginRight="4dip"
+            android:background="?android:attr/dividerVertical" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal" >
+
+            <Button
+                android:id="@+id/backButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1.0"
+                android:background="?android:attr/selectableItemBackground"
+                android:text="@string/back" />
+
+            <View
+                android:id="@+id/divider"
+                android:layout_width="1dip"
+                android:layout_height="wrap_content"
+                android:layout_centerHorizontal="true"
+                android:layout_marginBottom="4dip"
+                android:layout_marginTop="4dip"
+                android:background="?android:attr/dividerVertical" />
+
+            <Button
+                android:id="@+id/nextButton"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="1.0"
+                android:background="?android:attr/selectableItemBackground"
+                android:text="@string/next" />
+        </LinearLayout>
+    </RelativeLayout>
+
+</RelativeLayout>

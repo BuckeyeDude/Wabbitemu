@@ -69,57 +69,9 @@
         android:id="@+id/adContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_above="@+id/step3Layout" >
+        android:layout_alignParentBottom="true" >
 
         <include layout="@layout/ad" />
     </LinearLayout>
-
-    <RelativeLayout
-        android:id="@+id/step3Layout"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_alignParentBottom="true" >
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dip"
-            android:layout_alignParentTop="true"
-            android:layout_marginLeft="4dip"
-            android:layout_marginRight="4dip"
-            android:background="?android:attr/dividerVertical" />
-
-        <View
-            android:id="@+id/divider"
-            android:layout_width="1dip"
-            android:layout_height="wrap_content"
-            android:layout_alignParentBottom="true"
-            android:layout_alignParentTop="true"
-            android:layout_centerHorizontal="true"
-            android:layout_marginBottom="4dip"
-            android:layout_marginTop="4dip"
-            android:background="?android:attr/dividerVertical" />
-
-        <Button
-            android:id="@+id/backButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentBottom="true"
-            android:layout_alignParentLeft="true"
-            android:layout_alignParentTop="true"
-            android:layout_toLeftOf="@+id/divider"
-            android:background="?android:attr/selectableItemBackground"
-            android:text="@string/back" />
-
-        <Button
-            android:id="@+id/nextButton"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:layout_alignParentBottom="true"
-            android:layout_alignParentRight="true"
-            android:layout_alignParentTop="true"
-            android:layout_toRightOf="@+id/divider"
-            android:background="?android:attr/selectableItemBackground"
-            android:text="@string/finish" />
-    </RelativeLayout>
 
 </merge>

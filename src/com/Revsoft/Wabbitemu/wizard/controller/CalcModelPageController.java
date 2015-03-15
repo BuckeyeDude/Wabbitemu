@@ -1,12 +1,10 @@
 package com.Revsoft.Wabbitemu.wizard.controller;
 
 import android.support.annotation.NonNull;
-import android.view.View;
-import android.view.View.OnClickListener;
 
 import com.Revsoft.Wabbitemu.CalcInterface;
 import com.Revsoft.Wabbitemu.R;
-import com.Revsoft.Wabbitemu.wizard.SetupWizardController;
+import com.Revsoft.Wabbitemu.wizard.WizardNavigationController;
 import com.Revsoft.Wabbitemu.wizard.WizardPageController;
 import com.Revsoft.Wabbitemu.wizard.view.ModelPageView;
 
@@ -19,22 +17,8 @@ public class CalcModelPageController implements WizardPageController {
 	}
 
 	@Override
-	public void initialize(@NonNull final SetupWizardController wizardController) {
-		mView.getNextButton().setOnClickListener(new OnClickListener() {
-
-			@Override
-			public void onClick(View v) {
-				wizardController.moveNextPage();
-			}
-		});
-
-		mView.getBackButton().setOnClickListener(new OnClickListener() {
-
-			@Override
-			public void onClick(View v) {
-				wizardController.movePreviousPage();
-			}
-		});
+	public void configureButtons(@NonNull WizardNavigationController navController) {
+		// no-op
 	}
 
 	@Override

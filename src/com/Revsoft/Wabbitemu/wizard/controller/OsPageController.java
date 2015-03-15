@@ -4,15 +4,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import android.support.annotation.NonNull;
-import android.view.View;
-import android.view.View.OnClickListener;
 import android.widget.Spinner;
 import android.widget.SpinnerAdapter;
 
 import com.Revsoft.Wabbitemu.CalcInterface;
 import com.Revsoft.Wabbitemu.R;
 import com.Revsoft.Wabbitemu.utils.SpinnerDropDownAdapter;
-import com.Revsoft.Wabbitemu.wizard.SetupWizardController;
+import com.Revsoft.Wabbitemu.wizard.WizardNavigationController;
 import com.Revsoft.Wabbitemu.wizard.WizardPageController;
 import com.Revsoft.Wabbitemu.wizard.data.FinishWizardData;
 import com.Revsoft.Wabbitemu.wizard.view.OsPageView;
@@ -28,22 +26,8 @@ public class OsPageController implements WizardPageController {
 	}
 
 	@Override
-	public void initialize(final SetupWizardController wizardController) {
-		mView.getNextButton().setOnClickListener(new OnClickListener() {
-
-			@Override
-			public void onClick(View v) {
-				wizardController.moveNextPage();
-			}
-		});
-
-		mView.getBackButton().setOnClickListener(new OnClickListener() {
-
-			@Override
-			public void onClick(View v) {
-				wizardController.movePreviousPage();
-			}
-		});
+	public void configureButtons(@NonNull WizardNavigationController navController) {
+		mView.configureButtons(navController);
 	}
 
 	@Override
