@@ -104,6 +104,7 @@
     <string name="errorOsDownloadDescription">Error downloading the OS</string>
     <string name="errorLoadingNativeLib">Unable to load native library component. If this issue persists, please try reinstalling Wabbitemu.</string>
     <string name="errorRomCreateDescription">Error creating the ROM</string>
+    <string name="errorRomImage">Error loading ROM image</string>
     <string name="errorLink">There was an error sending the file to the calculator</string>
     <string name="errorScreenshot">Error taking screenshot.</string>
     <string name="errorMissingSdCard">No external storage was detected. Please add a storage device to save a screenshot.</string>

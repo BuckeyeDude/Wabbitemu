@@ -12,7 +12,7 @@ import com.crashlytics.android.Crashlytics;
 public class ErrorUtils {
 
 	public static void showErrorDialog(final Context context, final int errorMessage) {
-
+		showErrorDialog(context, errorMessage, null);
 	}
 
 	public static void showErrorDialog(final Context context,
@@ -31,7 +31,9 @@ public class ErrorUtils {
 					@Override
 					public void onClick(final DialogInterface dialog, final int which) {
 						dialog.dismiss();
-						onClickListener.onClick(dialog, which);
+						if (onClickListener != null) {
+							onClickListener.onClick(dialog, which);
+						}
 					}
 				})
 				.create();

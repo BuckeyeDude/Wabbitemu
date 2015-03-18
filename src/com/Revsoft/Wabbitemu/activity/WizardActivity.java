@@ -73,6 +73,10 @@ public class WizardActivity extends Activity {
 				mIsWizardFinishing = true;
 
 				final FinishWizardData finishInfo = (FinishWizardData) finalData;
+				if (finishInfo == null) {
+					ErrorUtils.showErrorDialog(WizardActivity.this, R.string.errorRomImage);
+					return;
+				}
 				final int calcModel = finishInfo.getCalcModel();
 				mUserActivityTracker.reportBreadCrumb("User finished wizard. Model: %s", calcModel);
 
