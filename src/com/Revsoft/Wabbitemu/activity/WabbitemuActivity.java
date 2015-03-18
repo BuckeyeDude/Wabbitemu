@@ -6,6 +6,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import android.app.Activity;
+import android.content.DialogInterface;
+import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
@@ -94,10 +96,14 @@ public class WabbitemuActivity extends Activity {
 	public void onCreate(final Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
+		mUserActivityTracker.initialize(this);
+
 		workaroundAsyncTaskIssue();
+		if (!testNativeLibraryLoad()) {
+			return;
+		}
 
 		AdUtils.initialize(getApplication());
-		mUserActivityTracker.initialize(this);
 		mCalcManager.initialize(this);
 		mSkinLoader.initialize(this);
 		mSharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
@@ -159,6 +165,24 @@ public class WabbitemuActivity extends Activity {
 		} catch (Throwable ignore) {
 			// ignored
 		}
+	}
+
+	private boolean testNativeLibraryLoad() {
+		try {
+			CalcInterface.GetModel();
+		} catch (UnsatisfiedLinkError ex) {
+			ErrorUtils.showErrorDialog(this, R.string.errorLoadingNativeLib, new OnClickListener() {
+
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					WabbitemuActivity.this.finish();
+				}
+			});
+
+			return false;
+		}
+
+		return true;
 	}
 
 	@Override
