@@ -22,6 +22,7 @@ import android.graphics.Path;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.os.Build;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.util.Log;
@@ -391,7 +392,7 @@ public class SkinBitmapLoader {
 		final WindowManager wm = (WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE);
 		final Display display = wm.getDefaultDisplay();
 		final Point displaySize = new Point();
-		if (mSharedPrefs.getBoolean(PreferenceConstants.IMMERSIVE_MODE.toString(), true)) {
+		if (mSharedPrefs.getBoolean(PreferenceConstants.IMMERSIVE_MODE.toString(), true) && Build.VERSION.SDK_INT >= 18) {
 			display.getRealSize(displaySize);
 		} else {
 			display.getSize(displaySize);
@@ -494,7 +495,11 @@ public class SkinBitmapLoader {
 			// mode
 			mUserActivityTracker.reportUserAction(UserActionActivity.MAIN_ACTIVITY,
 					UserActionEvent.INVALID_KEYMAP_PIXEL);
-			return mKeymapPixels[mKeymapPixels.length - 1];
+			return mKeymapPixels[mKeymapPixels.length - (index % mKeymapWidth)];
+		} else if (index < 0) {
+			mUserActivityTracker.reportUserAction(UserActionActivity.MAIN_ACTIVITY,
+					UserActionEvent.INVALID_KEYMAP_PIXEL);
+			return mKeymapPixels[index % mKeymapWidth];
 		}
 
 		return mKeymapPixels[index];

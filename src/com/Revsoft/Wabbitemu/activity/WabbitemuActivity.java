@@ -185,7 +185,6 @@ public class WabbitemuActivity extends Activity {
 	public void onStop() {
 		super.onStop();
 
-
 		mUserActivityTracker.reportActivityStop(this);
 	}
 
@@ -460,31 +459,15 @@ public class WabbitemuActivity extends Activity {
 	}
 
 	public void setImmersiveMode(boolean isImmersive) {
+		if (Build.VERSION.SDK_INT < 18) {
+			return;
+		}
 
 		// The UI options currently enabled are represented by a bitfield.
 		// getSystemUiVisibility() gives us that bitfield.
 		final View decorView = getWindow().getDecorView();
-		int uiOptions = decorView.getSystemUiVisibility();
+		final int uiOptions = decorView.getSystemUiVisibility();
 		int newUiOptions;
-
-		if (isImmersive) {
-			newUiOptions = uiOptions | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION;
-		} else {
-			newUiOptions = uiOptions & (~View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
-		}
-
-		// Status bar hiding: Backwards compatible to Jellybean
-		if (Build.VERSION.SDK_INT >= 16) {
-			if (isImmersive) {
-				newUiOptions |= View.SYSTEM_UI_FLAG_FULLSCREEN;
-				newUiOptions |= View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION;
-				newUiOptions |= View.SYSTEM_UI_FLAG_LAYOUT_STABLE;
-			} else {
-				newUiOptions &= ~View.SYSTEM_UI_FLAG_FULLSCREEN;
-				newUiOptions &= ~View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION;
-				newUiOptions &= ~View.SYSTEM_UI_FLAG_LAYOUT_STABLE;
-			}
-		}
 
 		// Immersive mode: Backward compatible to KitKat.
 		// Note that this flag doesn't do anything by itself, it only augments
@@ -495,12 +478,14 @@ public class WabbitemuActivity extends Activity {
 		// Sticky immersive mode differs in that it makes the navigation and
 		// status bars semi-transparent, and the UI flag does not get cleared
 		// when the user interacts with the screen.
-		if (Build.VERSION.SDK_INT >= 18) {
-			if (isImmersive) {
-				newUiOptions |= View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
-			} else {
-				newUiOptions &= ~View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
-			}
+		if (isImmersive) {
+			newUiOptions = uiOptions | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION;
+			newUiOptions |= View.SYSTEM_UI_FLAG_FULLSCREEN;
+			newUiOptions |= View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
+		} else {
+			newUiOptions = uiOptions & (~View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
+			newUiOptions &= ~View.SYSTEM_UI_FLAG_FULLSCREEN;
+			newUiOptions &= ~View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
 		}
 
 		decorView.setSystemUiVisibility(newUiOptions);
