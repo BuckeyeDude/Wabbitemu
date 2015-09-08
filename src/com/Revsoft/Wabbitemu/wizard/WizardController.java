@@ -1,11 +1,11 @@
 package com.Revsoft.Wabbitemu.wizard;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Stack;
 
 import android.app.Activity;
 import android.support.annotation.NonNull;
+import android.util.SparseArray;
+import android.util.SparseIntArray;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Animation;
@@ -20,8 +20,8 @@ public class WizardController {
 	private final Activity mActivity;
 	private final ViewAnimator mViewFlipper;
 	private final OnWizardFinishedListener mFinishedListener;
-	private final Map<Integer, WizardPageController> mPageControllers = new HashMap<Integer, WizardPageController>();
-	private final Map<Integer, Integer> mIdToPositionMap = new HashMap<Integer, Integer>();
+	private final SparseArray<WizardPageController> mPageControllers = new SparseArray<WizardPageController>();
+	private final SparseIntArray mIdToPositionMap = new SparseIntArray();
 	private final UserActivityTracker mUserActivityTracker = UserActivityTracker.getInstance();
 	private final WizardNavigationController mWizardNavController;
 
@@ -44,7 +44,7 @@ public class WizardController {
 				throw new IllegalStateException("Child at index " + i + " missing id");
 			}
 
-			if (mIdToPositionMap.containsKey(pageId)) {
+			if (mIdToPositionMap.get(pageId) != 0) {
 				throw new IllegalStateException("Duplicate page id " + pageId);
 			}
 
@@ -55,7 +55,7 @@ public class WizardController {
 	public void registerView(int pageId, @NonNull WizardPageController pageController) {
 		mPageControllers.put(pageId, pageController);
 
-		if (!mIdToPositionMap.containsKey(pageId)) {
+		if (mIdToPositionMap.get(pageId, -1) == -1) {
 			throw new IllegalStateException("View Id must be child of the view animator");
 		}
 
@@ -108,7 +108,7 @@ public class WizardController {
 		lastController.onHiding();
 		mViewFlipper.getInAnimation().setAnimationListener(mAnimationListener);
 
-		if (!mIdToPositionMap.containsKey(nextPageId)) {
+		if (mIdToPositionMap.get(nextPageId, -1) == -1) {
 			throw new IllegalStateException("Id is not registered " + nextPageId);
 		}
 

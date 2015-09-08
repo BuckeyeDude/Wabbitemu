@@ -20,13 +20,19 @@ public class UserActivityTracker {
 		return SingletonHolder.SINGLETON;
 	}
 
+	private boolean mIsInitialized;
+
 	private UserActivityTracker() {
 		// Disallow instantiation
 	}
 
-	public void initialize(Context context) {
+	public void initializeIfNecessary(Context context) {
+		if (mIsInitialized) {
+			return;
+		}
+
+		mIsInitialized = true;
 		Fabric.with(context, new Crashlytics.Builder()
-				.disabled(true)
 				.build());
 		final String androidId = Secure.getString(context.getApplicationContext().getContentResolver(),
 				Secure.ANDROID_ID);

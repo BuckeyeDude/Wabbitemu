@@ -37,7 +37,6 @@
         android:id="@+id/adContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_above="@+id/navContainer"
         android:layout_alignParentBottom="true" >
 
         <include layout="@layout/ad" />

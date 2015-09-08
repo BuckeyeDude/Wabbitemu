@@ -2,9 +2,11 @@ package com.Revsoft.Wabbitemu.activity;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.net.HttpURLConnection;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
@@ -96,7 +98,8 @@ public class WabbitemuActivity extends Activity {
 	public void onCreate(final Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-		mUserActivityTracker.initialize(this);
+		HttpURLConnection.setFollowRedirects(true);
+		mUserActivityTracker.initializeIfNecessary(this);
 
 		workaroundAsyncTaskIssue();
 		if (!testNativeLibraryLoad()) {
@@ -112,7 +115,7 @@ public class WabbitemuActivity extends Activity {
 		final File cacheDir = getApplicationContext().getCacheDir();
 		if (cacheDir != null) {
 			CalcInterface.SetCacheDir(cacheDir.getAbsolutePath());
-		} else {
+		} else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
 			for (File file : getApplicationContext().getExternalCacheDirs()) {
 				if (file != null) {
 					CalcInterface.SetCacheDir(file.getAbsolutePath());
@@ -482,8 +485,9 @@ public class WabbitemuActivity extends Activity {
 		startActivity(intent);
 	}
 
+	@TargetApi(Build.VERSION_CODES.KITKAT)
 	public void setImmersiveMode(boolean isImmersive) {
-		if (Build.VERSION.SDK_INT < 18) {
+		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
 			return;
 		}
 

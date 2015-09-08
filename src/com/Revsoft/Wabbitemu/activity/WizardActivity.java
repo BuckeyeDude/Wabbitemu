@@ -17,7 +17,9 @@ import android.os.AsyncTask.Status;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.WebView;
 import android.widget.Spinner;
 import android.widget.ViewAnimator;
 
@@ -50,6 +52,7 @@ public class WizardActivity extends Activity {
 
 	private WizardController mWizardController;
 	private String mCreatedFilePath;
+	private WebView mWebView;
 	private boolean mIsWizardFinishing;
 
 	private OSDownloader mOsDownloader;
@@ -57,9 +60,11 @@ public class WizardActivity extends Activity {
 	@Override
 	public void onCreate(final Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		mUserActivityTracker.initializeIfNecessary(getApplicationContext());
 		mUserActivityTracker.reportActivityStart(this);
 
 		setContentView(R.layout.wizard);
+		mWebView = (WebView) findViewById(R.id.testWebView);
 
 		final ViewAnimator viewAnimator = ViewUtils.findViewById(this, R.id.viewFlipper, ViewAnimator.class);
 		final ViewGroup navContainer = ViewUtils.findViewById(this, R.id.navContainer, ViewGroup.class);
@@ -304,8 +309,13 @@ public class WizardActivity extends Activity {
 			return;
 		}
 
+		final ViewGroup parent = (ViewGroup) mWebView.getParent();
+		parent.removeView(mWebView);
+		mWebView = new WebView(this);
+		mWebView.setVisibility(View.GONE);
+		parent.addView(mWebView);
 		final String osFilePath = osDownloadPath.getAbsolutePath();
-		mOsDownloader = new OSDownloader(this, osFilePath) {
+		mOsDownloader = new OSDownloader(this, osFilePath, mWebView, calcModel, osVersion) {
 
 			@Override
 			protected void onPostExecute(final Boolean success) {
@@ -331,8 +341,6 @@ public class WizardActivity extends Activity {
 				mIsWizardFinishing = false;
 			}
 		};
-
-		mOsDownloader.execute(calcModel, osVersion);
 	}
 
 	private void finishOsError() {

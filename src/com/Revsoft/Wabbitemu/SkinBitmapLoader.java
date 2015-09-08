@@ -2,9 +2,7 @@ package com.Revsoft.Wabbitemu;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -26,6 +24,7 @@ import android.os.Build;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.util.Log;
+import android.util.SparseArray;
 import android.view.Display;
 import android.view.WindowManager;
 
@@ -59,7 +58,7 @@ public class SkinBitmapLoader {
 
 	private final Set<CalcSkinChangedListener> mSkinListeners = new HashSet<CalcSkinChangedListener>();
 	private final AtomicBoolean mHasLoadedSkin = new AtomicBoolean(false);
-	private final Map<Integer, Rect> mButtonRects = new HashMap<Integer, Rect>();
+	private final SparseArray<Rect> mButtonRects = new SparseArray<Rect>();
 	private final UserActivityTracker mUserActivityTracker = UserActivityTracker.getInstance();
 
 	private Context mContext;
@@ -392,7 +391,9 @@ public class SkinBitmapLoader {
 		final WindowManager wm = (WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE);
 		final Display display = wm.getDefaultDisplay();
 		final Point displaySize = new Point();
-		if (mSharedPrefs.getBoolean(PreferenceConstants.IMMERSIVE_MODE.toString(), true) && Build.VERSION.SDK_INT >= 18) {
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1 &&
+				mSharedPrefs.getBoolean(PreferenceConstants.IMMERSIVE_MODE.toString(), true))
+		{
 			display.getRealSize(displaySize);
 		} else {
 			display.getSize(displaySize);
@@ -421,7 +422,7 @@ public class SkinBitmapLoader {
 					updateRect(mSkinRect, pixelOffset);
 				}
 			}
-			
+
 			if (pixelData != Color.WHITE) {
 				final Rect rect = mButtonRects.get(pixelData);
 				if (rect == null) {
@@ -434,7 +435,7 @@ public class SkinBitmapLoader {
 				}
 			}
 		}
-		
+
 		if (lcdRect == null) {
 			Log.d("Keymap", "Keymap fail");
 			return null;
@@ -499,7 +500,7 @@ public class SkinBitmapLoader {
 		} else if (index < 0) {
 			mUserActivityTracker.reportUserAction(UserActionActivity.MAIN_ACTIVITY,
 					UserActionEvent.INVALID_KEYMAP_PIXEL);
-			return mKeymapPixels[index % mKeymapWidth];
+			return mKeymapPixels[0 - (index % mKeymapWidth)];
 		}
 
 		return mKeymapPixels[index];

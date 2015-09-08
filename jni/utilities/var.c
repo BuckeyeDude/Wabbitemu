@@ -408,7 +408,10 @@ TIFILE_t* ImportBackup(FILE *infile, TIFILE_t *tifile) {
 		tifile->backup->data3[i] = (unsigned char)tmp;
 	}
 
-	tifile->chksum = (fgetc(infile) & 0xFF) + ((fgetc(infile) & 0xFF) << 8);
+	tmpread(infile);
+	tifile->chksum = tmp & 0xFF;
+	tmpread(infile);
+	tifile->chksum += (tmp & 0xFF) << 8;
 
 	tifile->type	= BACKUP_TYPE;
 	return tifile;
@@ -443,11 +446,12 @@ void ReadTiFileHeader(FILE *infile, TIFILE_t *tifile) {
 	if (!_strnicmp(headerString, FLASH_HEADER, 8)) {
 		tifile->type = FLASH_TYPE;
 		tifile->flash = (TIFLASH_t*) malloc(sizeof(TIFLASH_t));
-		ZeroMemory(tifile->flash, sizeof(TIFLASH_t));
 		if (tifile->flash == NULL) {
 			FreeTiFile(tifile);
 			return;
 		}
+
+		ZeroMemory(tifile->flash, sizeof(TIFLASH_t));
 
 		unsigned char *ptr = (unsigned char *) tifile->flash;
 		for(i = 0; i < TI_FLASH_HEADER_SIZE && !feof(infile); i++) {
@@ -619,7 +623,11 @@ TIFILE_t* ImportVarFile(FILE *infile, TIFILE_t *tifile, int varNumber) {
 		}
 	}
 
-	tifile->chksum = (fgetc(infile) & 0xFF) + ((fgetc(infile) & 0xFF) << 8);
+	tmpread(infile);
+	tifile->chksum = tmp & 0xFF;
+	tmpread(infile);
+	tifile->chksum += (tmp & 0xFF) << 8;
+
 	return tifile;
 }
 
