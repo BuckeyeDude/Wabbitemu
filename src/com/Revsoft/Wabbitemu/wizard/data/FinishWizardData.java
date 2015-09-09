@@ -1,5 +1,6 @@
 package com.Revsoft.Wabbitemu.wizard.data;
 
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
 import com.Revsoft.Wabbitemu.CalcInterface;
@@ -8,26 +9,44 @@ import com.Revsoft.Wabbitemu.CalcInterface;
 public class FinishWizardData {
 
 	private final int mCalcModel;
-	private final String mFilePath;
+	private final String mStringValue;
+	private final boolean mNeedsDownload;
 
 	public FinishWizardData(int calcModel) {
 		mCalcModel = calcModel;
-		mFilePath = null;
+		mStringValue = null;
+		mNeedsDownload = false;
 	}
 
 	public FinishWizardData(String filePath) {
 		mCalcModel = CalcInterface.NO_CALC;
-		mFilePath = filePath;
+		mStringValue = filePath;
+		mNeedsDownload = false;
 	}
 
-	public FinishWizardData(int calcModel, String filePath) {
+	public FinishWizardData(int calcModel, String downloadCode) {
 		mCalcModel = calcModel;
-		mFilePath = filePath;
+		mStringValue = downloadCode;
+		mNeedsDownload = true;
 	}
+
+	public boolean shouldDownloadOs() {
+		return mNeedsDownload;
+	}
+
+	@NonNull
+	public String getDownloadCode() {
+		if (!mNeedsDownload) {
+			throw new IllegalArgumentException("Cannot get download code for non download");
+		}
+
+		return mStringValue;
+	}
+
 
 	@Nullable
 	public String getFilePath() {
-		return mFilePath;
+		return mStringValue;
 	}
 
 	public int getCalcModel() {

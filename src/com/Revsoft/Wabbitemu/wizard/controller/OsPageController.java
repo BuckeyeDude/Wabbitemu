@@ -12,7 +12,6 @@ import com.Revsoft.Wabbitemu.R;
 import com.Revsoft.Wabbitemu.utils.SpinnerDropDownAdapter;
 import com.Revsoft.Wabbitemu.wizard.WizardNavigationController;
 import com.Revsoft.Wabbitemu.wizard.WizardPageController;
-import com.Revsoft.Wabbitemu.wizard.data.FinishWizardData;
 import com.Revsoft.Wabbitemu.wizard.view.OsPageView;
 
 public class OsPageController implements WizardPageController {
@@ -27,7 +26,7 @@ public class OsPageController implements WizardPageController {
 
 	@Override
 	public void configureButtons(@NonNull WizardNavigationController navController) {
-		mView.configureButtons(navController);
+		navController.setNextButton();
 	}
 
 	@Override
@@ -37,20 +36,19 @@ public class OsPageController implements WizardPageController {
 
 	@Override
 	public boolean hasNextPage() {
-		return !isFinalPage();
+		return true;
 	}
 
 	@Override
 	public boolean isFinalPage() {
-		return mView.getSelectedRadioId() == R.id.downloadOsRadio;
+		return false;
 	}
 
 	@Override
 	public int getNextPage() {
-		if (isFinalPage()) {
-			throw new IllegalStateException("No next page");
-		}
-		return R.id.browse_os_page;
+		return mView.getSelectedRadioId() == R.id.downloadOsRadio ?
+				R.id.os_download_page :
+				R.id.browse_os_page;
 	}
 
 	@Override
@@ -102,6 +100,6 @@ public class OsPageController implements WizardPageController {
 
 	@Override
 	public Object getControllerData() {
-		return isFinalPage() ? new FinishWizardData(mCalcModel) : mCalcModel;
+		return mCalcModel;
 	}
 }

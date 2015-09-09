@@ -10,6 +10,7 @@
     <string name="gettingStartedTitle">Getting Started</string>
     <string name="calculatorTypeTitle">Calculator Type</string>
     <string name="osSelectionTitle">OS Selection</string>
+    <string name="osDownloadTitle">OS Download</string>
     <string name="osVersionDescription">OS Version: </string>
     <string name="whatIsRomLink">What is a ROM?</string>
     <string name="calculatorTypeDescription">What calculator type would you like to emulate?</string>
@@ -101,6 +102,7 @@
     <string name="useImmersiveModeSummary">On the calc window, hide the status and soft key bars to take up the entire screen. Swipe from the top or bottom edges to gain access to the bars.</string>
     
     <string name="errorTitle">Error</string>
+    <string name="errorWebPageDownloadError">Unable to download OS download web page</string>
     <string name="errorOsDownloadDescription">Error downloading the OS</string>
     <string name="errorLoadingNativeLib">Unable to load native library component. If this issue persists, please try reinstalling Wabbitemu.</string>
     <string name="errorRomCreateDescription">Error creating the ROM</string>

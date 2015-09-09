@@ -60,6 +60,10 @@ public class WizardNavigationController {
 		mWizardController.moveNextPage();
 	}
 
+	public void movePreviousPage() {
+		mWizardController.movePreviousPage();
+	}
+
 	public void setNextButton() {
 		mNextButton.setText(R.string.next);
 	}

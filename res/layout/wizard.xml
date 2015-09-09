@@ -24,6 +24,11 @@
             android:id="@+id/os_page"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
+        
+        <com.Revsoft.Wabbitemu.wizard.view.OsDownloadPageView
+            android:id="@+id/os_download_page"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
 
         <com.Revsoft.Wabbitemu.wizard.view.BrowseOsPageView
             android:id="@+id/browse_os_page"
@@ -80,9 +85,4 @@
                 android:text="@string/next" />
         </LinearLayout>
     </RelativeLayout>
-
-    <WebView android:id="@+id/testWebView"
-        android:visibility="gone"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
 </RelativeLayout>

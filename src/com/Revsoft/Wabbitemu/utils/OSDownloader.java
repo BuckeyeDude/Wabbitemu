@@ -15,33 +15,26 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.AsyncTask;
-import android.os.Handler;
-import android.os.Looper;
-import android.webkit.JavascriptInterface;
-import android.webkit.WebView;
-import android.webkit.WebViewClient;
 
 import com.Revsoft.Wabbitemu.CalcInterface;
 import com.Revsoft.Wabbitemu.R;
+import com.Revsoft.Wabbitemu.wizard.controller.OsDownloadPageController;
 
 public class OSDownloader extends AsyncTask<String, Integer, Boolean> {
 
 	private final UserActivityTracker mUserActivityTracker = UserActivityTracker.getInstance();
 	private final ProgressDialog mProgressDialog;
 	private final String mOsFilePath;
-	private final WebView mWebView;
-	private final String mUserAgent;
 	private final int mCalcType;
 	private final int mOsVersion;
 
-	public OSDownloader(Context context, String osFilePath, WebView webView, int calcType, int osVersion) {
+	public OSDownloader(Context context, String osFilePath, int calcType, int osVersion) {
 		mOsFilePath = osFilePath;
 		mProgressDialog = new ProgressDialog(context);
 		mProgressDialog.setTitle(R.string.downloadingTitle);
 		mProgressDialog.setMessage(context.getResources().getString(R.string.downloadingOsDescription));
 		mProgressDialog.setIndeterminate(true);
 		mProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-		mWebView = webView;
 		mCalcType = calcType;
 		mOsVersion = osVersion;
 
@@ -51,107 +44,10 @@ public class OSDownloader extends AsyncTask<String, Integer, Boolean> {
 				OSDownloader.this.cancel(true);
 			}
 		});
-		
-		mWebView.getSettings().setJavaScriptEnabled(true);
-		mWebView.getSettings()
-				.setUserAgentString(
-						"User-Agent: Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/43.0.2357.134 Safari/537.36");
-		mWebView.setWebViewClient(new WebViewClient() {
-			@Override
-			public void onPageFinished(WebView view, String url) {
-				view.loadUrl("javascript:$(document).ajaxComplete(function(e, xhr, settings) { Android.onFoundCode(xhr.responseText); });"+
-"var getDownloadAuth; "+
-"if (window.oldDeferred == undefined) {"+
-"	window.oldDeferred = $.Deferred;"+
-"}"+
-"$.Deferred = function() {"+ 
-"	var internalDefer = window.oldDeferred();"+
-"	return { "+
-"		always: function() { return internalDefer.always(); },"+
-"		done: function() { return internalDefer.done(); }, "+
-"		fail: function() { return internalDefer.fail(); },"+
-"		reject: function() { return internalDefer.reject(); },"+
-"		rejectWith: function(a, c) { return internalDefer.rejectWith(a, c); },"+
-"		resolve: function() { return internalDefer.resolve(); },"+
-"		resolveWith: function(a, c) { return internalDefer.resolveWith(a, c); },"+
-"		notify: function() { return internalDefer.notify(arguments); },"+
-"		notifyWith: function(a, c) { return internalDefer.reject(a, c); },"+
-"		promise: function(arg) { return internalDefer.promise(arg); },"+
-"		progress: function() { return internalDefer.progress(); },"+
-"		state: function() { return internalDefer.state(); },"+
-"		then: function(arg) {"+
-"			getDownloadAuth = arg; return internalDefer.then(arg);"+ 
-"		},"+
-"	}"+
-"};"+
-"try {"+
-"$.grep($._data($( '.sublayout-etdownloadbundledetails' )[0], \"events\").click, function(item) {"+
-"	return item != undefined && item.selector === '.protected-download [data-fileid]'"+
-"})[0].handler({"+
-"    currentTarget: $('a.download-file').first()[0],"+
-"	preventDefault: function() { },"+
-"	stopImmediatePropagation: function() {}"+
-"}); "+
-"} catch (e) {"+
-"}"+
-"getDownloadAuth();");
-			}
-			
-			@Override
-			public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
-				if (getStatus() != Status.PENDING) {
-					return;
-				}
 
-				execute((String) null);
-			}
-		});
-		mWebView.addJavascriptInterface(new JavaScriptInterface(), "Android");
-
-		mWebView.clearCache(true);
-		mWebView.clearView();
-		mWebView.reload();
-		switch (mCalcType) {
-		case CalcInterface.TI_73:
-			mWebView.loadUrl("https://education.ti.com/en/us/software/details/en/956CE30854A74767893104FCDF195B76/73ti73exploreroperatingsystem");
-			break;
-		case CalcInterface.TI_83P:
-		case CalcInterface.TI_83PSE:
-			mWebView.loadUrl("https://education.ti.com/en/us/software/details/en/C95956E744FB4C0A899F5A63EBEA60DD/83ti83plusoperatingsystemsoftware");
-			break;
-		case CalcInterface.TI_84P:
-		case CalcInterface.TI_84PSE:
-			mWebView.loadUrl("https://education.ti.com/en/us/software/details/en/400C88E8E75B4123BB7E90B6A676368D/ti84plusoperatingsystem");
-			break;
-		case CalcInterface.TI_84PCSE:
-			mWebView.loadUrl("https://education.ti.com/en/us/software/details/en/5F0CBAC101194542B16B80BCE6CB3602/ti-84-plus-c-silver-edition-operating-system");
-			break;
-		default:
-			throw new IllegalStateException("Invalid calculator type");
-		}
-
-		mUserAgent = mWebView.getSettings().getUserAgentString();
 
 		mProgressDialog.show();
 		mUserActivityTracker.reportBreadCrumb("Showing OS Download dialog");
-	}
-
-	class JavaScriptInterface {
-		@JavascriptInterface
-		public void onFoundCode(final String message) {
-			final Handler handler = new Handler(Looper.getMainLooper());
-			handler.post(new Runnable() {
-
-				@Override
-				public void run() {
-					if (getStatus() != Status.PENDING) {
-						return;
-					}
-
-					execute(message.replace("\"", ""));
-				}
-			});
-		}
 	}
 
 	@Override
@@ -192,7 +88,7 @@ public class OSDownloader extends AsyncTask<String, Integer, Boolean> {
 			final HttpClient connection = new DefaultHttpClient();
 			final HttpGet httpGet = new HttpGet(urlString);
 			httpGet.setHeader("Cookie", "DownloadAuthorizationToken=" + authCode);
-			httpGet.setHeader("User-Agent", mUserAgent);
+			httpGet.setHeader("User-Agent", OsDownloadPageController.USER_AGENT);
 			final HttpResponse response = connection.execute(httpGet);
 			final InputStream inputStream = response.getEntity().getContent();
 			outputStream = new FileOutputStream(mOsFilePath);

@@ -17,9 +17,7 @@ import android.os.AsyncTask.Status;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 import android.view.ViewGroup;
-import android.webkit.WebView;
 import android.widget.Spinner;
 import android.widget.ViewAnimator;
 
@@ -38,12 +36,14 @@ import com.Revsoft.Wabbitemu.wizard.controller.BrowseOsPageController;
 import com.Revsoft.Wabbitemu.wizard.controller.BrowseRomPageController;
 import com.Revsoft.Wabbitemu.wizard.controller.CalcModelPageController;
 import com.Revsoft.Wabbitemu.wizard.controller.LandingPageController;
+import com.Revsoft.Wabbitemu.wizard.controller.OsDownloadPageController;
 import com.Revsoft.Wabbitemu.wizard.controller.OsPageController;
 import com.Revsoft.Wabbitemu.wizard.data.FinishWizardData;
 import com.Revsoft.Wabbitemu.wizard.view.BrowseOsPageView;
 import com.Revsoft.Wabbitemu.wizard.view.BrowseRomPageView;
 import com.Revsoft.Wabbitemu.wizard.view.LandingPageView;
 import com.Revsoft.Wabbitemu.wizard.view.ModelPageView;
+import com.Revsoft.Wabbitemu.wizard.view.OsDownloadPageView;
 import com.Revsoft.Wabbitemu.wizard.view.OsPageView;
 
 public class WizardActivity extends Activity {
@@ -52,7 +52,6 @@ public class WizardActivity extends Activity {
 
 	private WizardController mWizardController;
 	private String mCreatedFilePath;
-	private WebView mWebView;
 	private boolean mIsWizardFinishing;
 
 	private OSDownloader mOsDownloader;
@@ -64,7 +63,6 @@ public class WizardActivity extends Activity {
 		mUserActivityTracker.reportActivityStart(this);
 
 		setContentView(R.layout.wizard);
-		mWebView = (WebView) findViewById(R.id.testWebView);
 
 		final ViewAnimator viewAnimator = ViewUtils.findViewById(this, R.id.viewFlipper, ViewAnimator.class);
 		final ViewGroup navContainer = ViewUtils.findViewById(this, R.id.navContainer, ViewGroup.class);
@@ -82,13 +80,14 @@ public class WizardActivity extends Activity {
 					ErrorUtils.showErrorDialog(WizardActivity.this, R.string.errorRomImage);
 					return;
 				}
+
 				final int calcModel = finishInfo.getCalcModel();
 				mUserActivityTracker.reportBreadCrumb("User finished wizard. Model: %s", calcModel);
 
-				if (finishInfo.getFilePath() == null) {
+				if (finishInfo.shouldDownloadOs()) {
 					mUserActivityTracker.reportUserAction(UserActionActivity.WIZARD_ACTIVITY,
 							UserActionEvent.BOOTFREE_ROM);
-					tryDownloadAndCreateRom(calcModel);
+					tryDownloadAndCreateRom(calcModel, finishInfo.getDownloadCode());
 				} else if (calcModel == CalcInterface.NO_CALC) {
 					mUserActivityTracker.reportUserAction(UserActionActivity.WIZARD_ACTIVITY,
 							UserActionEvent.HAVE_OWN_ROM);
@@ -110,10 +109,15 @@ public class WizardActivity extends Activity {
 		final OsPageView osPageView = ViewUtils.findViewById(this, R.id.os_page, OsPageView.class);
 		mWizardController.registerView(R.id.os_page, new OsPageController(osPageView));
 
+		final OsDownloadPageView osDownloadPageView = ViewUtils.findViewById(this, R.id.os_download_page,
+				OsDownloadPageView.class);
+		mWizardController.registerView(R.id.os_download_page, new OsDownloadPageController(osDownloadPageView));
+
 		final BrowseOsPageView browseOsPageView = ViewUtils.findViewById(this, R.id.browse_os_page,
 				BrowseOsPageView.class);
 		mWizardController.registerView(R.id.browse_os_page, new BrowseOsPageController(browseOsPageView,
 				getFragmentManager()));
+
 
 		final BrowseRomPageView browseRomPageView = ViewUtils.findViewById(this, R.id.browse_rom_page,
 				BrowseRomPageView.class);
@@ -177,7 +181,7 @@ public class WizardActivity extends Activity {
 		}
 	}
 
-	private void tryDownloadAndCreateRom(int calcModel) {
+	private void tryDownloadAndCreateRom(int calcModel, String downloadCode) {
 		if (mOsDownloader != null && mOsDownloader.getStatus() == Status.RUNNING) {
 			throw new IllegalStateException("Invalid state, download running");
 		}
@@ -197,7 +201,7 @@ public class WizardActivity extends Activity {
 			return;
 		}
 
-		createRomDownloadOs(calcModel);
+		createRomDownloadOs(calcModel, downloadCode);
 	}
 
 	private boolean isOnline() {
@@ -291,7 +295,7 @@ public class WizardActivity extends Activity {
 		return bootPagePath.getAbsolutePath();
 	}
 
-	private void createRomDownloadOs(final int calcModel) {
+	private void createRomDownloadOs(final int calcModel, final String downloadCode) {
 		final String bootPagePath = extractBootpage(calcModel);
 		if (bootPagePath == null) {
 			finishRomError();
@@ -309,13 +313,8 @@ public class WizardActivity extends Activity {
 			return;
 		}
 
-		final ViewGroup parent = (ViewGroup) mWebView.getParent();
-		parent.removeView(mWebView);
-		mWebView = new WebView(this);
-		mWebView.setVisibility(View.GONE);
-		parent.addView(mWebView);
 		final String osFilePath = osDownloadPath.getAbsolutePath();
-		mOsDownloader = new OSDownloader(this, osFilePath, mWebView, calcModel, osVersion) {
+		mOsDownloader = new OSDownloader(this, osFilePath, calcModel, osVersion) {
 
 			@Override
 			protected void onPostExecute(final Boolean success) {
@@ -341,6 +340,7 @@ public class WizardActivity extends Activity {
 				mIsWizardFinishing = false;
 			}
 		};
+		mOsDownloader.execute(downloadCode);
 	}
 
 	private void finishOsError() {
