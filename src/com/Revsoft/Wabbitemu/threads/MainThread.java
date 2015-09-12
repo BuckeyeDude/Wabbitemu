@@ -8,6 +8,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.support.annotation.Nullable;
 import android.view.SurfaceHolder;
 
 import com.Revsoft.Wabbitemu.CalcInterface;
@@ -33,7 +34,7 @@ public class MainThread extends Thread {
 		mPaint.setARGB(0xFF, 0xFF, 0xFF, 0xFF);
 	}
 
-	public void createScreen(final Rect lcdRect, final Rect screenRect) {
+	public void recreateScreen(final Rect lcdRect, final Rect screenRect) {
 		synchronized (mScreenLock) {
 			mLcdRect = lcdRect;
 			mScreenRect = new Rect(screenRect);
@@ -47,16 +48,13 @@ public class MainThread extends Thread {
 		}
 	}
 
-	public void destroyScreen() {
-		synchronized (mScreenLock) {
-			mHasCreatedLcd = false;
-			mScreenBitmap = null;
-			mScreenBuffer = null;
-		}
-	}
-
+	@Nullable
 	public Bitmap getScreen() {
 		synchronized (mScreenLock) {
+			if (!mHasCreatedLcd) {
+				return null;
+			}
+
 			if (!CalcInterface.IsLCDActive()) {
 				final int lcdColor = CalcInterface.GetModel() == CalcInterface.TI_84PCSE ?
 						Color.BLACK : Color.argb(0xFF, 0x9E, 0xAB, 0x88);
@@ -85,8 +83,10 @@ public class MainThread extends Thread {
 				if (canvas == null) {
 					return;
 				}
-				getScreen();
-				canvas.drawBitmap(mScreenBitmap, mLcdRect, mScreenRect, mPaint);
+
+				if (getScreen() != null) {
+					canvas.drawBitmap(mScreenBitmap, mLcdRect, mScreenRect, mPaint);
+				}
 			} finally {
 				if (canvas != null) {
 					mSurfaceHolder.unlockCanvasAndPost(canvas);

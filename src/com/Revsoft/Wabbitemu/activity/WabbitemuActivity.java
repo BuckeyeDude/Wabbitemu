@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.net.HttpURLConnection;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 
 import android.annotation.TargetApi;
 import android.app.Activity;
@@ -60,7 +61,7 @@ public class WabbitemuActivity extends Activity {
 
 		private final int mPosition;
 
-		private MainMenuItem(final int position) {
+		MainMenuItem(final int position) {
 			mPosition = position;
 		}
 
@@ -78,7 +79,7 @@ public class WabbitemuActivity extends Activity {
 	private final UserActivityTracker mUserActivityTracker = UserActivityTracker.getInstance();
 	private final CalculatorManager mCalcManager = CalculatorManager.getInstance();
 	private final SkinBitmapLoader mSkinLoader = SkinBitmapLoader.getInstance();
-	private final VisibilityChangeListener mVisiblityListener = new VisibilityChangeListener();
+	private final VisibilityChangeListener mVisibilityListener = new VisibilityChangeListener();
 
 	private SharedPreferences mSharedPrefs;
 	private EmulatorFragment mEmulatorFragment;
@@ -105,13 +106,9 @@ public class WabbitemuActivity extends Activity {
 
 		workaroundAsyncTaskIssue();
 		if (!testNativeLibraryLoad()) {
-			ErrorUtils.showErrorDialog(this, R.string.error_failed_load_native_lib, new OnClickListener() {
-				@Override
-				public void onClick(DialogInterface dialog, int which) {
-					dialog.dismiss();
-					finish();
-				}
-			});
+			ErrorUtils.showErrorDialog(this,
+                    R.string.error_failed_load_native_lib,
+                    new FinishActivityClickListener());
 			return;
 		}
 
@@ -201,7 +198,7 @@ public class WabbitemuActivity extends Activity {
 		super.onResume();
 
 		if (mSharedPrefs.getBoolean(PreferenceConstants.IMMERSIVE_MODE.toString(), true)) {
-			getWindow().getDecorView().setOnSystemUiVisibilityChangeListener(mVisiblityListener);
+			getWindow().getDecorView().setOnSystemUiVisibilityChangeListener(mVisibilityListener);
 			setImmersiveMode(true);
 		}
 	}
@@ -228,7 +225,7 @@ public class WabbitemuActivity extends Activity {
 		mDrawerList = ViewUtils.findViewById(this, R.id.left_drawer, ListView.class);
 		final String[] menuItems = getResources().getStringArray(R.array.menu_array);
 
-		mDrawerList.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, menuItems));
+		mDrawerList.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, menuItems));
 		mDrawerLayout.setScrimColor(Color.parseColor("#DD000000"));
 		mDrawerList.setOnItemClickListener(new OnItemClickListener() {
 
@@ -312,7 +309,7 @@ public class WabbitemuActivity extends Activity {
 					final SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
 					final SharedPreferences.Editor editor = sharedPrefs.edit();
 					editor.putBoolean(PreferenceConstants.FIRST_RUN.toString(), false);
-					editor.commit();
+					editor.apply();
 
 					mDrawerLayout.openDrawer(mDrawerList);
 				}
@@ -409,10 +406,10 @@ public class WabbitemuActivity extends Activity {
 				outputDir.mkdirs();
 			}
 
-			final SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss");
+			final SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault());
 			final String now = sdf.format(new Date());
 
-			final String fileName = "screenshot" + now.toString() + ".png";
+			final String fileName = "screenshot" + now + ".png";
 			outputFile = new File(outputDir, fileName);
 		} else {
 			ErrorUtils.showErrorDialog(this, R.string.errorMissingSdCard);
@@ -535,5 +532,13 @@ public class WabbitemuActivity extends Activity {
 			// something like the loading dialog.
 			setImmersiveMode(true);
 		}
+	}
+
+	private class FinishActivityClickListener implements OnClickListener {
+		@Override
+        public void onClick(DialogInterface dialog, int which) {
+            dialog.dismiss();
+            finish();
+        }
 	}
 }

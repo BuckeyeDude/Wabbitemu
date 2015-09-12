@@ -32,7 +32,7 @@ public class CalculatorManager {
 	private final UserActivityTracker mUserTracker = UserActivityTracker.getInstance();
 	private final SkinBitmapLoader mSkinLoader = SkinBitmapLoader.getInstance();
 	private final ExecutorService mExecutorService = Executors.newSingleThreadExecutor();
-	private final Map<FileLoadedCallback, String> mRomCallbacks = new ConcurrentHashMap<FileLoadedCallback, String>();
+	private final Map<FileLoadedCallback, String> mRomCallbacks = new ConcurrentHashMap<>();
 	private final AtomicBoolean mHasLoadedRom = new AtomicBoolean();
 	private final CalcThread mCalcThread = new CalcThread();
 
@@ -125,7 +125,7 @@ public class CalculatorManager {
 		final SharedPreferences.Editor editor = mSharedPrefs.edit();
 		editor.putString(PreferenceConstants.ROM_PATH.toString(), mCurrentRomFile)
 				.putInt(PreferenceConstants.ROM_MODEL.toString(), CalcInterface.GetModel())
-				.commit();
+				.apply();
 	}
 
 	private void handleRomLoaded() {

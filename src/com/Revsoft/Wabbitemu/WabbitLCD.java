@@ -3,6 +3,7 @@ package com.Revsoft.Wabbitemu;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Rect;
+import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.view.KeyEvent;
 import android.view.SurfaceHolder;
@@ -86,16 +87,16 @@ public class WabbitLCD extends SurfaceView implements SurfaceHolder.Callback, Ca
 			return;
 		}
 
-		mMainThread.destroyScreen();
 		final FrameLayout.LayoutParams layoutParams = (LayoutParams) getLayoutParams();
 		layoutParams.width = lcdSkinRect.width();
 		layoutParams.height = lcdSkinRect.height();
 		layoutParams.setMargins(lcdSkinRect.left, lcdSkinRect.top, 0, 0);
 		setLayoutParams(layoutParams);
 		getHolder().setFixedSize(lcdSkinRect.width(), lcdSkinRect.height());
-		mMainThread.createScreen(lcdRect, lcdSkinRect);
+		mMainThread.recreateScreen(lcdRect, lcdSkinRect);
 	}
 
+	@Nullable
 	public Bitmap getScreen() {
 		if (mMainThread == null) {
 			return null;

@@ -15,6 +15,10 @@ dependencies {
     compile('com.crashlytics.sdk.android:crashlytics:2.5.2@aar') { transitive = true }
 }
 
+crashlytics {
+
+}
+
 android {
     compileSdkVersion 21
     buildToolsVersion "23.0.0"
@@ -22,10 +26,22 @@ android {
     defaultConfig {
         minSdkVersion 14
         targetSdkVersion 21
+        versionCode 33
+        versionName "1.05.10"
         ndk {
             moduleName "cppmodule"
             abiFilter "armeabi-v7a"
             stl "gnustl_static"
+        }
+    }
+
+    buildTypes {
+        debug {
+            // Disable fabric build ID generation for debug builds
+            ext.enableCrashlytics = false
+        }
+        release {
+            ext.enableCrashlytics = true
         }
     }
 
