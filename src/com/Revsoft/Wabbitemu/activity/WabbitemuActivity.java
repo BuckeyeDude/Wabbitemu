@@ -101,15 +101,23 @@ public class WabbitemuActivity extends Activity {
 		HttpURLConnection.setFollowRedirects(true);
 		mUserActivityTracker.initializeIfNecessary(this);
 
+		mSharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+
 		workaroundAsyncTaskIssue();
 		if (!testNativeLibraryLoad()) {
+			ErrorUtils.showErrorDialog(this, R.string.error_failed_load_native_lib, new OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					dialog.dismiss();
+					finish();
+				}
+			});
 			return;
 		}
 
 		AdUtils.initialize(getApplication());
 		mCalcManager.initialize(this);
 		mSkinLoader.initialize(this);
-		mSharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
 
 		mUserActivityTracker.reportActivityStart(this);
 		final File cacheDir = getApplicationContext().getCacheDir();

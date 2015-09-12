@@ -1,0 +1,80 @@
+repositories {
+    jcenter() {
+        maven { url 'https://maven.fabric.io/public' }
+    }
+}
+
+apply plugin: 'com.android.application'
+apply plugin: 'io.fabric'
+
+dependencies {
+    compile fileTree(dir: 'libs', include: '*.jar')
+    compile project(':android-ColorPickerPreference-master')
+    compile 'com.android.support:support-v4:23.0.0'
+    compile 'com.google.android.gms:play-services-ads:7.8.0'
+    compile('com.crashlytics.sdk.android:crashlytics:2.5.2@aar') { transitive = true }
+}
+
+android {
+    compileSdkVersion 21
+    buildToolsVersion "23.0.0"
+
+    defaultConfig {
+        minSdkVersion 14
+        targetSdkVersion 21
+        ndk {
+            moduleName "cppmodule"
+            abiFilter "armeabi-v7a"
+            stl "gnustl_static"
+        }
+    }
+
+    sourceSets {
+        main {
+            manifest.srcFile 'AndroidManifest.xml'
+            java.srcDirs = ['src']
+            resources.srcDirs = []
+            aidl.srcDirs = ['src']
+            renderscript.srcDirs = ['src']
+            res.srcDirs = ['res']
+            assets.srcDirs = ['assets']
+            jni.srcDirs = [] // This prevents the auto generation of Android.mk
+            jniLibs.srcDir 'libs'
+        }
+
+        // Move the tests to tests/java, tests/res, etc...
+        instrumentTest.setRoot('tests')
+
+        // Move the build types to build-types/<type>
+        // For instance, build-types/debug/java, build-types/debug/AndroidManifest.xml, ...
+        // This moves them out of them default location under src/<type>/... which would
+        // conflict with src/ being used by the main source set.
+        // Adding new build types or product flavors should be accompanied
+        // by a similar customization.
+        debug.setRoot('build-types/debug')
+        release.setRoot('build-types/release')
+    }
+
+    // Can't use new experimental build with 1.3 yet because crashlytics doesn't support it
+    task buildNative(type: Exec, description: 'Compile JNI source via NDK') {
+        def ndkDir = android.ndkDirectory
+        commandLine "$ndkDir/ndk-build.cmd",
+                '-C', file('jni').absolutePath, // Change src/main/jni the relative path to your jni source
+                '-j', Runtime.runtime.availableProcessors(),
+                'all',
+                'NDK_DEBUG=1'
+    }
+
+    task cleanNative(type: Exec, description: 'Clean JNI object files') {
+        def ndkDir = android.ndkDirectory
+        commandLine "$ndkDir/ndk-build.cmd",
+                '-C', file('jni').absolutePath, // Change src/main/jni the relative path to your jni source
+                'clean'
+    }
+
+    clean.dependsOn 'cleanNative'
+
+    tasks.withType(JavaCompile) {
+        compileTask -> compileTask.dependsOn buildNative
+    }
+}

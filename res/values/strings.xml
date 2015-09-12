@@ -110,4 +110,5 @@
     <string name="errorLink">There was an error sending the file to the calculator</string>
     <string name="errorScreenshot">Error taking screenshot.</string>
     <string name="errorMissingSdCard">No external storage was detected. Please add a storage device to save a screenshot.</string>
+    <string name="error_failed_load_native_lib">Failed to load the native library. This is a fatal error.</string>
 </resources>

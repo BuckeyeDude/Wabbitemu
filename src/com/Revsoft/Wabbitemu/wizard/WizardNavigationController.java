@@ -13,7 +13,6 @@ public class WizardNavigationController {
 
 	private final WizardController mWizardController;
 	private final Button mNextButton;
-	private final View mSeparator;
 	private final Button mBackButton;
 
 	public WizardNavigationController(@NonNull WizardController wizardController,
@@ -21,7 +20,6 @@ public class WizardNavigationController {
 	{
 		mWizardController = wizardController;
 		mNextButton = ViewUtils.findViewById(navContainer, R.id.nextButton, Button.class);
-		mSeparator = ViewUtils.findViewById(navContainer, R.id.divider, View.class);
 		mBackButton = ViewUtils.findViewById(navContainer, R.id.backButton, Button.class);
 
 		mNextButton.setOnClickListener(new OnClickListener() {
@@ -74,6 +72,5 @@ public class WizardNavigationController {
 
 	private void setButtonVisibility(View button, int visibility) {
 		button.setVisibility(visibility);
-		mSeparator.setVisibility(visibility);
 	}
 }

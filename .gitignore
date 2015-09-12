@@ -213,14 +213,14 @@ pip-log.txt
 
 #Mr Developer
 .mr.developer.cfg
-/build.gradle
 /jni.zip
 /proguard.cfg
 /gen
 /out
 /lint.xml
-/Wabbitemu.iml
+/*.iml
 /crashlytics.properties
 /assets/crashlytics-build.properties
 /res/values/com_crashlytics_export_strings.xml
-kit-libs/
+
+
