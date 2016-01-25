@@ -1,10 +1,5 @@
 package com.Revsoft.Wabbitemu.activity;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
@@ -45,6 +40,11 @@ import com.Revsoft.Wabbitemu.wizard.view.LandingPageView;
 import com.Revsoft.Wabbitemu.wizard.view.ModelPageView;
 import com.Revsoft.Wabbitemu.wizard.view.OsDownloadPageView;
 import com.Revsoft.Wabbitemu.wizard.view.OsPageView;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 
 public class WizardActivity extends Activity {
 
@@ -117,7 +117,6 @@ public class WizardActivity extends Activity {
 				BrowseOsPageView.class);
 		mWizardController.registerView(R.id.browse_os_page, new BrowseOsPageController(browseOsPageView,
 				getFragmentManager()));
-
 
 		final BrowseRomPageView browseRomPageView = ViewUtils.findViewById(this, R.id.browse_rom_page,
 				BrowseRomPageView.class);
@@ -314,23 +313,12 @@ public class WizardActivity extends Activity {
 		}
 
 		final String osFilePath = osDownloadPath.getAbsolutePath();
-		mOsDownloader = new OSDownloader(this, osFilePath, calcModel, osVersion) {
+		mOsDownloader = new OSDownloader(this, osFilePath, calcModel, osVersion, downloadCode) {
 
 			@Override
 			protected void onPostExecute(final Boolean success) {
 				super.onPostExecute(success);
-
-				if (success) {
-					final int error = CalcInterface.CreateRom(osFilePath, bootPagePath, mCreatedFilePath, calcModel);
-					mUserActivityTracker.reportBreadCrumb("Creating ROM type: %s error: %s", calcModel, error);
-					if (error == 0) {
-						finishSuccess(mCreatedFilePath);
-					} else {
-						finishRomError();
-					}
-				} else {
-					finishOsError();
-				}
+				createRom(success, osFilePath, bootPagePath, calcModel);
 			}
 
 			@Override
@@ -340,7 +328,21 @@ public class WizardActivity extends Activity {
 				mIsWizardFinishing = false;
 			}
 		};
-		mOsDownloader.execute(downloadCode);
+		mOsDownloader.execute();
+	}
+
+	private void createRom(Boolean success, String osFilePath, String bootPagePath, int calcModel) {
+		if (success) {
+            final int error = CalcInterface.CreateRom(osFilePath, bootPagePath, mCreatedFilePath, calcModel);
+            mUserActivityTracker.reportBreadCrumb("Creating ROM type: %s error: %s", calcModel, error);
+            if (error == 0) {
+                finishSuccess(mCreatedFilePath);
+            } else {
+                finishRomError();
+            }
+        } else {
+            finishOsError();
+        }
 	}
 
 	private void finishOsError() {

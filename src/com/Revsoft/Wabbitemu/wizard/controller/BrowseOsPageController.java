@@ -124,7 +124,7 @@ public class BrowseOsPageController implements WizardPageController {
 		fragInfo.setArguments(setupBundle);
 
 		final FragmentTransaction transaction = mFragmentManager.beginTransaction();
-		transaction.replace(R.id.browseOsFragment, fragInfo);
+		transaction.replace(R.id.browse_page, fragInfo);
 		transaction.commit();
 	}
 }

@@ -107,7 +107,7 @@ public class BrowseRomPageController implements WizardPageController {
 		fragInfo.setArguments(setupBundle);
 
 		final FragmentTransaction transaction = mFragmentManager.beginTransaction();
-		transaction.replace(R.id.browseRomFragment, fragInfo);
+		transaction.replace(R.id.browse_page, fragInfo);
 		transaction.commit();
 	}
 }

@@ -27,8 +27,8 @@
     </LinearLayout>
 
     <ListView
-        android:id="@+id/browseView"
         android:layout_width="match_parent"
+        android:id="@+id/browseView"
         android:layout_height="match_parent"
         android:layout_above="@+id/adContainer"
         android:isScrollContainer="true" />

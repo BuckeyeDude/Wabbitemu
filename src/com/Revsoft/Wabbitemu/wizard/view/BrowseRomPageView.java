@@ -12,6 +12,6 @@ public class BrowseRomPageView extends RelativeLayout {
 	public BrowseRomPageView(Context context, AttributeSet attributeSet) {
 		super(context, attributeSet);
 
-		LayoutInflater.from(context).inflate(R.layout.browse_rom_page, this, true);
+		LayoutInflater.from(context).inflate(R.layout.browse_wizard_page, this, true);
 	}
 }

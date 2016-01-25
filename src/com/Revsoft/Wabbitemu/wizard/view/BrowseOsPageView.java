@@ -12,6 +12,6 @@ public class BrowseOsPageView extends RelativeLayout {
 	public BrowseOsPageView(Context context, AttributeSet attributeSet) {
 		super(context, attributeSet);
 
-		LayoutInflater.from(context).inflate(R.layout.browse_os_page, this, true);
+		LayoutInflater.from(context).inflate(R.layout.browse_wizard_page, this, true);
 	}
 }

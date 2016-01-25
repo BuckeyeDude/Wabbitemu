@@ -12,6 +12,7 @@ import com.Revsoft.Wabbitemu.R;
 import com.Revsoft.Wabbitemu.utils.SpinnerDropDownAdapter;
 import com.Revsoft.Wabbitemu.wizard.WizardNavigationController;
 import com.Revsoft.Wabbitemu.wizard.WizardPageController;
+import com.Revsoft.Wabbitemu.wizard.data.FinishWizardData;
 import com.Revsoft.Wabbitemu.wizard.view.OsPageView;
 
 public class OsPageController implements WizardPageController {
@@ -26,7 +27,11 @@ public class OsPageController implements WizardPageController {
 
 	@Override
 	public void configureButtons(@NonNull WizardNavigationController navController) {
-		navController.setNextButton();
+		if (isFinalPage()) {
+			navController.setFinishButton();
+		} else {
+			navController.setNextButton();
+		}
 	}
 
 	@Override
@@ -36,19 +41,20 @@ public class OsPageController implements WizardPageController {
 
 	@Override
 	public boolean hasNextPage() {
-		return true;
+		return !isFinalPage();
 	}
 
 	@Override
 	public boolean isFinalPage() {
-		return false;
+		return mView.getSelectedRadioId() == R.id.downloadOsRadio && mCalcModel != CalcInterface.TI_84PCSE;
 	}
 
 	@Override
 	public int getNextPage() {
-		return mView.getSelectedRadioId() == R.id.downloadOsRadio ?
-				R.id.os_download_page :
-				R.id.browse_os_page;
+		if (isFinalPage()) {
+			throw new IllegalStateException("No next page");
+		}
+		return mCalcModel == CalcInterface.TI_84PCSE ? R.id.os_download_page : R.id.browse_os_page;
 	}
 
 	@Override
@@ -63,7 +69,7 @@ public class OsPageController implements WizardPageController {
 
 	@Override
 	public void onShowing(Object previousData) {
-		final List<String> items = new ArrayList<String>();
+		final List<String> items = new ArrayList<>();
 
 		mCalcModel = (int) (Integer) previousData;
 		switch (mCalcModel) {
@@ -80,7 +86,7 @@ public class OsPageController implements WizardPageController {
 			items.add("2.43");
 			break;
 		case CalcInterface.TI_84PCSE:
-			items.add("4.2");
+			//items.add("4.2");
 			items.add("4.0");
 			break;
 		default:
@@ -100,6 +106,6 @@ public class OsPageController implements WizardPageController {
 
 	@Override
 	public Object getControllerData() {
-		return mCalcModel;
+		return isFinalPage() ? new FinishWizardData(mCalcModel, null) : mCalcModel;
 	}
 }

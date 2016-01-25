@@ -1,6 +1,5 @@
 package com.Revsoft.Wabbitemu.wizard.data;
 
-import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
 import com.Revsoft.Wabbitemu.CalcInterface;
@@ -34,7 +33,7 @@ public class FinishWizardData {
 		return mNeedsDownload;
 	}
 
-	@NonNull
+	@Nullable
 	public String getDownloadCode() {
 		if (!mNeedsDownload) {
 			throw new IllegalArgumentException("Cannot get download code for non download");

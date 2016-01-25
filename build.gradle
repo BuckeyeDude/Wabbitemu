@@ -21,13 +21,13 @@ crashlytics {
 
 android {
     compileSdkVersion 21
-    buildToolsVersion "23.0.0"
+    buildToolsVersion "23.0.2"
 
     defaultConfig {
         minSdkVersion 14
         targetSdkVersion 21
-        versionCode 33
-        versionName "1.05.10"
+        versionCode 35
+        versionName "1.05.12"
         ndk {
             moduleName "cppmodule"
             abiFilter "armeabi-v7a"

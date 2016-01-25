@@ -52,8 +52,7 @@ public class BrowseFragment extends Fragment {
 			mListView.setOnItemClickListener(new OnItemClickListener() {
 
 				@Override
-				public void
-						onItemClick(final AdapterView<?> parent, final View view, final int position, final long id) {
+				public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 					final String filePath = (String) mListView.getItemAtPosition(position);
 					if (mBrowseCallback != null) {
 						mBrowseCallback.onBrowseItemSelected(filePath);

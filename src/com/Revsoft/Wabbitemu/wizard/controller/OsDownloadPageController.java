@@ -18,7 +18,7 @@ import com.Revsoft.Wabbitemu.wizard.data.FinishWizardData;
 import com.Revsoft.Wabbitemu.wizard.view.OsDownloadPageView;
 
 public class OsDownloadPageController implements WizardPageController {
-    public static final String USER_AGENT = "User-Agent: Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/43.0.2357.134 Safari/537.36";
+    public static final String USER_AGENT = "Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/43.0.2357.134 Safari/537.36";
 
     private final OsDownloadPageView mView;
     private final WebView mWebView;
@@ -92,10 +92,10 @@ public class OsDownloadPageController implements WizardPageController {
                 break;
             case CalcInterface.TI_84P:
             case CalcInterface.TI_84PSE:
-                mWebView.loadUrl("https://education.ti.com/en/us/software/details/en/400C88E8E75B4123BB7E90B6A676368D/ti84plusoperatingsystem");
+                mWebView.loadUrl("https://education.ti.com/en/us/software/details/en/B7DADA7FD4AA40CE9D7911B004B8C460/ti84plusoperatingsystem");
                 break;
             case CalcInterface.TI_84PCSE:
-                mWebView.loadUrl("https://education.ti.com/en/us/software/details/en/5F0CBAC101194542B16B80BCE6CB3602/ti-84-plus-c-silver-edition-operating-system");
+                mWebView.loadUrl("https://education.ti.com/en/asia/software/details/en/812E5FCF48C6456CB156A03DE5D07016/singaporeapprovedosapps");
                 break;
             default:
                 throw new IllegalStateException("Invalid calculator type");
@@ -115,7 +115,7 @@ public class OsDownloadPageController implements WizardPageController {
     private class OsDownloadWebViewClient extends WebViewClient {
         @Override
         public void onPageFinished(WebView view, String url) {
-            final String newStyles = "#layout-default { 	width: 400px; }  #header-site { 	display: none; }  .sublayout-etdownloadbundle { 	min-height: auto; }   .sublayout-etdownloadbundledetails { 	width: auto; }  .sublayout-etdownloadsactivitiesheader { 	display: none; }  .etdownloadbundleheader { 	padding-top: 10px; 	width: auto; }  .etheroimage { 	display: none; }  .column-pdf, .column-appsspaces { 	display: none; }  .etguidebooks, .etrelatedsoftware { 	display: none; }  ui-dialog-buttonset > button { 	margin: 20px; 	display: block; }  eula-captcha > div { 	width: 100% !important; }  .etmaincontent {  display: none; }  .back-to-results {  display: none; }  .feature-summary {  display: none; }  #footer-site {  display: none; }  .ui-dialog-buttonset {  display: block !important;  margin-left: auto;  margin-right: auto;  width: 300px; }  .dialog-key-eula.ui-dialog .ui-dialog-buttonpane .ui-dialog-buttonset .ui-button {  margin: 20px; }  .dialog-eula {  max-height: 200px !important; }";
+            final String newStyles = "#layout-default { 	width: 100%; }  #header-site { 	display: none; }  .sublayout-etdownloadbundle { 	min-height: auto; }   .sublayout-etdownloadbundledetails { 	width: auto; }  .sublayout-etdownloadsactivitiesheader { 	display: none; }  .etdownloadbundleheader { 	padding-top: 10px; 	width: auto; }  .etheroimage { 	display: none; }  .column-pdf, .column-size, .column-version, .column-appsspaces { 	display: none; }  .etguidebooks, .etrelatedsoftware { 	display: none; }  ui-dialog-buttonset > button { 	margin: 20px; 	display: block; }  eula-captcha > div { 	width: 100% !important; }  .etmaincontent {  display: none; }  .back-to-results {  display: none; }  .feature-summary {  display: none; }  #footer-site {  display: none; }  .ui-dialog-buttonset {  display: block !important;  margin-left: auto;  margin-right: auto;  width: 300px; }  .dialog-key-eula.ui-dialog .ui-dialog-buttonpane .ui-dialog-buttonset .ui-button {  margin: 20px; }  .dialog-eula {  max-height: 200px !important; } .column-downloaditem.protected-download { opacity: 1 } .column-downloaditem { opacity: 0 }";
             view.loadUrl("javascript:$(document).ajaxComplete(function(e, xhr, settings) { " +
                     "Android.onFoundCode(xhr.responseText); });" +
                     "Dialogs.Init('Eula', function(dialogData) { dialogData.params.width = 400 } );" +
