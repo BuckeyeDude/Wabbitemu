@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+    <item android:id="@+id/loadFileMenuItem" android:title="@string/loadFile"></item>
+    <item android:id="@+id/rerunWizardMenuItem" android:title="@string/rerunWizard"></item>
+    <item android:id="@+id/resetMenuItem" android:title="@string/reset"></item>
+    <item android:id="@+id/settingsMenuItem" android:title="@string/settings"></item>
+    <item android:id="@+id/aboutMenuItem" android:title="@string/about"></item>
+    
+
+</menu>

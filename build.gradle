@@ -1,96 +1,198 @@
+buildscript {
+    repositories {
+        maven { url 'https://maven.fabric.io/public' }
+    }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle-experimental:0.7.3'
+        classpath 'io.fabric.tools:gradle:1.21.4'
+    }
+}
 repositories {
-    jcenter() {
+    jcenter {
         maven { url 'https://maven.fabric.io/public' }
     }
 }
 
-apply plugin: 'com.android.application'
-apply plugin: 'io.fabric'
+apply plugin: 'com.android.model.application'
 
 dependencies {
-    compile fileTree(dir: 'libs', include: '*.jar')
     compile project(':android-ColorPickerPreference-master')
-    compile 'com.android.support:support-v4:23.0.0'
-    compile 'com.google.android.gms:play-services-ads:7.8.0'
-    compile('com.crashlytics.sdk.android:crashlytics:2.5.2@aar') { transitive = true }
+    compile 'com.android.support:support-v4:24.2.1'
+    compile 'com.google.android.gms:play-services-ads:9.4.0'
+    compile('com.crashlytics.sdk.android:crashlytics:2.5.5@aar') { transitive = true }
+    compile 'com.google.code.findbugs:jsr305:1.3.9'
+    compile 'com.squareup.okhttp3:okhttp:3.4.1'
+    compile "com.squareup.okhttp3:okhttp-urlconnection:3.4.1"
+    compile 'org.jsoup:jsoup:1.7.2'
+    compile 'com.dorkbox:CabParser:2.9'
 }
 
-crashlytics {
+task crashlyticsConfigure(description: 'configuring crashlytis') {
+    def inDir = file('template/crashlyticsStrings.xml').absolutePath
+    def outputShaderDir = file('src/main/res/values').absolutePath
 
+    copy {
+        from(inDir) {
+            filter {
+                line -> line.replaceAll('CRASHLYTICSUUID', UUID.randomUUID().toString())
+            }
+        }
+        into outputShaderDir
+    }
 }
 
-android {
-    compileSdkVersion 21
-    buildToolsVersion "23.0.2"
+tasks.whenTaskAdded { task ->
+    if (task.name.startsWith('pre') && task.name.endsWith('Build')) {
+        task.dependsOn crashlyticsConfigure
+    }
+    if (task.name.startsWith('post')) {
+        task.finalizedBy crashlyticsUpload
+    }
+}
 
-    defaultConfig {
-        minSdkVersion 14
-        targetSdkVersion 21
-        versionCode 35
-        versionName "1.05.12"
+task crashlyticsUpload(type: Exec, description: 'handle the uploading via jar command line') {
+    args '-jar', 'crashlytics-devtools.jar', '-properties', 'ndk.properties'
+    executable 'java'
+}
+
+model {
+    android {
+        compileSdkVersion 24
+        buildToolsVersion '23.0.2'
+
+        defaultConfig {
+            minSdkVersion.apiLevel 14
+            targetSdkVersion.apiLevel 24
+            versionCode 36
+            versionName '1.05.13'
+        }
+
+        buildTypes {
+            debug {
+                // Disable fabric build ID generation for debug builds
+                ext.enableCrashlytics = false
+                ndk {
+                    CFlags.add('-ggdb')
+                    cppFlags.add('-ggdb')
+                }
+            }
+            release {
+                ext.enableCrashlytics = true
+                signingConfig = $('android.signingConfigs.myConfig')
+                ndk {
+                    CFlags.add('-flto')
+                    CFlags.add('-Ofast')
+                    CFlags.add('-funroll-loops')
+                    CFlags.add('-ffast-math')
+                    CFlags.add('-fno-signed-zeros')
+                    CFlags.add('-funsafe-math-optimizations')
+                    cppFlags.add('-flto')
+                    cppFlags.add('-Ofast')
+                    cppFlags.add('-funroll-loops')
+                    cppFlags.add('-ffast-math')
+                    cppFlags.add('-fno-signed-zeros')
+                    cppFlags.add('-funsafe-math-optimizations')
+                    cppFlags.add('-frtti')
+                }
+            }
+        }
+
+        productFlavors {
+            create('noAds') {
+                applicationId "com.Revsoft.Wabbitemu.noads"
+            }
+            create('ads') {
+                applicationId "com.Revsoft.Wabbitemu"
+            }
+        }
+
+        sources {
+            main {
+                jni {
+                    source {
+                        exclude "**/avifile.cpp"
+                        exclude "**/expandpane.cpp"
+                        exclude "**/fileutilities.cpp"
+                        exclude "**/ftp.cpp"
+                        exclude "**/ioapi.cpp"
+                        exclude "**/iowin32.cpp"
+                        exclude "**/miniunz.cpp"
+                        exclude "**/minizip.cpp"
+                        exclude "**/png.cpp"
+                        exclude "**/print.cpp"
+                        exclude "**/sendfileswindows.cpp"
+                        exclude "**/unzip.cpp"
+                        exclude "**/wabbithttp.cpp"
+                        exclude "**/zip.cpp"
+                    }
+                }
+            }
+        }
+
+        abis {
+            create('x86') {
+
+            }
+            create('armeabi-v7a') {
+                CFlags.add('-mfloat-abi=softfp')
+                CFlags.add('-mfpu=vfp')
+                cppFlags.add('-mfloat-abi=softfp')
+                cppFlags.add('-mfpu=vfp')
+            }
+        }
+
         ndk {
-            moduleName "cppmodule"
-            abiFilter "armeabi-v7a"
-            stl "gnustl_static"
+            moduleName 'Wabbitemu'
+            stl 'gnustl_static'
+            abiFilters.add('armeabi-v7a')
+            abiFilters.add('x86')
+            ldLibs.add("log")
+            ldLibs.add("z")
+            CFlags.add('-fsigned-char')
+            CFlags.add('-ftree-vectorize')
+            CFlags.add('-DHIGH_SHADE_GIF')
+            CFlags.add('-DVERBOSE')
+            CFlags.add('-DZLIB_WINAPI')
+            CFlags.add('-D_ANDROID')
+            CFlags.add('-std=gnu99')
+
+            CFlags.add('-I' + project.buildDir + '/../src/main/jni')
+            CFlags.add('-I' + project.buildDir + '/../src/main/jni/core')
+            CFlags.add('-I' + project.buildDir + '/../src/main/jni/hardware')
+            CFlags.add('-I' + project.buildDir + '/../src/main/jni/interface')
+            CFlags.add('-I' + project.buildDir + '/../src/main/jni/utilities')
+
+            cppFlags.add('-fsigned-char')
+            cppFlags.add('-ftree-vectorize')
+            cppFlags.add('-DHIGH_SHADE_GIF')
+            cppFlags.add('-DVERBOSE')
+            cppFlags.add('-DZLIB_WINAPI')
+            cppFlags.add('-D_ANDROID')
+            cppFlags.add('-std=gnu++11')
+            cppFlags.add("-felide-constructors")
+            cppFlags.add("-fexceptions")
+
+            cppFlags.add('-I' + project.buildDir + '/../src/main/jni')
+            cppFlags.add('-I' + project.buildDir + '/../src/main/jni/core')
+            cppFlags.add('-I' + project.buildDir + '/../src/main/jni/hardware')
+            cppFlags.add('-I' + project.buildDir + '/../src/main/jni/interface')
+            cppFlags.add('-I' + project.buildDir + '/../src/main/jni/utilities')
         }
     }
 
-    buildTypes {
-        debug {
-            // Disable fabric build ID generation for debug builds
-            ext.enableCrashlytics = false
+    android.signingConfigs {
+        create('myConfig') {
+            storeFile '../../keystore'
+            storePassword '*WNgcn3my'
+            keyAlias 'wabbitemu key'
+            keyPassword '*WNgcn3my'
+            storeType 'jks'
         }
-        release {
-            ext.enableCrashlytics = true
-        }
     }
 
-    sourceSets {
-        main {
-            manifest.srcFile 'AndroidManifest.xml'
-            java.srcDirs = ['src']
-            resources.srcDirs = []
-            aidl.srcDirs = ['src']
-            renderscript.srcDirs = ['src']
-            res.srcDirs = ['res']
-            assets.srcDirs = ['assets']
-            jni.srcDirs = [] // This prevents the auto generation of Android.mk
-            jniLibs.srcDir 'libs'
-        }
-
-        // Move the tests to tests/java, tests/res, etc...
-        instrumentTest.setRoot('tests')
-
-        // Move the build types to build-types/<type>
-        // For instance, build-types/debug/java, build-types/debug/AndroidManifest.xml, ...
-        // This moves them out of them default location under src/<type>/... which would
-        // conflict with src/ being used by the main source set.
-        // Adding new build types or product flavors should be accompanied
-        // by a similar customization.
-        debug.setRoot('build-types/debug')
-        release.setRoot('build-types/release')
-    }
-
-    // Can't use new experimental build with 1.3 yet because crashlytics doesn't support it
-    task buildNative(type: Exec, description: 'Compile JNI source via NDK') {
-        def ndkDir = android.ndkDirectory
-        commandLine "$ndkDir/ndk-build.cmd",
-                '-C', file('jni').absolutePath, // Change src/main/jni the relative path to your jni source
-                '-j', Runtime.runtime.availableProcessors(),
-                'all',
-                'NDK_DEBUG=1'
-    }
-
-    task cleanNative(type: Exec, description: 'Clean JNI object files') {
-        def ndkDir = android.ndkDirectory
-        commandLine "$ndkDir/ndk-build.cmd",
-                '-C', file('jni').absolutePath, // Change src/main/jni the relative path to your jni source
-                'clean'
-    }
-
-    clean.dependsOn 'cleanNative'
-
-    tasks.withType(JavaCompile) {
-        compileTask -> compileTask.dependsOn buildNative
+    android.packagingOptions {
+        exclude 'LICENSE'
+        exclude 'LICENSE.Apachev2'
     }
 }
