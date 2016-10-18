@@ -64,8 +64,8 @@ model {
         defaultConfig {
             minSdkVersion.apiLevel 14
             targetSdkVersion.apiLevel 24
-            versionCode 36
-            versionName '1.05.13'
+            versionCode 38
+            versionName '1.05.16'
         }
 
         buildTypes {

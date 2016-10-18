@@ -22,7 +22,7 @@ public class LandingPageView extends RelativeLayout {
 		mRadioGroup = ViewUtils.findViewById(this, R.id.setupOptionsRadioGroup, RadioGroup.class);
 
 		final View adView = this.findViewById(R.id.adView);
-		AdUtils.loadAd(getResources(), adView);
+		AdUtils.loadAd(adView);
 	}
 
 	public int getSelectedRadioId() { 

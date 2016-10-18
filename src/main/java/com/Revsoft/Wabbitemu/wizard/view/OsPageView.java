@@ -29,7 +29,7 @@ public class OsPageView extends RelativeLayout {
 		mSpinner = ViewUtils.findViewById(this, R.id.osVersionSpinner, Spinner.class);
 		mRadioGroup = ViewUtils.findViewById(this, R.id.setupOsAcquisistion, RadioGroup.class);
 
-		AdUtils.loadAd(getResources(), this.findViewById(R.id.adView));
+		AdUtils.loadAd(this.findViewById(R.id.adView));
 	}
 
 	public Spinner getSpinner() {

@@ -22,23 +22,23 @@ import com.Revsoft.Wabbitemu.utils.PreferenceConstants;
 public class CalcSkin extends View {
 
 	private final SkinBitmapLoader mSkinLoader = SkinBitmapLoader.getInstance();
-	private final SharedPreferences mSharedPrefs;
 	private final CalcKeyManager mCalcKeyManager;
 	private final Vibrator mVibrator;
 	private final Paint mPaint;
 	private final List<Rect> mKeymapDrawRect = new ArrayList<>();
 	private final Paint mKeymapPaint = new Paint();
-	
+	private final Rect mDrawRect = new Rect();
+
 	private boolean mHasVibrationEnabled;
 
 	public CalcSkin(Context context, AttributeSet attrs) {
 		super(context, attrs);
 
 		mCalcKeyManager = CalcKeyManager.getInstance();
-		mSharedPrefs = PreferenceManager.getDefaultSharedPreferences(context);
-		mSharedPrefs.registerOnSharedPreferenceChangeListener(mPrefListener);
+		final SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(context);
+		sharedPrefs.registerOnSharedPreferenceChangeListener(mPrefListener);
 		mVibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
-		mHasVibrationEnabled = mSharedPrefs.getBoolean(PreferenceConstants.USE_VIBRATION.toString(), true);
+		mHasVibrationEnabled = sharedPrefs.getBoolean(PreferenceConstants.USE_VIBRATION.toString(), true);
 
 		mPaint = new Paint();
 		mPaint.setAntiAlias(false);
@@ -74,8 +74,8 @@ public class CalcSkin extends View {
 		canvas.drawColor(Color.DKGRAY);
 		if (renderedSkin != null) {
 			final Rect src = mSkinLoader.getSkinRect();
-			final Rect dest = new Rect(0, 0, canvas.getWidth(), canvas.getHeight());
-			canvas.drawBitmap(renderedSkin, src, dest, mPaint);
+			mDrawRect.set(0, 0, canvas.getWidth(), canvas.getHeight());
+			canvas.drawBitmap(renderedSkin, src, mDrawRect, mPaint);
 
 		}
 		

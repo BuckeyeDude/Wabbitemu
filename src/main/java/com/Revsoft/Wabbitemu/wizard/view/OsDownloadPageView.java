@@ -26,7 +26,7 @@ public class OsDownloadPageView extends RelativeLayout {
 		mLoadingSpinner = ViewUtils.findViewById(this, R.id.loadingSpinner, ProgressBar.class);
 
 		final View adView = this.findViewById(R.id.adView);
-		AdUtils.loadAd(getResources(), adView);
+		AdUtils.loadAd(adView);
 	}
 
 	public WebView getWebView() {

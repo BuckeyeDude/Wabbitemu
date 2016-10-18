@@ -13,6 +13,6 @@ public class SettingsActivity extends Activity {
 
         setTitle(R.string.settings);
         setContentView(R.layout.settings);
-        AdUtils.loadAd(getResources(), this.findViewById(R.id.adView));
+        AdUtils.loadAd(this.findViewById(R.id.adView));
     }
 }

@@ -68,7 +68,7 @@ public class BrowseFragment extends Fragment {
             startSearch(view, mExtensionsRegex);
 
             mAdView = view.findViewById(R.id.adView);
-            AdUtils.loadAd(getResources(), mAdView);
+            AdUtils.loadAd(mAdView);
         }
 
         return view;

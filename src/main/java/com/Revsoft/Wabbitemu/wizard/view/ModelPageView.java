@@ -20,7 +20,7 @@ public class ModelPageView extends RelativeLayout {
 		LayoutInflater.from(context).inflate(R.layout.model_page, this, true);
 		mRadioGroup = ViewUtils.findViewById(this, R.id.setupModelRadioGroup, RadioGroup.class);
 
-		AdUtils.loadAd(getResources(), this.findViewById(R.id.adView));
+		AdUtils.loadAd(this.findViewById(R.id.adView));
 	}
 
 	public int getSelectedRadioId() {

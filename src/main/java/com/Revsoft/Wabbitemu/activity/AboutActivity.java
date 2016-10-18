@@ -39,6 +39,6 @@ public class AboutActivity extends Activity {
 			Log.e("About", "Version exception", e);
 		}
 
-		AdUtils.loadAd(getResources(), this.findViewById(R.id.adView));
+		AdUtils.loadAd(this.findViewById(R.id.adView));
 	}
 }

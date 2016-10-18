@@ -1,7 +1,6 @@
 package com.Revsoft.Wabbitemu.utils;
 
 import android.app.Application;
-import android.content.res.Resources;
 import android.view.View;
 
 public class AdUtils {
@@ -10,7 +9,7 @@ public class AdUtils {
         // no-op
     }
 
-    public static void loadAd(Resources resources, final View adView) {
+    public static void loadAd(View adView) {
         // no-op
     }
 
