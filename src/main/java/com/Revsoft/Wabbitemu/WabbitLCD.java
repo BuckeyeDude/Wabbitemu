@@ -5,7 +5,6 @@ import android.graphics.Bitmap;
 import android.graphics.Rect;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -14,14 +13,16 @@ import android.widget.FrameLayout.LayoutParams;
 
 import com.Revsoft.Wabbitemu.calc.CalcScreenUpdateCallback;
 import com.Revsoft.Wabbitemu.calc.MainThread;
-import com.Revsoft.Wabbitemu.utils.KeyMapping;
 
-import java.lang.reflect.Field;
+import java.nio.IntBuffer;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class WabbitLCD extends SurfaceView implements CalcScreenUpdateCallback {
 
 	private final CalcKeyManager mCalcKeyManager;
 	private final MainThread mMainThread;
+	private final ExecutorService mExecutorService;
 
 	public WabbitLCD(final Context context, final AttributeSet attrs) {
 		super(context, attrs);
@@ -31,14 +32,7 @@ public class WabbitLCD extends SurfaceView implements CalcScreenUpdateCallback {
 		mMainThread = new MainThread();
 		holder.addCallback(mMainThread);
 		setFocusable(true);
-
-		try {
-			final Field field = SurfaceView.class.getDeclaredField("DEBUG");
-			field.setAccessible(true);
-			field.set(this, false);
-		} catch (Exception e) {
-			Log.e("Wabbitemu", e.toString());
-		}
+		mExecutorService = Executors.newSingleThreadExecutor();
 	}
 
 	@Override
@@ -53,7 +47,12 @@ public class WabbitLCD extends SurfaceView implements CalcScreenUpdateCallback {
 
 	@Override
 	public void onUpdateScreen() {
-		mMainThread.run();
+		mExecutorService.submit(mMainThread);
+	}
+
+	@Override
+	public IntBuffer getScreenBuffer() {
+		return mMainThread.getScreenBuffer();
 	}
 
 	public void updateSkin(final Rect lcdRect, final Rect lcdSkinRect) {

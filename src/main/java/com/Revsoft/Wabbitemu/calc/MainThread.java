@@ -10,7 +10,7 @@ import android.view.SurfaceHolder;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
-public class MainThread implements SurfaceHolder.Callback {
+public class MainThread implements SurfaceHolder.Callback, Runnable {
 
     private final Paint mPaint;
     private final Object mScreenLock = new Object();
@@ -38,6 +38,10 @@ public class MainThread implements SurfaceHolder.Callback {
         mHasCreatedLcd = true;
     }
 
+    public IntBuffer getScreenBuffer() {
+        return mCurrentScreenBuffer;
+    }
+
     @Nullable
     public Bitmap getScreen() {
         synchronized (mScreenLock) {
@@ -45,6 +49,7 @@ public class MainThread implements SurfaceHolder.Callback {
         }
     }
 
+    @Override
     public void run() {
         if (mSurfaceHolder == null || !mHasCreatedLcd) {
             return;
@@ -58,9 +63,6 @@ public class MainThread implements SurfaceHolder.Callback {
                     return;
                 }
 
-                mCurrentScreenBuffer.rewind();
-                CalcInterface.GetLCD(mCurrentScreenBuffer);
-                mCurrentScreenBuffer.rewind();
                 mScreenBitmap.copyPixelsFromBuffer(mCurrentScreenBuffer);
                 if (getScreen() != null) {
                     canvas.drawBitmap(mScreenBitmap, mLcdRect, mScreenRect, mPaint);

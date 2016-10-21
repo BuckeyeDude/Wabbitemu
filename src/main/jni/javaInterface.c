@@ -1,3 +1,4 @@
+#include <pthread.h>
 #include "com_Revsoft_Wabbitemu_CalcInterface.h"
 #include "calc.h"
 #include "linksendvar.h"
@@ -25,7 +26,7 @@ void load_settings(LPCALC lpCalc, LPVOID lParam) {
 JNIEXPORT void JNICALL Java_com_Revsoft_Wabbitemu_calc_CalcInterface_Initialize
 		(JNIEnv *env, jclass classObj, jstring filePath) {
 	checkThread();
-	const char *path = env->GetStringUTFChars(filePath, JNI_FALSE);
+	const char *path = (*env)->GetStringUTFChars(env, filePath, JNI_FALSE);
 	strcpy(cache_dir, path);
 	lpCalc = calc_slot_new();
 	lpCalc->model = INVALID_MODEL;
@@ -46,15 +47,9 @@ JNIEXPORT void JNICALL Java_com_Revsoft_Wabbitemu_calc_CalcInterface_Initialize
 JNIEXPORT jboolean JNICALL Java_com_Revsoft_Wabbitemu_calc_CalcInterface_SaveCalcState
 		(JNIEnv *env, jclass classObj, jstring filePath) {
 	checkThread();
-	const char *path = env->GetStringUTFChars(filePath, JNI_FALSE);
+	const char *path = (*env)->GetStringUTFChars(env, filePath, JNI_FALSE);
 
-    SAVESTATE_t *save;
-    try {
-        save = SaveSlot(lpCalc, "Wabbitemu", "Automatic save state");
-    } catch (std::exception &e) {
-        _tprintf_s(_T("Exception loading save state: %s"), e.what());
-        return JNI_FALSE;
-    }
+    SAVESTATE_t *save = SaveSlot(lpCalc, "Wabbitemu", "Automatic save state");
 	BOOL wasSuccessful = FALSE;
 	if (save != NULL) {
 		wasSuccessful = WriteSave(path, save, ZLIB_CMP);
@@ -73,9 +68,9 @@ JNIEXPORT jint JNICALL Java_com_Revsoft_Wabbitemu_calc_CalcInterface_CreateRom
 	(JNIEnv *env, jclass classObj, jstring jOsPath, jstring jBootPath,
 			jstring jRomPath, jint model) {
 	checkThread();
-	const char *osPath = env->GetStringUTFChars(jOsPath, JNI_FALSE);
-	const char *bootPath = env->GetStringUTFChars(jBootPath, JNI_FALSE);
-	const char *romPath = env->GetStringUTFChars(jRomPath, JNI_FALSE);
+	const char *osPath = (*env)->GetStringUTFChars(env, jOsPath, JNI_FALSE);
+	const char *bootPath = (*env)->GetStringUTFChars(env, jBootPath, JNI_FALSE);
+	const char *romPath = (*env)->GetStringUTFChars(env, jRomPath, JNI_FALSE);
 
 	// Do not allow more than one calc currently
 	if (lpCalc) {
@@ -122,7 +117,7 @@ JNIEXPORT jint JNICALL Java_com_Revsoft_Wabbitemu_calc_CalcInterface_CreateRom
 JNIEXPORT jint JNICALL Java_com_Revsoft_Wabbitemu_calc_CalcInterface_LoadFile
 		(JNIEnv *env, jclass classObj, jstring filePath) {
 	checkThread();
-	const char *path = env->GetStringUTFChars(filePath, JNI_FALSE);
+	const char *path = (*env)->GetStringUTFChars(env, filePath, JNI_FALSE);
 	TIFILE_t *tifile = importvar(path, TRUE);
 	if (!tifile || !lpCalc) {
 		return (jint) LERR_FILE;
@@ -151,7 +146,6 @@ JNIEXPORT void JNICALL Java_com_Revsoft_Wabbitemu_calc_CalcInterface_ResetCalc
  */
 JNIEXPORT void JNICALL Java_com_Revsoft_Wabbitemu_calc_CalcInterface_RunCalcs
   (JNIEnv *env, jclass classObj) {
-	checkThread();
 	calc_run_all();
 }
 
@@ -309,7 +303,7 @@ JNIEXPORT jint JNICALL Java_com_Revsoft_Wabbitemu_calc_CalcInterface_GetLCD
 	LCDBase_t *lcd = lpCalc->cpu.pio.lcd;
 	assert(intBuffer != NULL);
 
-	int *bytes = (int *) env->GetDirectBufferAddress(intBuffer);
+	int *bytes = (int *) (*env)->GetDirectBufferAddress(env, intBuffer);
 	if (bytes == NULL) {
 		return FALSE;
 	}

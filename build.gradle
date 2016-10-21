@@ -1,5 +1,6 @@
 buildscript {
     repositories {
+        jcenter()
         maven { url 'https://maven.fabric.io/public' }
     }
 
@@ -75,6 +76,20 @@ model {
                 ndk {
                     CFlags.add('-ggdb')
                     cppFlags.add('-ggdb')
+
+                    CFlags.add('-flto')
+                    CFlags.add('-Ofast')
+                    CFlags.add('-funroll-loops')
+                    CFlags.add('-ffast-math')
+                    CFlags.add('-fno-signed-zeros')
+                    CFlags.add('-funsafe-math-optimizations')
+                    cppFlags.add('-flto')
+                    cppFlags.add('-Ofast')
+                    cppFlags.add('-funroll-loops')
+                    cppFlags.add('-ffast-math')
+                    cppFlags.add('-fno-signed-zeros')
+                    cppFlags.add('-funsafe-math-optimizations')
+                    cppFlags.add('-frtti')
                 }
             }
             release {
@@ -112,19 +127,19 @@ model {
                 jni {
                     source {
                         exclude "**/avifile.cpp"
-                        exclude "**/expandpane.cpp"
-                        exclude "**/fileutilities.cpp"
-                        exclude "**/ftp.cpp"
-                        exclude "**/ioapi.cpp"
-                        exclude "**/iowin32.cpp"
-                        exclude "**/miniunz.cpp"
-                        exclude "**/minizip.cpp"
-                        exclude "**/png.cpp"
-                        exclude "**/print.cpp"
+                        exclude "**/expandpane.c"
+                        exclude "**/fileutilities.c"
+                        exclude "**/ftp.c"
+                        exclude "**/ioapi.c"
+                        exclude "**/iowin32.c"
+                        exclude "**/miniunz.c"
+                        exclude "**/minizip.c"
+                        exclude "**/png.c"
+                        exclude "**/print.c"
                         exclude "**/sendfileswindows.cpp"
-                        exclude "**/unzip.cpp"
-                        exclude "**/wabbithttp.cpp"
-                        exclude "**/zip.cpp"
+                        exclude "**/unzip.c"
+                        exclude "**/wabbithttp.c"
+                        exclude "**/zip.c"
                     }
                 }
             }
@@ -136,9 +151,11 @@ model {
             }
             create('armeabi-v7a') {
                 CFlags.add('-mfloat-abi=softfp')
-                CFlags.add('-mfpu=vfp')
+                CFlags.add('-mfpu=neon')
+                CFlags.add('-marm')
                 cppFlags.add('-mfloat-abi=softfp')
-                cppFlags.add('-mfpu=vfp')
+                cppFlags.add('-mfpu=neon')
+                cppFlags.add('-marm')
             }
         }
 
@@ -149,12 +166,14 @@ model {
             abiFilters.add('x86')
             ldLibs.add("log")
             ldLibs.add("z")
+            //ldLibs.add("android-ndk-profiler")
             CFlags.add('-fsigned-char')
             CFlags.add('-ftree-vectorize')
             CFlags.add('-DHIGH_SHADE_GIF')
             CFlags.add('-DVERBOSE')
             CFlags.add('-DZLIB_WINAPI')
             CFlags.add('-D_ANDROID')
+            CFlags.add('-DDISABLE_EXTRA_FEATURES')
             CFlags.add('-std=gnu99')
 
             CFlags.add('-I' + project.buildDir + '/../src/main/jni')
@@ -170,8 +189,8 @@ model {
             cppFlags.add('-DZLIB_WINAPI')
             cppFlags.add('-D_ANDROID')
             cppFlags.add('-std=gnu++11')
-            cppFlags.add("-felide-constructors")
-            cppFlags.add("-fexceptions")
+            cppFlags.add('-felide-constructors')
+            cppFlags.add('-fexceptions')
 
             cppFlags.add('-I' + project.buildDir + '/../src/main/jni')
             cppFlags.add('-I' + project.buildDir + '/../src/main/jni/core')

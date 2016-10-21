@@ -1,7 +1,9 @@
 package com.Revsoft.Wabbitemu.calc;
 
+import android.os.SystemClock;
 import android.util.Log;
 
+import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -13,15 +15,15 @@ import javax.annotation.Nonnull;
 public class CalcThread extends Thread {
 
     private static final long FPS = 50L;
-    private static final long TPS = TimeUnit.SECONDS.toMillis(1) / FPS;
-    private static final int MAX_FRAME_SKIP = (int) (FPS / 2);
+    private static final long TPF = TimeUnit.SECONDS.toMillis(1) / FPS;
 
     private final AtomicBoolean mIsPaused = new AtomicBoolean(false);
-    private final AtomicBoolean mReset = new AtomicBoolean(false);
     private final List<String> mPauseList;
     private final List<Runnable> mRunnables = Collections.synchronizedList(new ArrayList<Runnable>());
 
     private CalcScreenUpdateCallback mScreenUpdateCallback;
+    private long mPreviousTimerMillis;
+    private long mDifference;
 
     public CalcThread() {
         mPauseList = new ArrayList<>();
@@ -29,9 +31,6 @@ public class CalcThread extends Thread {
 
     @Override
     public void run() {
-        long startTime;
-        int framesSkipped;
-
         while (true) {
             if (isInterrupted()) {
                 break;
@@ -52,33 +51,26 @@ public class CalcThread extends Thread {
                 continue;
             }
 
-            if (mReset.getAndSet(false)) {
-                CalcInterface.ResetCalc();
-            }
+            final long newTimeMillis = SystemClock.elapsedRealtime();
+            mDifference += ((newTimeMillis - mPreviousTimerMillis) & 0x3F) - TPF;
+            mPreviousTimerMillis = newTimeMillis;
 
-            startTime = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-            framesSkipped = 0;
+            if (mDifference > -TPF) {
+                CalcInterface.RunCalcs();
 
-            runCalcs();
-            if (mScreenUpdateCallback != null) {
-                mScreenUpdateCallback.onUpdateScreen();
-            }
-
-            long sleepTime = TPS - TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) + startTime;
-
-            if (sleepTime > 0) {
-                try {
-                    sleep(sleepTime);
-                } catch (final InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    break;
+                if (mScreenUpdateCallback != null) {
+                    final IntBuffer screenBuffer = mScreenUpdateCallback.getScreenBuffer();
+                    screenBuffer.rewind();
+                    CalcInterface.GetLCD(screenBuffer);
+                    screenBuffer.rewind();
+                    mScreenUpdateCallback.onUpdateScreen();
                 }
-            }
-
-            while (sleepTime < 0 && framesSkipped < MAX_FRAME_SKIP) {
-                runCalcs();
-                sleepTime += TPS;
-                framesSkipped++;
+                while (mDifference >= TPF) {
+                    CalcInterface.RunCalcs();
+                    mDifference -= TPF;
+                }
+            } else {
+                mDifference += TPF;
                 Log.d("Wabbitemu", "Frame skip");
             }
 
@@ -86,10 +78,6 @@ public class CalcThread extends Thread {
             // Log.d("", "Frame skip: " + framesSkipped);
             // }
         }
-    }
-
-    private void runCalcs() {
-        CalcInterface.RunCalcs();
     }
 
     public void setPaused(@Nonnull String key, boolean shouldBePaused) {
@@ -108,7 +96,12 @@ public class CalcThread extends Thread {
     }
 
     public void resetCalc() {
-        mReset.set(true);
+        mRunnables.add(new Runnable() {
+            @Override
+            public void run() {
+                CalcInterface.ResetCalc();
+            }
+        });
     }
 
     public void setScreenUpdateCallback(CalcScreenUpdateCallback callback) {

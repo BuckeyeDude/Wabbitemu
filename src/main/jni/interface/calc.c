@@ -499,20 +499,24 @@ int calc_run_tstates(LPCALC lpCalc, uint64_t tstates) {
 	uint64_t time_end = lpCalc->timer_c.tstates + tstates - lpCalc->time_error;
 
 	while (lpCalc->running) {
+#ifndef DISABLE_EXTRA_FEATURES
 		if (check_break(&lpCalc->mem_c, addr16_to_waddr(&lpCalc->mem_c, lpCalc->cpu.pc))) {
 			calc_set_running(lpCalc, FALSE);
 			lpCalc->breakpoint_callback(lpCalc);
 			return 0;
 		}
+#endif
 
 		CPU_step(&lpCalc->cpu);
 
+#ifndef DISABLE_EXTRA_FEATURES
 		if (lpCalc->cpu.pio.lcd != NULL && 
 			(lpCalc->timer_c.elapsed - lpCalc->cpu.pio.lcd->lastaviframe) >= (1.0 / AVI_FPS))
 		{
 			notify_event(lpCalc, AVI_VIDEO_FRAME_EVENT);
 			lpCalc->cpu.pio.lcd->lastaviframe += 1.0 / AVI_FPS;
 		}
+#endif
 
 		if (lpCalc->timer_c.tstates >= time_end) {
 			lpCalc->time_error = (uint64_t)(lpCalc->timer_c.tstates - time_end);

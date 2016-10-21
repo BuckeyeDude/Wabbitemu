@@ -146,9 +146,6 @@ void clear_mem_read_break(memc *mem, waddr_t waddr) {
 }
 
 unsigned char mem_write(memc *mem, unsigned short addr, char data) {
-	if (addr == 0x9d95) {
-		__android_log_print(ANDROID_LOG_WARN, "CPU", "%02x", data);
-	}
 	if ((mem->port27_remap_count > 0) && !mem->boot_mapped && (mc_bank(addr) == 3) && (addr >= (0x10000 - 64 * mem->port27_remap_count)) && addr >= 0xFB64) {
 		return mem->ram[0 * PAGE_SIZE + mc_base(addr)] = data;
 	}
@@ -161,11 +158,7 @@ unsigned char mem_write(memc *mem, unsigned short addr, char data) {
 			return mem->ram[2 * PAGE_SIZE + mc_base(addr)] = data;
 		}
 	}
-	auto test = mem->banks[mc_bank(addr)].addr + mc_base(addr);
-	if (test == &mem->ram[PAGE_SIZE + 0x1d95]) {
-		__android_log_print(ANDROID_LOG_WARN, "CPU", "%02x", data);
-	}
-	return  *(test) = (unsigned char) data;
+	return  *(mem->banks[mc_bank(addr)].addr + mc_base(addr)) = data;
 }
 
 inline unsigned short read2bytes(memc *mem, unsigned short addr) {
@@ -502,11 +495,13 @@ static unsigned char flash_read(CPU_t *cpu, unsigned short addr) {
 }
 
 unsigned char CPU_mem_read(CPU_t *cpu, unsigned short addr) {
+#ifndef DISABLE_EXTRA_FEATURES
 	if (check_mem_read_break(cpu->mem_c, addr16_to_waddr(cpu->mem_c, addr))) {
 		if (cpu->mem_read_break_callback) {
 			cpu->mem_read_break_callback(cpu);
 		}
 	}
+#endif
 
 	if (cpu->mem_c->banks[mc_bank(addr)].ram) {
 		cpu->bus = mem_read(cpu->mem_c, addr);
@@ -587,11 +582,13 @@ static void flash_write(CPU_t *cpu, unsigned short addr, unsigned char data) {
 		break;
 	case FLASH_PROGRAM: {
 		flash_write_byte(mem_c, addr, data);
+#ifndef DISABLE_EXTRA_FEATURES
 		if (check_mem_write_break(cpu->mem_c, addr16_to_waddr(cpu->mem_c, addr))) {
 			if (cpu->mem_write_break_callback) {
 				cpu->mem_write_break_callback(cpu);
 			}
 		}
+#endif
 
 		endflash(mem_c);
 		break;
@@ -618,11 +615,13 @@ static void flash_write(CPU_t *cpu, unsigned short addr, unsigned char data) {
 			for (int i = 0; i < cpu->mem_c->flash_size; i++) {
 				cpu->mem_c->flash[i] = 0xFF;
 
+#ifndef DISABLE_EXTRA_FEATURES
 				if (check_mem_write_break(cpu->mem_c, addr32_to_waddr(i, FALSE))) {
 					if (cpu->mem_write_break_callback) {
 						cpu->mem_write_break_callback(cpu);
 					}
 				}
+#endif
 			}
 		} else if (data == 0x30) {
 			// erase sectors
@@ -658,11 +657,13 @@ static void flash_write(CPU_t *cpu, unsigned short addr, unsigned char data) {
 			for (int i = startaddr; i < endaddr; i++) {
 				mem_c->flash[i] = 0xFF;
 
+#ifndef DISABLE_EXTRA_FEATURES
 				if (check_mem_write_break(cpu->mem_c, addr32_to_waddr(i, FALSE))) {
 					if (cpu->mem_write_break_callback) {
 						cpu->mem_write_break_callback(cpu);
 					}
 				}
+#endif
 			}
 		} else {
 			endflash_break(cpu);
@@ -686,11 +687,13 @@ static void flash_write(CPU_t *cpu, unsigned short addr, unsigned char data) {
 		break;
 	case FLASH_FASTMODE_PROG: {
 		flash_write_byte(cpu->mem_c, addr, data);
+#ifndef DISABLE_EXTRA_FEATURES
 		if (check_mem_write_break(cpu->mem_c, addr16_to_waddr(cpu->mem_c, addr))) {
 			if (cpu->mem_write_break_callback) {
 				cpu->mem_write_break_callback(cpu);
 			}
 		}
+#endif
 		mem_c->step = FLASH_FASTMODE;
 		break;
 	}
@@ -712,11 +715,13 @@ void CPU_mem_write(CPU_t *cpu, unsigned short addr, unsigned char data) {
 	if (bank->ram) {
 		if (!bank->read_only) {
 			mem_write(cpu->mem_c, addr, data);
+#ifndef DISABLE_EXTRA_FEATURES
 			if (check_mem_write_break(cpu->mem_c, addr16_to_waddr(cpu->mem_c, addr))) {
 				if (cpu->mem_write_break_callback) {
 					cpu->mem_write_break_callback(cpu);
 				}
 			}
+#endif
 		}
 		SEtc_add(cpu->timer_c, cpu->mem_c->write_ram_tstates);
 	} else {
@@ -848,9 +853,7 @@ static void CPU_opcode_run(CPU_t *cpu) {
 	}
 #endif
 	const int time = opcode[cpu->bus](cpu);
-	if (time != 0) {
-		tc_add(cpu->timer_c, time);
-	}
+	tc_add(cpu->timer_c, time);
 }
 
 static int CPU_CB_opcode_run(CPU_t *cpu) {
@@ -976,7 +979,6 @@ int CPU_step(CPU_t* cpu) {
 #ifdef WITH_REVERSE
 	CPU_add_prev_instr(cpu);
 #endif
-	//__android_log_print(ANDROID_LOG_WARN, "CPU", "%04x", cpu->pc);
 	if (cpu->halt == FALSE) {
 		CPU_opcode_fetch(cpu);
 		CPU_opcode_run(cpu);
@@ -999,9 +1001,11 @@ int CPU_step(CPU_t* cpu) {
 		handle_interrupt(cpu);
 	}
 
+#ifndef DISABLE_EXTRA_FEATURES
 	if (cpu->profiler.running) {
 		handle_profiling(cpu, old_tstates, old_pc);
 	}
+#endif
 
 	return 0;
 }
