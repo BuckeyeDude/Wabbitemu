@@ -17,7 +17,7 @@ int bit_ind(CPU_t *cpu, char offset) {
 	int result, reg;
 	unsigned short address;
 	int test_mask = (1 << ((cpu->bus >> 3) & 0x07));
-	
+
 	if (cpu->prefix == IX_PREFIX) {
 		address = cpu->ix + offset;
 	} else {
@@ -37,7 +37,7 @@ int res_ind(CPU_t *cpu, char offset) {
 	int reg;
 	int save = (cpu->bus & 0x07);
 	unsigned char bit = ~(1 << ((cpu->bus >> 3)& 0x07));
-	
+
 	if (cpu->prefix == IX_PREFIX) {
 		reg = CPU_mem_read(cpu, cpu->ix + offset);
 		CPU_mem_write(cpu, cpu->ix + offset, reg & bit);
@@ -45,7 +45,7 @@ int res_ind(CPU_t *cpu, char offset) {
 		reg = CPU_mem_read(cpu, cpu->iy + offset);
 		CPU_mem_write(cpu, cpu->iy + offset, reg & bit);
 	}
-	
+
 	reg &= bit;
 	switch(save) {
 		case 0:
@@ -80,7 +80,7 @@ int set_ind(CPU_t *cpu, char offset) {
 	int reg;
 	unsigned char bit = (1 << ((cpu->bus >> 3)& 0x07));
 	int save = (cpu->bus & 0x07);
-	
+
 	if (cpu->prefix == IX_PREFIX) {
 		reg = CPU_mem_read(cpu, cpu->ix + offset);
 		CPU_mem_write(cpu, cpu->ix + offset, reg | bit);
@@ -88,7 +88,7 @@ int set_ind(CPU_t *cpu, char offset) {
 		reg = CPU_mem_read(cpu, cpu->iy + offset);
 		CPU_mem_write(cpu, cpu->iy + offset, reg | bit);
 	}
-	
+
 	reg |= bit;
 	switch(save) {
 		case 0:
@@ -122,7 +122,7 @@ int rl_ind(CPU_t *cpu, char offset) {
 	int result;
 	int carry;
 	int save = (cpu->bus & 0x07);
-	
+
 	if (cpu->prefix == IX_PREFIX) {
 		result = CPU_mem_read(cpu, cpu->ix + offset);
 		carry = (result>>7)&1;
@@ -137,7 +137,7 @@ int rl_ind(CPU_t *cpu, char offset) {
 	cpu->f = signchk(result) + zerochk(result) +
 		 x5chk(result) + x3chk(result)+
 		 parity(result) + carry;
-		 
+
 
 	switch(save) {
 		case 0:
@@ -162,7 +162,7 @@ int rl_ind(CPU_t *cpu, char offset) {
 			cpu->a = result;
 			break;
 	}
-	
+
 	return 23;
 }
 
@@ -170,7 +170,7 @@ int rlc_ind(CPU_t *cpu, char offset) {
 	int result;
 	int carry;
 	int save = (cpu->bus & 0x07);
-	
+
 	if (cpu->prefix == IX_PREFIX) {
 		result = CPU_mem_read(cpu, cpu->ix + offset);
 		carry = (result>>7)&1;
@@ -185,7 +185,7 @@ int rlc_ind(CPU_t *cpu, char offset) {
 	cpu->f = signchk(result) + zerochk(result) +
 		 x5chk(result) + x3chk(result)+
 		 parity(result) + carry;
-		 
+
 	switch(save) {
 		case 0:
 			cpu->b = result;
@@ -217,7 +217,7 @@ int rr_ind(CPU_t *cpu, char offset) {
 	int result;
 	int carry;
 	int save = (cpu->bus & 0x07);
-	
+
 	if (cpu->prefix == IX_PREFIX) {
 		result = CPU_mem_read(cpu, cpu->ix + offset);
 		carry = result & 1;
@@ -264,7 +264,7 @@ int rrc_ind(CPU_t *cpu, char offset) {
 	int result;
 	int carry;
 	int save = (cpu->bus & 0x07);
-	
+
 	if (cpu->prefix == IX_PREFIX) {
 		result = CPU_mem_read(cpu, cpu->ix + offset);
 		carry = result & 1;
@@ -279,7 +279,7 @@ int rrc_ind(CPU_t *cpu, char offset) {
 	cpu->f = signchk(result) + zerochk(result) +
 		 x5chk(result) + x3chk(result)+
 		 parity(result) + carry;
-		 
+
 	switch(save) {
 		case 0:
 			cpu->b = result;
@@ -302,7 +302,7 @@ int rrc_ind(CPU_t *cpu, char offset) {
 		case 7:
 			cpu->a = result;
 			break;
-	}		 
+	}
 
 	return 23;
 }
@@ -311,7 +311,7 @@ int sll_ind(CPU_t *cpu, char offset) {
 	int result;
 	int carry;
 	int save = (cpu->bus & 0x07);
-	
+
 	if (cpu->prefix == IX_PREFIX) {
 		result = CPU_mem_read(cpu, cpu->ix + offset);
 		carry = (result>>7)&1;
@@ -326,7 +326,7 @@ int sll_ind(CPU_t *cpu, char offset) {
 	cpu->f = signchk(result) + zerochk(result) +
 		 x5chk(result) + x3chk(result)+
 		 parity(result) + carry;
-		 
+
 	switch(save) {
 		case 0:
 			cpu->b = result;
@@ -358,7 +358,7 @@ int srl_ind(CPU_t *cpu, char offset) {
 	int result;
 	int carry;
 	int save = (cpu->bus & 0x07);
-	
+
 	if (cpu->prefix == IX_PREFIX) {
 		result = CPU_mem_read(cpu, cpu->ix + offset);
 		carry = result & 1;
@@ -373,7 +373,7 @@ int srl_ind(CPU_t *cpu, char offset) {
 	cpu->f = signchk(result) + zerochk(result) +
 		 x5chk(result) + x3chk(result)+
 		 parity(result) + carry;
-		 
+
 	switch(save) {
 		case 0:
 			cpu->b = result;
@@ -420,7 +420,7 @@ int sla_ind(CPU_t *cpu, char offset) {
 	cpu->f = signchk(result) + zerochk(result) +
 		 x5chk(result) + x3chk(result)+
 		 parity(result) + carry;
-		 
+
 	switch(save) {
 		case 0:
 			cpu->b = result;
@@ -452,7 +452,7 @@ int sra_ind(CPU_t *cpu, char offset) {
 	int result;
 	int carry;
 	int save = (cpu->bus & 0x07);
-	
+
 	if (cpu->prefix == IX_PREFIX) {
 		result = CPU_mem_read(cpu, cpu->ix + offset);
 		carry = result & 1;
@@ -467,7 +467,7 @@ int sra_ind(CPU_t *cpu, char offset) {
 	cpu->f = signchk(result) + zerochk(result) +
 		 x5chk(result) + x3chk(result)+
 		 parity(result) + carry;
-		 
+
 	switch(save) {
 		case 0:
 			cpu->b = result;

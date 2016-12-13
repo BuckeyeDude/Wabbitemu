@@ -60,10 +60,12 @@ public class CalcThread extends Thread {
 
                 if (mScreenUpdateCallback != null) {
                     final IntBuffer screenBuffer = mScreenUpdateCallback.getScreenBuffer();
-                    screenBuffer.rewind();
-                    CalcInterface.GetLCD(screenBuffer);
-                    screenBuffer.rewind();
-                    mScreenUpdateCallback.onUpdateScreen();
+                    if (screenBuffer != null) {
+                        screenBuffer.rewind();
+                        CalcInterface.GetLCD(screenBuffer);
+                        screenBuffer.rewind();
+                        mScreenUpdateCallback.onUpdateScreen();
+                    }
                 }
                 while (mDifference >= TPF) {
                     CalcInterface.RunCalcs();

@@ -71,8 +71,8 @@ int sbc_hl_reg16(CPU_t *cpu) {
 	}
 	result = cpu->hl - reg - (cpu->f&CARRY_MASK);
 
-	cpu->f = signchk16(result) + zerochk16(result) + 
-		 x5chk16(result) + hcsubchk16(cpu->hl,reg,cpu->f&CARRY_MASK) + 
+	cpu->f = signchk16(result) + zerochk16(result) +
+		 x5chk16(result) + hcsubchk16(cpu->hl,reg,cpu->f&CARRY_MASK) +
 		 x3chk16(result)+ vchksub16(cpu->hl, reg, result) +                //DOUBLE CHECK!!!!
 		 SUB_INSTR +  carrychk16(result);
 	cpu->hl = result;
@@ -91,8 +91,8 @@ int cpd(CPU_t *cpu) {
 	cpu->bc--;
 	cpu->hl--;
 	cpu->f = signchk(result) + zerochk(result) +
-		 x5chk(reg-((cpu->f&HC_MASK)>>4)) + hcsubchk(cpu->a,reg,0) + 
-		 x3chk(reg-((cpu->f&HC_MASK)>>4))+ doparity(cpu->bc!=0) + 
+		 x5chk(reg-((cpu->f&HC_MASK)>>4)) + hcsubchk(cpu->a,reg,0) +
+		 x3chk(reg-((cpu->f&HC_MASK)>>4))+ doparity(cpu->bc!=0) +
 		 SUB_INSTR +  unaffect(CARRY_MASK);
 
 	return 16;
@@ -107,14 +107,14 @@ int cpdr(CPU_t *cpu) {
 	cpu->bc--;
 	cpu->hl--;
 	cpu->f = signchk(result) + zerochk(result) +
-		 x5chk(reg-((cpu->f&HC_MASK)>>4)) + hcsubchk(cpu->a,reg,0) + 
-		 x3chk(reg-((cpu->f&HC_MASK)>>4))+ doparity(cpu->bc!=0) + 
+		 x5chk(reg-((cpu->f&HC_MASK)>>4)) + hcsubchk(cpu->a,reg,0) +
+		 x3chk(reg-((cpu->f&HC_MASK)>>4))+ doparity(cpu->bc!=0) +
 		 SUB_INSTR +  unaffect(CARRY_MASK);
 	if ((cpu->f&PV_MASK)!=0 && (cpu->f&ZERO_MASK)==0 ) {
 		cpu->pc-=2;
 		return 21;
 	}
-	
+
 	return 16;
 }
 
@@ -126,8 +126,8 @@ int cpi(CPU_t *cpu) {
 	cpu->bc--;
 	cpu->hl++;
 	cpu->f = signchk(result) + zerochk(result) +
-		 x5chk(reg-((cpu->f&HC_MASK)>>4)) + hcsubchk(cpu->a,reg,0) + 
-		 x3chk(reg-((cpu->f&HC_MASK)>>4))+ doparity(cpu->bc!=0) + 
+		 x5chk(reg-((cpu->f&HC_MASK)>>4)) + hcsubchk(cpu->a,reg,0) +
+		 x3chk(reg-((cpu->f&HC_MASK)>>4))+ doparity(cpu->bc!=0) +
 		 SUB_INSTR +  unaffect(CARRY_MASK);
 	return 16;
 }
@@ -139,8 +139,8 @@ int cpir(CPU_t *cpu) {
 	cpu->bc--;
 	cpu->hl++;
 	cpu->f = signchk(result) + zerochk(result) +
-		 x5chk(reg-((cpu->f&HC_MASK)>>4)) + hcsubchk(cpu->a,reg,0) + 
-		 x3chk(reg-((cpu->f&HC_MASK)>>4))+ doparity(cpu->bc!=0) + 
+		 x5chk(reg-((cpu->f&HC_MASK)>>4)) + hcsubchk(cpu->a,reg,0) +
+		 x3chk(reg-((cpu->f&HC_MASK)>>4))+ doparity(cpu->bc!=0) +
 		 SUB_INSTR +  unaffect(CARRY_MASK);
 	if ((cpu->f&PV_MASK)!=0 && (cpu->f&ZERO_MASK)==0 ) {
 		cpu->pc-=2;
@@ -156,7 +156,7 @@ int rld(CPU_t *cpu) {
 	CPU_mem_write(cpu,cpu->hl,result&0xff);
 	cpu->a = (cpu->a&0xF0)+((result>>8)&0x0F);
 	cpu->f = signchk(cpu->a) + zerochk(cpu->a) +
-		 x5chk(cpu->a) + x3chk(cpu->a)+ 
+		 x5chk(cpu->a) + x3chk(cpu->a)+
 		 parity(cpu->a) + unaffect(CARRY_MASK);
 
 	return 18;
@@ -169,7 +169,7 @@ int rrd(CPU_t *cpu) {
 	CPU_mem_write(cpu,cpu->hl,result&0xff);
 	cpu->a = (cpu->a&0xF0)+(tmp&0x0F);
 	cpu->f = signchk(cpu->a) + zerochk(cpu->a) +
-		 x5chk(cpu->a) + x3chk(cpu->a)+ 
+		 x5chk(cpu->a) + x3chk(cpu->a)+
 		 parity(cpu->a) + unaffect(CARRY_MASK);
 
 	return 18;
@@ -221,7 +221,7 @@ int bit(CPU_t *cpu) {
 	else xchk = cpu->h;
 		xchk = result;
 	cpu->f = signchk(result) + zerochk(result) +
-		 x5chk(xchk) + HC_MASK + 
+		 x5chk(xchk) + HC_MASK +
 		 x3chk(xchk)+ parity(result) + unaffect(CARRY_MASK);
 
 	return time;
@@ -345,7 +345,7 @@ int rl_reg(CPU_t *cpu) {
 			break;
 	}
 	cpu->f = signchk(result) + zerochk(result) +
-		 x5chk(result) + x3chk(result)+ 
+		 x5chk(result) + x3chk(result)+
 		 parity(result) + carry;
 
 	return time;
@@ -393,7 +393,7 @@ int rlc_reg(CPU_t *cpu) {
 			break;
 	}
 	cpu->f = signchk(result) + zerochk(result) +
-		 x5chk(result) + x3chk(result)+ 
+		 x5chk(result) + x3chk(result)+
 		 parity(result) + carry;
 	return time;
 }
@@ -440,7 +440,7 @@ int rr_reg(CPU_t *cpu) {
 			break;
 	}
 	cpu->f = signchk(result) + zerochk(result) +
-		 x5chk(result) + x3chk(result)+ 
+		 x5chk(result) + x3chk(result)+
 		 parity(result) + carry;
 	return time;
 }
@@ -486,7 +486,7 @@ int rrc_reg(CPU_t *cpu) {
 			break;
 	}
 	cpu->f = signchk(result) + zerochk(result) +
-		 x5chk(result) + x3chk(result)+ 
+		 x5chk(result) + x3chk(result)+
 		 parity(result) + carry;
 	return time;
 }
@@ -533,7 +533,7 @@ int sll_reg(CPU_t *cpu) {
 			break;
 	}
 	cpu->f = signchk(result) + zerochk(result) +
-		 x5chk(result) + x3chk(result)+ 
+		 x5chk(result) + x3chk(result)+
 		 parity(result) + carry;
 	return time;
 }
@@ -579,7 +579,7 @@ int sla_reg(CPU_t *cpu) {
 			break;
 	}
 	cpu->f = signchk(result) + zerochk(result) +
-		 x5chk(result) + x3chk(result)+ 
+		 x5chk(result) + x3chk(result)+
 		 parity(result) + carry;
 
 	return time;
@@ -627,7 +627,7 @@ int sra_reg(CPU_t *cpu) {
 			break;
 	}
 	cpu->f = signchk(result) + zerochk(result) +
-		 x5chk(result) + x3chk(result)+ 
+		 x5chk(result) + x3chk(result)+
 		 parity(result) + carry;
 
 	return time;
@@ -674,7 +674,7 @@ int srl_reg(CPU_t *cpu) {
 			break;
 	}
 	cpu->f = signchk(result) + zerochk(result) +
-		 x5chk(result) + x3chk(result)+ 
+		 x5chk(result) + x3chk(result)+
 		 parity(result) + carry;
 	return time;
 }
@@ -727,7 +727,7 @@ int and_reg8(CPU_t *cpu) {
 				} else {
 					reg = CPU_mem_read(cpu, cpu->iy + offset);
 				}
-				
+
 				time += 15;
 			}
 			break;
@@ -737,7 +737,7 @@ int and_reg8(CPU_t *cpu) {
 	}
 	result = cpu->a & reg;
 	cpu->f = signchk(result) + zerochk(result) +
-		 x5chk(result) + HC_MASK + 
+		 x5chk(result) + HC_MASK +
 		 x3chk(result)+ parity(result);
 	cpu->a = result;
 	return time;
@@ -750,11 +750,11 @@ int and_reg8(CPU_t *cpu) {
 int and_num8(CPU_t *cpu) {
 	int result;
 	int reg;
-	
+
 	reg = CPU_mem_read(cpu,cpu->pc++);
 	result = cpu->a&reg;
 	cpu->f = signchk(result) + zerochk(result) +
-		 x5chk(result) + HC_MASK + 
+		 x5chk(result) + HC_MASK +
 		 x3chk(result)+ parity(result);
 	cpu->a = result;
 	return 7;
@@ -815,7 +815,7 @@ int or_reg8(CPU_t *cpu) {
 	}
 	result = cpu->a | reg;
 	cpu->f = signchk(result) + zerochk(result) +
-		 x5chk(result) + 
+		 x5chk(result) +
 		 x3chk(result)+ parity(result);
 	cpu->a = result;
 	return time;
@@ -826,11 +826,11 @@ int or_reg8(CPU_t *cpu) {
 int or_num8(CPU_t *cpu) {
 	int result;
 	int reg;
-	
+
 	reg = CPU_mem_read(cpu,cpu->pc++);
 	result = cpu->a|reg;
 	cpu->f = signchk(result) + zerochk(result) +
-		 x5chk(result) + 
+		 x5chk(result) +
 		 x3chk(result)+ parity(result);
 	cpu->a = result;
 
@@ -890,7 +890,7 @@ int xor_reg8(CPU_t *cpu) {
 	}
 	result = cpu->a^reg;
 	cpu->f = signchk(result) + zerochk(result) +
-		 x5chk(result) + 
+		 x5chk(result) +
 		 x3chk(result)+ parity(result);
 	cpu->a = result;
 	return time;
@@ -906,7 +906,7 @@ int xor_num8(CPU_t *cpu) {
 	reg = CPU_mem_read(cpu,cpu->pc++);
 	result = cpu->a^reg;
 	cpu->f = signchk(result) + zerochk(result) +
-		 x5chk(result) + 
+		 x5chk(result) +
 		 x3chk(result)+ parity(result);
 	cpu->a = result;
 	return 7;
@@ -963,8 +963,8 @@ int cp_reg8(CPU_t *cpu) {
 	}
 	result = cpu->a - reg;
 	cpu->f = signchk(result) + zerochk(result) +
-		 x5chk(reg) + hcsubchk(cpu->a,reg,0) + 
-		 x3chk(reg)+ vchksub(cpu->a,reg,result) + 
+		 x5chk(reg) + hcsubchk(cpu->a,reg,0) +
+		 x3chk(reg)+ vchksub(cpu->a,reg,result) +
 		 SUB_INSTR +  carrychk(result);
 	return time;
 }
@@ -976,8 +976,8 @@ int cp_num8(CPU_t *cpu) {
 	reg = CPU_mem_read(cpu,cpu->pc++);
 	result = cpu->a - reg;
 	cpu->f = signchk(result) + zerochk(result) +
-		 x5chk(reg) + hcsubchk(cpu->a,reg,0) + 
-		 x3chk(reg)+ vchksub(cpu->a,reg,result) + 
+		 x5chk(reg) + hcsubchk(cpu->a,reg,0) +
+		 x3chk(reg)+ vchksub(cpu->a,reg,result) +
 		 SUB_INSTR +  carrychk(result);
 
 	return 7;
@@ -994,7 +994,7 @@ int cpl(CPU_t *cpu) {
 
 int daa(CPU_t *cpu) {
 	int result = cpu->a;
-	
+
 	if ( (cpu->f&N_MASK)!=0 ) {
 		if ( (cpu->f&HC_MASK)!=0 || (cpu->a&0x0f)>9 ) result -= 0x06;
 		if ( (cpu->f&CARRY_MASK)!=0 || (cpu->a > 0x99) ) result -= 0x60;
@@ -1003,8 +1003,8 @@ int daa(CPU_t *cpu) {
 		if ( (cpu->f&CARRY_MASK)!=0 || (cpu->a > 0x99) ) result += 0x60;
 	}
 	cpu->f = signchk(result) + zerochk(result) +
-		 x5chk(result) + (cpu->a&0x10 ^ result&0x10) + 
-		 x3chk(result)+ parity(result) + 
+		 x5chk(result) + (cpu->a&0x10 ^ result&0x10) +
+		 x3chk(result)+ parity(result) +
 		 unaffect( N_MASK ) + ((cpu->f & CARRY_MASK) | ((cpu->a>0x99)?CARRY_MASK:0));
 	cpu->a = result;
 	return 4;
@@ -1103,8 +1103,8 @@ int dec_reg8(CPU_t *cpu) {
 			break;
 	}
 	cpu->f = signchk(result) + zerochk(result) +
-		 x5chk(result) + hcsubchk(reg,1,0) + 
-		 x3chk(result)+ vchksub(reg,1,result) + 
+		 x5chk(result) + hcsubchk(reg,1,0) +
+		 x3chk(result)+ vchksub(reg,1,result) +
 		 SUB_INSTR +  unaffect(CARRY_MASK);
 
 	return time;
@@ -1201,8 +1201,8 @@ int inc_reg8(CPU_t *cpu) {
 			break;
 	}
 	cpu->f = signchk(result) + zerochk(result) +
-		 x5chk(result) + hcaddchk(reg,1,0) + 
-		 x3chk(result)+vchkadd(reg,1,result) + 
+		 x5chk(result) + hcaddchk(reg,1,0) +
+		 x3chk(result)+vchkadd(reg,1,result) +
 		 ADD_INSTR +  unaffect(CARRY_MASK);
 	return time;
 }
@@ -1262,8 +1262,8 @@ int add_a_reg(CPU_t *cpu, int carry) {
 	}
 	result = cpu->a+reg+carry;
 	cpu->f = signchk(result) + zerochk(result) +
-		 x5chk(result) + hcaddchk(cpu->a,reg,carry) + 
-		 x3chk(result)+ vchkadd(cpu->a,reg,result) + 
+		 x5chk(result) + hcaddchk(cpu->a,reg,carry) +
+		 x3chk(result)+ vchkadd(cpu->a,reg,result) +
 		 ADD_INSTR +  carrychk(result);
 	cpu->a = result;
 	return time;
@@ -1285,8 +1285,8 @@ int add_a_num(CPU_t *cpu, int carry) {
 	reg = CPU_mem_read(cpu,cpu->pc++);	//THIS IS NOT AN OPCODE READ
 	result = cpu->a + reg + carry;
 	cpu->f = signchk(result) + zerochk(result) +
-		 x5chk(result) + hcaddchk(cpu->a,reg,carry) + 
-		 x3chk(result)+ vchkadd(cpu->a,reg,result) + 
+		 x5chk(result) + hcaddchk(cpu->a,reg,carry) +
+		 x3chk(result)+ vchkadd(cpu->a,reg,result) +
 		 ADD_INSTR +  carrychk(result);
 	cpu->a = result;
 	return 7;
@@ -1356,8 +1356,8 @@ int sub_a_reg(CPU_t *cpu, int carry) {
 	}
 	result = cpu->a - reg - carry;
 	cpu->f = signchk(result) + zerochk(result) +
-		 x5chk(result) + hcsubchk(cpu->a,reg,carry) + 
-		 x3chk(result)+ vchksub(cpu->a,reg,result) + 
+		 x5chk(result) + hcsubchk(cpu->a,reg,carry) +
+		 x3chk(result)+ vchksub(cpu->a,reg,result) +
 		 SUB_INSTR +  carrychk(result);
 	cpu->a = result;
 	return time;
@@ -1375,12 +1375,12 @@ int sub_a_reg8(CPU_t *cpu) {
 int sub_a_num(CPU_t *cpu,int carry) {
 	int result;
 	int reg;
-	
+
 	reg = CPU_mem_read(cpu,cpu->pc++);
 	result = cpu->a - reg - carry;
 	cpu->f = signchk(result) + zerochk(result) +
-		 x5chk(result) + hcsubchk(cpu->a,reg,carry) + 
-		 x3chk(result)+ vchksub(cpu->a,reg,result) + 
+		 x5chk(result) + hcsubchk(cpu->a,reg,carry) +
+		 x3chk(result)+ vchksub(cpu->a,reg,result) +
 		 SUB_INSTR +  carrychk(result);
 	cpu->a = result;
 
@@ -1437,7 +1437,7 @@ int inc_reg16(CPU_t *cpu) {
 			cpu->sp++;
 			break;
 	}
-	
+
 	return time;
 }
 
@@ -1445,7 +1445,7 @@ int add_hl_reg16(CPU_t *cpu) {
 	int result;
 	int base, reg;
 
-	int time = 11; 
+	int time = 11;
 	switch (((cpu->bus)>>4)&3) {
 		case 0x00:
 			reg = cpu->bc;
@@ -1480,9 +1480,9 @@ int add_hl_reg16(CPU_t *cpu) {
 		cpu->iy = result = base + reg;
 	}
 
-	cpu->f = unaffect(SIGN_MASK +ZERO_MASK+PV_MASK) + 
-		 x5chk16(result) + hcaddchk16(base, reg, 0) + 
-		 x3chk16(result)+ 
+	cpu->f = unaffect(SIGN_MASK +ZERO_MASK+PV_MASK) +
+		 x5chk16(result) + hcaddchk16(base, reg, 0) +
+		 x3chk16(result)+
 		 ADD_INSTR +  carrychk16( base + reg);
 	return time;
 }
@@ -1490,16 +1490,16 @@ int add_hl_reg16(CPU_t *cpu) {
 
 int rla(CPU_t *cpu) {
 	int result = ((cpu->a<<1)+(cpu->f&1))&255;
-	cpu->f = unaffect(SIGN_MASK +ZERO_MASK+PV_MASK) + 
+	cpu->f = unaffect(SIGN_MASK +ZERO_MASK+PV_MASK) +
 		 x5chk(result) + x3chk(result)+ (((cpu->a)>>7)&1);
 	cpu->a =result;
 
 	return 4;
-	
+
 }
 int rlca(CPU_t *cpu) {
 	int result = ((cpu->a<<1)+(((cpu->a)>>7)&1))&255;
-	cpu->f = unaffect(SIGN_MASK +ZERO_MASK+PV_MASK) + 
+	cpu->f = unaffect(SIGN_MASK +ZERO_MASK+PV_MASK) +
 		 x5chk(result) + x3chk(result)+ (((cpu->a)>>7)&1);
 	cpu->a =result;
 
@@ -1507,16 +1507,16 @@ int rlca(CPU_t *cpu) {
 }
 int rra(CPU_t *cpu) {
 	int result = ((cpu->a>>1)+((cpu->f&1)<<7))&255;
-	cpu->f = unaffect(SIGN_MASK +ZERO_MASK+PV_MASK) + 
+	cpu->f = unaffect(SIGN_MASK +ZERO_MASK+PV_MASK) +
 		 x5chk(result) + x3chk(result)+ ((cpu->a)&1);
 	cpu->a =result;
 
 	return 4;
-	
+
 }
 int rrca(CPU_t *cpu) {
 	int result = ((cpu->a>>1)+(((cpu->a)<<7)&128))&255;
-	cpu->f = unaffect(SIGN_MASK +ZERO_MASK+PV_MASK) + 
+	cpu->f = unaffect(SIGN_MASK +ZERO_MASK+PV_MASK) +
 		 x5chk(result) + x3chk(result)+ ((cpu->a)&1);
 	cpu->a =result;
 

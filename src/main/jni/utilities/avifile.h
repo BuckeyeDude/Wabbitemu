@@ -22,7 +22,7 @@ class CAviFile
 	DWORD				m_dwQuality;				// Video Quality
 	DWORD				m_dwFCCHandler;				// Video Codec FourCC	
 	TCHAR				m_szFileName[MAX_PATH];		// Holds the Output Movie File Name
-	TCHAR				m_szErrMsg[MAX_PATH];		// Holds the Last ERROR Message, if any
+	TCHAR				m_szErrMsg[MAX_PATH];		// Holds the Last Error Message, if any
 	
 	int					m_nAppendFuncSelector;		//0=Dummy	1=FirstTime	2=Usual
 
@@ -42,7 +42,7 @@ class CAviFile
 	/// Takes care of releasing the memory and movie related handles
 	void ReleaseMemory();
 
-	/// Sets the ERROR Message
+	/// Sets the Error Message
 	void SetErrorMessage(LPCTSTR lpszErrMsg);
 
 public:

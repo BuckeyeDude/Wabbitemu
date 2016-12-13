@@ -8,7 +8,7 @@
         android:id="@+id/adView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        ads:adSize="FULL_BANNER"
+        ads:adSize="MEDIUM_RECTANGLE"
         ads:adUnitId="ca-app-pub-9020637264295870/8898887345" />
 
 </merge>

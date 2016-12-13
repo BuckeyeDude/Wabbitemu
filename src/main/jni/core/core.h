@@ -401,7 +401,7 @@ void displayreg(CPU_t *);
 
 #endif
 
-#define addschar(address_m, offset_m) ( ( ( (char) offset_m ) + (unsigned short) address_m ) )
+#define addschar(address_m, offset_m) ( ( ( (signed char) offset_m ) + (unsigned short) address_m ) )
 
 
 #define index_ext(hlcase,ixcase,iycase) \

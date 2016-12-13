@@ -82,7 +82,7 @@ int do_extract_currentfile(unzFile uf, TCHAR *dirToExtractTo)
 	buf = (void *) malloc(size_buf);
 	if (buf == NULL)
 	{
-		_tprintf(_T("ERROR allocating memory\n"));
+		_tprintf(_T("Error allocating memory\n"));
 		return UNZ_INTERNALERROR;
 	}
 

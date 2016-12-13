@@ -48,7 +48,7 @@ LPCTSTR g_szLinkErrorDescriptions[] =
 	_T("No error"),
 	_T("Virtual link error"),
 	_T("Link timed out"),
-	_T("ERROR force loading application"),
+	_T("Error force loading application"),
 	_T("Invalid checksum on a packet"),
 	_T("The virtual link was not initialized"),
 	_T("Not enough free space on the calculator"),
@@ -62,6 +62,7 @@ static LINK_ERR SendFile(const LPCALC lpCalc, LPCTSTR lpszFileName, SEND_FLAG De
 
 static HANDLE hSendInfoMutex = NULL;
 static std::map<LPCALC, LPSENDINFO> g_SendInfo;
+static const TCHAR *current_file_sending;
 
 static HWND CreateSendFileProgress(HWND hwndParent, const LPCALC lpCalc)
 {
@@ -143,6 +144,7 @@ static DWORD CALLBACK SendFileToCalcThread(LPVOID lpParam) {
 		playsound(lpCalc->audio);
 	}
 
+	current_file_sending = NULL;
 	lpsi->DestinationList->clear();
 	lpsi->iCurrentFile = 0;
 	return 0;
@@ -187,8 +189,7 @@ BOOL SendFileToCalc(HWND hwndParent, const LPCALC lpCalc, LPCTSTR lpszFileName, 
 		}
 
 		LPSENDINFO lpsi;
-		const std::map<LPCALC, LPSENDINFO>::iterator iterator = g_SendInfo.find(lpCalc);
-		if (iterator == g_SendInfo.end() || g_SendInfo[lpCalc] == NULL)
+		if (g_SendInfo.find(lpCalc) == g_SendInfo.end() || g_SendInfo[lpCalc] == NULL)
 		{
 			lpsi = new SENDINFO;
 			ZeroMemory(lpsi, sizeof(SENDINFO));
@@ -202,7 +203,7 @@ BOOL SendFileToCalc(HWND hwndParent, const LPCALC lpCalc, LPCTSTR lpszFileName, 
 		}
 		else
 		{
-			lpsi = iterator->second;
+			lpsi = g_SendInfo[lpCalc];
 		}
 
 		if (lpsi->hwndDlg == NULL) {
@@ -345,10 +346,6 @@ static LINK_ERR SendFile(const LPCALC lpCalc, LPCTSTR lpszFileName, SEND_FLAG De
 			break;
 		}
 		case BREAKPOINT_TYPE:
-			break;
-		default:
-			result = LERR_SUCCESS;
-			assert(false);
 			break;
 		}
 		if (var) {

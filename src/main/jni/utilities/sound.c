@@ -132,7 +132,7 @@ int soundinit(AUDIO_t *audio) {
 			&audio->wfx,
 			(DWORD_PTR)FillSoundBuffer,
 			(DWORD_PTR)audio,
-			CALLBACK_FUNCTION) != MMSYSERR_NOERROR) 
+			CALLBACK_FUNCTION) != MMSYSERR_NOERROR)
 	{
 		audio->enabled = FALSE;
 		MessageBox(NULL, _T("Unable to open audio device."), _T("Error"), MB_OK);

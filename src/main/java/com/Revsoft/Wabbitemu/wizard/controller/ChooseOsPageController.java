@@ -30,8 +30,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.net.CookieManager;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.regex.Pattern;
 
 import javax.annotation.Nonnull;
@@ -41,9 +39,6 @@ import dorkbox.cabParser.CabException;
 import dorkbox.cabParser.CabParser;
 import dorkbox.cabParser.CabStreamSaver;
 import dorkbox.cabParser.structure.CabFileEntry;
-import okhttp3.Cookie;
-import okhttp3.CookieJar;
-import okhttp3.HttpUrl;
 import okhttp3.JavaNetCookieJar;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -70,7 +65,7 @@ public class ChooseOsPageController implements WizardPageController {
     @Override
     public void configureButtons(@Nonnull WizardNavigationController navController) {
         mNavController = navController;
-        navController.setNextButton();
+        navController.hideNextButton();
         if (mIsFinished) {
             mNavController.finishWizard();
         }

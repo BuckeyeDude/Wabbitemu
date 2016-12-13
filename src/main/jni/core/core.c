@@ -327,7 +327,7 @@ static BOOL is_allowed_exec(CPU_t *cpu) {
 		if (!bank->ram)	{		// If its flash and between page limits
 			return bank->page <= mem->flash_lower || bank->page > mem->flash_upper;
 		}
-		
+
 		if (bank->page & (2 >> (mem->prot_mode + 1))) {
 			return TRUE;		// We know were in ram so lets check if the page is allowed in the mem protected mode
 		}
@@ -342,8 +342,8 @@ static BOOL is_allowed_exec(CPU_t *cpu) {
 			cpu->pc >= 0xFB64)
 		{
 			global_addr = 0 * PAGE_SIZE + pc_base_addr;
-		} else if ((mem->port28_remap_count > 0) && 
-			!mem->boot_mapped && 
+		} else if ((mem->port28_remap_count > 0) &&
+			!mem->boot_mapped &&
 			(pc_bank == 2) &&
 			(pc_base_addr < 64 * mem->port28_remap_count))
 		{
@@ -419,7 +419,7 @@ static int CPU_opcode_fetch(CPU_t *cpu) {
 		change_page(mem, 0, 0, FALSE);
 		mem->hasChangedPage0 = TRUE;
 	}
-	
+
 	if (!is_allowed_exec(cpu)) {
 		if (cpu->exe_violation_callback) {
 			cpu->exe_violation_callback(cpu);

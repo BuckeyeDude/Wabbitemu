@@ -62,7 +62,7 @@ typedef struct tagCALC {
 	char rom_version[32];
 	CalcModel model;
 
-	unsigned long long time_error;
+	uint64_t time_error;
 
 	BOOL active;
 	BOOL running;

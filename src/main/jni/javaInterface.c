@@ -1,11 +1,8 @@
-#include <pthread.h>
 #include "com_Revsoft_Wabbitemu_CalcInterface.h"
 #include "calc.h"
 #include "linksendvar.h"
 #include "sendfile.h"
 #include "exportvar.h"
-
-void checkThread();
 
 static LPCALC lpCalc;
 static int redPalette[256];
@@ -25,7 +22,6 @@ void load_settings(LPCALC lpCalc, LPVOID lParam) {
  */
 JNIEXPORT void JNICALL Java_com_Revsoft_Wabbitemu_calc_CalcInterface_Initialize
 		(JNIEnv *env, jclass classObj, jstring filePath) {
-	checkThread();
 	const char *path = (*env)->GetStringUTFChars(env, filePath, JNI_FALSE);
 	strcpy(cache_dir, path);
 	lpCalc = calc_slot_new();
@@ -46,7 +42,6 @@ JNIEXPORT void JNICALL Java_com_Revsoft_Wabbitemu_calc_CalcInterface_Initialize
  */
 JNIEXPORT jboolean JNICALL Java_com_Revsoft_Wabbitemu_calc_CalcInterface_SaveCalcState
 		(JNIEnv *env, jclass classObj, jstring filePath) {
-	checkThread();
 	const char *path = (*env)->GetStringUTFChars(env, filePath, JNI_FALSE);
 
     SAVESTATE_t *save = SaveSlot(lpCalc, "Wabbitemu", "Automatic save state");
@@ -67,7 +62,6 @@ JNIEXPORT jboolean JNICALL Java_com_Revsoft_Wabbitemu_calc_CalcInterface_SaveCal
 JNIEXPORT jint JNICALL Java_com_Revsoft_Wabbitemu_calc_CalcInterface_CreateRom
 	(JNIEnv *env, jclass classObj, jstring jOsPath, jstring jBootPath,
 			jstring jRomPath, jint model) {
-	checkThread();
 	const char *osPath = (*env)->GetStringUTFChars(env, jOsPath, JNI_FALSE);
 	const char *bootPath = (*env)->GetStringUTFChars(env, jBootPath, JNI_FALSE);
 	const char *romPath = (*env)->GetStringUTFChars(env, jRomPath, JNI_FALSE);
@@ -116,7 +110,6 @@ JNIEXPORT jint JNICALL Java_com_Revsoft_Wabbitemu_calc_CalcInterface_CreateRom
 
 JNIEXPORT jint JNICALL Java_com_Revsoft_Wabbitemu_calc_CalcInterface_LoadFile
 		(JNIEnv *env, jclass classObj, jstring filePath) {
-	checkThread();
 	const char *path = (*env)->GetStringUTFChars(env, filePath, JNI_FALSE);
 	TIFILE_t *tifile = importvar(path, TRUE);
 	if (!tifile || !lpCalc) {
@@ -129,7 +122,6 @@ JNIEXPORT jint JNICALL Java_com_Revsoft_Wabbitemu_calc_CalcInterface_LoadFile
 
 JNIEXPORT void JNICALL Java_com_Revsoft_Wabbitemu_calc_CalcInterface_ResetCalc
 		(JNIEnv *env, jclass classObj) {
-	checkThread();
 	if (!lpCalc) {
 		return;
 	}
@@ -156,7 +148,6 @@ JNIEXPORT void JNICALL Java_com_Revsoft_Wabbitemu_calc_CalcInterface_RunCalcs
  */
 JNIEXPORT void JNICALL Java_com_Revsoft_Wabbitemu_calc_CalcInterface_PauseCalc
   (JNIEnv *env, jclass classObj) {
-	checkThread();
 	if (!lpCalc) {
 		return;
 	}
@@ -171,7 +162,6 @@ JNIEXPORT void JNICALL Java_com_Revsoft_Wabbitemu_calc_CalcInterface_PauseCalc
  */
 JNIEXPORT void JNICALL Java_com_Revsoft_Wabbitemu_calc_CalcInterface_UnpauseCalc
   (JNIEnv *env, jclass classObj) {
-	checkThread();
 	if (!lpCalc) {
 		return;
 	}
@@ -203,7 +193,6 @@ JNIEXPORT jlong JNICALL Java_com_Revsoft_Wabbitemu_calc_CalcInterface_Tstates
  */
 JNIEXPORT void JNICALL Java_com_Revsoft_Wabbitemu_calc_CalcInterface_SetSpeedCalc
   (JNIEnv *env, jclass classObj, jint speed) {
-	checkThread();
 	lpCalc->speed = speed;
 }
 
@@ -214,7 +203,6 @@ JNIEXPORT void JNICALL Java_com_Revsoft_Wabbitemu_calc_CalcInterface_SetSpeedCal
  */
 JNIEXPORT void JNICALL Java_com_Revsoft_Wabbitemu_calc_CalcInterface_ClearKeys
   (JNIEnv *env, jclass classObj) {
-	checkThread();
 	for (int i = 0; i < 7; i++) {
 		for (int j = 0; j < 8; j++) {
 
@@ -229,7 +217,6 @@ JNIEXPORT void JNICALL Java_com_Revsoft_Wabbitemu_calc_CalcInterface_ClearKeys
  */
 JNIEXPORT void JNICALL Java_com_Revsoft_Wabbitemu_calc_CalcInterface_PressKey
   (JNIEnv *env, jclass classObj, jint group, jint bit) {
-	checkThread();
 	if (!lpCalc) {
 		return;
 	}
@@ -244,7 +231,6 @@ JNIEXPORT void JNICALL Java_com_Revsoft_Wabbitemu_calc_CalcInterface_PressKey
  */
 JNIEXPORT void JNICALL Java_com_Revsoft_Wabbitemu_calc_CalcInterface_SetAutoTurnOn
   (JNIEnv *env, jclass classObj, jboolean turnOn) {
-	checkThread();
 	auto_turn_on = turnOn ? TRUE : FALSE;
 }
 
@@ -256,7 +242,6 @@ JNIEXPORT void JNICALL Java_com_Revsoft_Wabbitemu_calc_CalcInterface_SetAutoTurn
  */
 JNIEXPORT void JNICALL Java_com_Revsoft_Wabbitemu_calc_CalcInterface_ReleaseKey
   (JNIEnv *env, jclass classObj, jint group, jint bit) {
-	checkThread();
 	if (!lpCalc) {
 		return;
 	}

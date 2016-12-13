@@ -570,7 +570,7 @@ void calc_unregister_event(LPCALC lpCalc, EVENT_TYPE event_type, event_callback 
 	for (int i = 0; i < MAX_REGISTERED_EVENTS; i++) {
 		if (lpCalc->registered_events[i].type == event_type && 
 			lpCalc->registered_events[i].callback == callback &&
-			lpCalc->registered_events[i].lParam == lParam) 
+			lpCalc->registered_events[i].lParam == lParam)
 		{
 			lpCalc->registered_events[i].type = NO_EVENT;
 			lpCalc->registered_events[i].callback = NULL;

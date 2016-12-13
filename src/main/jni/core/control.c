@@ -21,15 +21,15 @@ int ednop(CPU_t *cpu) {
 int ldd(CPU_t *cpu) {
 	int tmp;
 	int reg;
-	
+
 	reg = CPU_mem_read(cpu,cpu->hl);
 	CPU_mem_write(cpu,cpu->de,reg);
 	tmp = cpu->a + reg;
 	cpu->bc--;
 	cpu->hl--;
 	cpu->de--;
-	cpu->f = dox5((tmp&2)!=0) + dox3((tmp&8)!=0) + 
-		 doparity(cpu->bc!=0) + 
+	cpu->f = dox5((tmp&2)!=0) + dox3((tmp&8)!=0) +
+		 doparity(cpu->bc!=0) +
 		 unaffect(SIGN_MASK + ZERO_MASK + CARRY_MASK);
 
 	return 16;
@@ -38,15 +38,15 @@ int ldd(CPU_t *cpu) {
 int lddr(CPU_t *cpu) {
 	int tmp;
 	int reg;
-	
+
 	reg = CPU_mem_read(cpu,cpu->hl);
 	CPU_mem_write(cpu,cpu->de,reg);
 	tmp = cpu->a + reg;
 	cpu->bc--;
 	cpu->hl--;
 	cpu->de--;
-	cpu->f = dox5((tmp&2)!=0) + dox3((tmp&8)!=0) + 
-		 doparity(cpu->bc!=0) + 
+	cpu->f = dox5((tmp&2)!=0) + dox3((tmp&8)!=0) +
+		 doparity(cpu->bc!=0) +
 		 unaffect(SIGN_MASK + ZERO_MASK + CARRY_MASK);
 	if (cpu->bc!=0) {
 		cpu->pc -=2;
@@ -58,15 +58,15 @@ int lddr(CPU_t *cpu) {
 int ldi(CPU_t *cpu) {
 	int tmp;
 	int reg;
-	
+
 	reg = CPU_mem_read(cpu,cpu->hl);
 	CPU_mem_write(cpu,cpu->de,(u_char)reg);
 	tmp = cpu->a + reg;
 	cpu->bc--;
 	cpu->hl++;
 	cpu->de++;
-	cpu->f = dox5((tmp&2)!=0) + dox3((tmp&8)!=0) + 
-		 doparity(cpu->bc!=0) + 
+	cpu->f = dox5((tmp&2)!=0) + dox3((tmp&8)!=0) +
+		 doparity(cpu->bc!=0) +
 		 unaffect(SIGN_MASK + ZERO_MASK + CARRY_MASK);
 	return 16;
 }
@@ -74,15 +74,15 @@ int ldi(CPU_t *cpu) {
 int ldir(CPU_t *cpu) {
 	int tmp;
 	int reg;
-	
+
 	reg = CPU_mem_read(cpu,cpu->hl);
 	CPU_mem_write(cpu,cpu->de,(u_char)reg);
 	tmp = cpu->a + reg;
 	cpu->bc--;
 	cpu->hl++;
 	cpu->de++;
-	cpu->f = dox5((tmp&2)!=0) + dox3((tmp&8)!=0) + 
-		 doparity(cpu->bc!=0) + 
+	cpu->f = dox5((tmp&2)!=0) + dox3((tmp&8)!=0) +
+		 doparity(cpu->bc!=0) +
 		 unaffect(SIGN_MASK + ZERO_MASK + CARRY_MASK);
 	if (cpu->bc!=0) {
 		cpu->pc -=2;
@@ -184,7 +184,7 @@ int in_reg_c(CPU_t *cpu) {
 			break;
 	}
 	cpu->f = signchk(cpu->bus) + zerochk(cpu->bus) +
-		 x5chk(cpu->bus) + x3chk(cpu->bus) + 
+		 x5chk(cpu->bus) + x3chk(cpu->bus) +
 		 parity(cpu->bus) + unaffect(CARRY_MASK);
 	return 12;
 }
@@ -199,10 +199,10 @@ int ind(CPU_t *cpu) {
 	cpu->hl--;
 	tmp = result+ ((cpu->c-1) & 255);
 	cpu->f = signchk(cpu->b) + zerochk(cpu->b) +
-		 x5chk(cpu->b) + dohc( tmp>255 ) + 
-		 x3chk(cpu->b) +  parity((tmp&7)^cpu->b) + 
+		 x5chk(cpu->b) + dohc( tmp>255 ) +
+		 x3chk(cpu->b) +  parity((tmp&7)^cpu->b) +
 		 (((result&128)!=0)? N_MASK:0) +
-		 carry( tmp>255 ); 
+		 carry( tmp>255 );
 	return 16;
 }
 
@@ -215,8 +215,8 @@ int indr(CPU_t *cpu) {
 	cpu->hl--;
 	tmp = result+ ((cpu->c-1) & 255);
 	cpu->f = signchk(cpu->b) + zerochk(cpu->b) +
-		 x5chk(cpu->b) + dohc( tmp>255 ) + 
-		 x3chk(cpu->b) +  parity((tmp&7)^cpu->b) + 
+		 x5chk(cpu->b) + dohc( tmp>255 ) +
+		 x3chk(cpu->b) +  parity((tmp&7)^cpu->b) +
 		 (((result&128)!=0)? N_MASK:0) +
 		 carry( tmp>255 );
 	if (cpu->b!=0) {
@@ -228,7 +228,7 @@ int indr(CPU_t *cpu) {
 }
 int ini(CPU_t *cpu) {
 	int result,tmp;
-	
+
 	device_input(cpu, cpu->c);
 	result = cpu->bus;
 	CPU_mem_write(cpu,cpu->hl,cpu->bus);
@@ -236,16 +236,16 @@ int ini(CPU_t *cpu) {
 	cpu->hl++;
 	tmp = result+ ((cpu->c+1) & 255);
 	cpu->f = signchk(cpu->b) + zerochk(cpu->b) +
-		 x5chk(cpu->b) + dohc( tmp>255 ) + 
-		 x3chk(cpu->b) +  parity((tmp&7)^cpu->b) + 
+		 x5chk(cpu->b) + dohc( tmp>255 ) +
+		 x3chk(cpu->b) +  parity((tmp&7)^cpu->b) +
 		 (((result&128)!=0)? N_MASK:0) +
-		 carry( tmp>255 ); 
+		 carry( tmp>255 );
 	return 16;
 }
 
 int inir(CPU_t *cpu) {
 	int result,tmp;
-	
+
 	device_input(cpu, cpu->c);
 	result = cpu->bus;
 	CPU_mem_write(cpu,cpu->hl,cpu->bus);
@@ -253,8 +253,8 @@ int inir(CPU_t *cpu) {
 	cpu->hl++;
 	tmp = result+ ((cpu->c+1) & 255);
 	cpu->f = signchk(cpu->b) + zerochk(cpu->b) +
-		 x5chk(cpu->b) + dohc( tmp>255 ) + 
-		 x3chk(cpu->b) +  parity((tmp&7)^cpu->b) + 
+		 x5chk(cpu->b) + dohc( tmp>255 ) +
+		 x3chk(cpu->b) +  parity((tmp&7)^cpu->b) +
 		 (((result&128)!=0)? N_MASK:0) +
 		 carry( tmp>255 );
 	if (cpu->b!=0) {
@@ -276,48 +276,48 @@ int ld_r_a(CPU_t *cpu) {
 int ld_a_i(CPU_t *cpu) {
 	cpu->a = cpu->i;
 	cpu->f = signchk(cpu->a) + zerochk(cpu->a) +
-		 x5chk(cpu->a) + x3chk(cpu->a) + 
+		 x5chk(cpu->a) + x3chk(cpu->a) +
 		 doparity(cpu->iff2!=0) + unaffect(CARRY_MASK);
 	return 9;
 }
 int ld_a_r(CPU_t *cpu) {
 	cpu->a = cpu->r;
 	cpu->f = signchk(cpu->a) + zerochk(cpu->a) +
-		 x5chk(cpu->a) + x3chk(cpu->a) + 
+		 x5chk(cpu->a) + x3chk(cpu->a) +
 		 doparity(cpu->iff2!=0) + unaffect(CARRY_MASK);
 	return 9;
 }
 
 
-int out_reg(CPU_t *cpu) { 
-	 int test = (cpu->bus>>3)&7; 
-	 switch(test) { 
-		  case 0x00: 
-			   cpu->bus=cpu->b; 
-			   break; 
-		  case 0x01: 
-			   cpu->bus=cpu->c; 
-			   break; 
-		  case 0x02: 
-			   cpu->bus=cpu->d; 
-			   break; 
-		  case 0x03: 
-			   cpu->bus=cpu->e; 
-			   break; 
-		  case 0x04: 
-			   cpu->bus=cpu->h; 
-			   break; 
-		  case 0x05: 
-			   cpu->bus=cpu->l; 
-			   break; 
-		  case 0x06: 
-			   cpu->bus=0xFF; 
-			   break; 
-		  case 0x07: 
-			   cpu->bus=cpu->a; 
-			   break; 
-	 } 
-	 device_output(cpu, cpu->c); 
+int out_reg(CPU_t *cpu) {
+	 int test = (cpu->bus>>3)&7;
+	 switch(test) {
+		  case 0x00:
+			   cpu->bus=cpu->b;
+			   break;
+		  case 0x01:
+			   cpu->bus=cpu->c;
+			   break;
+		  case 0x02:
+			   cpu->bus=cpu->d;
+			   break;
+		  case 0x03:
+			   cpu->bus=cpu->e;
+			   break;
+		  case 0x04:
+			   cpu->bus=cpu->h;
+			   break;
+		  case 0x05:
+			   cpu->bus=cpu->l;
+			   break;
+		  case 0x06:
+			   cpu->bus=0xFF;
+			   break;
+		  case 0x07:
+			   cpu->bus=cpu->a;
+			   break;
+	 }
+	 device_output(cpu, cpu->c);
 	 return 12;
 }
 
@@ -332,26 +332,26 @@ int outd(CPU_t *cpu) {
 	cpu->hl--;
 	tmp = result+ cpu->l;
 	cpu->f = signchk(cpu->b) + zerochk(cpu->b) +
-		 x5chk(cpu->b) + dohc( tmp>255 ) + 
-		 x3chk(cpu->b) +  parity((tmp&0x07)^cpu->b) + 
+		 x5chk(cpu->b) + dohc( tmp>255 ) +
+		 x3chk(cpu->b) +  parity((tmp&0x07)^cpu->b) +
 		 (((result&0x80)!=0)? N_MASK:0) +
-		 carry( tmp>255 ); 
+		 carry( tmp>255 );
 	return 16;
 }
 
 int otdr(CPU_t *cpu) {
 	int result,tmp;
-	
+
 	result=CPU_mem_read(cpu,cpu->hl);
 	device_output(cpu, cpu->c);
 	cpu->b--;
 	cpu->hl--;
 	tmp = result+ cpu->l;
 	cpu->f = signchk(cpu->b) + zerochk(cpu->b) +
-		 x5chk(cpu->b) + dohc( tmp>255 ) + 
-		 x3chk(cpu->b) +  parity((tmp&0x07)^cpu->b) + 
+		 x5chk(cpu->b) + dohc( tmp>255 ) +
+		 x3chk(cpu->b) +  parity((tmp&0x07)^cpu->b) +
 		 (((result&0x80)!=0)? N_MASK:0) +
-		 carry( tmp>255 ); 
+		 carry( tmp>255 );
 	if (cpu->b!=0) {
 		cpu->pc -=2;
 		return 21;
@@ -361,33 +361,33 @@ int otdr(CPU_t *cpu) {
 }
 int outi(CPU_t *cpu) {
 	int result,tmp;
-	
+
 	result=CPU_mem_read(cpu,cpu->hl);
 	device_output(cpu, cpu->c);
 	cpu->b--;
 	cpu->hl++;
 	tmp = result+ cpu->l;
 	cpu->f = signchk(cpu->b) + zerochk(cpu->b) +
-		 x5chk(cpu->b) + dohc( tmp>255 ) + 
-		 x3chk(cpu->b) +  parity((tmp&0x07)^cpu->b) + 
+		 x5chk(cpu->b) + dohc( tmp>255 ) +
+		 x3chk(cpu->b) +  parity((tmp&0x07)^cpu->b) +
 		 (((result&0x80)!=0)? N_MASK:0) +
-		 carry( tmp>255 ); 
+		 carry( tmp>255 );
 	return 16;
 }
 
 int otir(CPU_t *cpu) {
 	int result,tmp;
-	
+
 	result=CPU_mem_read(cpu,cpu->hl);
 	device_output(cpu, cpu->c);
 	cpu->b--;
 	cpu->hl++;
 	tmp = result+ cpu->l;
 	cpu->f = signchk(cpu->b) + zerochk(cpu->b) +
-		 x5chk(cpu->b) + dohc( tmp>255 ) + 
-		 x3chk(cpu->b) +  parity((tmp&0x07)^cpu->b) + 
+		 x5chk(cpu->b) + dohc( tmp>255 ) +
+		 x3chk(cpu->b) +  parity((tmp&0x07)^cpu->b) +
 		 (((result&0x80)!=0)? N_MASK:0) +
-		 carry( tmp>255 ); 
+		 carry( tmp>255 );
 	if (cpu->b!=0) {
 		cpu->pc -=2;
 		return 21;
@@ -424,7 +424,7 @@ int scf(CPU_t *cpu) {
 // CCF
 int ccf(CPU_t *cpu) {
 	cpu->f = unaffect( SIGN_MASK+ZERO_MASK+PV_MASK) +
-		 x5chk(cpu->a|cpu->f) + dohc( (cpu->f&CARRY_MASK)!=0 ) + 
+		 x5chk(cpu->a|cpu->f) + dohc( (cpu->f&CARRY_MASK)!=0 ) +
 		 x3chk(cpu->a|cpu->f) + ((cpu->f&CARRY_MASK)^CARRY_MASK);
 	return 4;
 }
@@ -485,7 +485,7 @@ int ret_condition(CPU_t *cpu) {
 int call(CPU_t *cpu) {
 	unsigned short address = CPU_mem_read(cpu, cpu->pc++);
 	address |= CPU_mem_read(cpu, cpu->pc++) << 8;
-	
+
 	CPU_mem_write(cpu, --cpu->sp, cpu->pc >> 8);
 	CPU_mem_write(cpu, --cpu->sp, cpu->pc & 0xFF);
 	cpu->pc = address;
@@ -497,7 +497,7 @@ int call_condition(CPU_t *cpu) {
 	int condition = (cpu->bus >> 3) & 0x07;
 	unsigned short address = CPU_mem_read(cpu, cpu->pc++);
 	address |= CPU_mem_read(cpu, cpu->pc++) << 8;
-	
+
 	switch (condition) {
 		case 0:	if (!(cpu->f & ZERO_MASK)) succeed = TRUE;
 				break;
@@ -530,7 +530,7 @@ int call_condition(CPU_t *cpu) {
 int push_reg16(CPU_t *cpu) {
 	unsigned short reg;
 	int time = 11;
-	
+
 	switch ((cpu->bus >> 4) & 0x03) {
 		case 0:
 			reg = cpu->bc;
@@ -565,7 +565,7 @@ int pop_reg16(CPU_t *cpu) {
 	reg |= CPU_mem_read(cpu, cpu->sp++) << 8;
 
 	int time = 10;
-	
+
 	switch ( (old_bus>>4) & 0x03) {
 		case 0:
 			cpu->bc = reg;
@@ -619,7 +619,7 @@ int ld_mem16_hlf(CPU_t *cpu) {
 		CPU_mem_write(cpu, reg++, cpu->iyl);
 		CPU_mem_write(cpu, reg, cpu->iyh);
 		return 20;
-	}		
+	}
 }
 
 int ld_hlf_mem16(CPU_t *cpu) {
@@ -636,7 +636,7 @@ int ld_hlf_mem16(CPU_t *cpu) {
 	} else {
 		cpu->iy = reg;
 		return 20;
-	}		
+	}
 }
 
 int ld_hl_num16(CPU_t *cpu) {
@@ -652,7 +652,7 @@ int ld_hl_num16(CPU_t *cpu) {
 	} else {
 		cpu->iy = reg;
 		return 14;
-	}	
+	}
 }
 int ld_de_num16(CPU_t *cpu) {
 	cpu->de = CPU_mem_read(cpu, cpu->pc++);
@@ -815,7 +815,7 @@ int ld_r_r(CPU_t *cpu) {
 			reg=cpu->a;
 			break;
 	}
-	
+
 	switch(test) {
 		case 0x00:
 			cpu->b=reg;
@@ -862,7 +862,7 @@ int ld_r_r(CPU_t *cpu) {
 				} else {
 					CPU_mem_write(cpu, cpu->iy + offset, reg);
 				}
-				
+
 				time += 15;
 			}
 			break;
@@ -887,7 +887,7 @@ int nop(CPU_t *cpu) {
 int ex_sp_hl(CPU_t *cpu) {
 	unsigned short reg = CPU_mem_read(cpu, cpu->sp);
 	reg |= CPU_mem_read(cpu, cpu->sp + 1) << 8;
-	
+
 	if (!cpu->prefix) {
 		CPU_mem_write(cpu,cpu->sp + 1, cpu->h);
 		CPU_mem_write(cpu,cpu->sp, cpu->l);
@@ -937,19 +937,19 @@ int ex_af_afp(CPU_t *cpu) {
 	unsigned short reg;
 	swappair(cpu->af,cpu->afp);
 	return 4;
-}	
+}
 
 int jp_hl(CPU_t *cpu) {
 	index_ext (
 		cpu->pc = cpu->hl;
 		return 4;,
-		
+
 		cpu->pc = cpu->ix;
 		return 8;,
 
 		cpu->pc = cpu->iy;
 		return 8;
-	)	
+	)
 }
 int jp(CPU_t *cpu) {
 	unsigned short address = CPU_mem_read(cpu, cpu->pc++);
